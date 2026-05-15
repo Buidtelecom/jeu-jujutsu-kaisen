@@ -141,6 +141,7 @@
         .domain-sukuna { background-image: url("lhotel_demoniaque_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-megumi { background-image: url("image_du_territoire_de_megumi.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
         
+        /* Nouveaux Domaines */
         .domain-hakari { background-image: url("image_du_territoire_dhakari.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-mahito { background-image: url("arriere_plan_territoire_de_mahito.png"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-jogo { background-image: url("arriere_plan_territoire_de_Jogo.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
@@ -565,7 +566,7 @@
         
         const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
         const menuBackgrounds = [
-            "G5cmiQlbcAEl_hl.jpg",
+            "homejjk5.jpg",
             "images.jpeg",
             "images_1.jpeg",
             "jjk_homme.jpeg"
@@ -845,7 +846,6 @@
             overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
             await wait(500); 
             
-            // Appliquer un fond dynamique aléatoire parmi vos images sur les menus de navigation
             const randomBg = menuBackgrounds[Math.floor(Math.random() * menuBackgrounds.length)];
             document.querySelectorAll('.dynamic-menu-bg').forEach(bg => {
                 bg.style.backgroundImage = `url('${randomBg}')`;
