@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jujutsu Kaisen: Clash</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Animations Personnalisées */
+        @keyframes strike-player {
+            0% { transform: translateX(0) scale(1); }
+            30% { transform: translateX(50px) scale(1.15); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
+            50% { transform: translateX(60px) scale(1.1); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 1)); }
+            70% { transform: translateX(40px) scale(1.05); }
+            100% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+        }
+        @keyframes strike-enemy {
+            0% { transform: translateX(0) scale(1) scaleX(-1); }
+            30% { transform: translateX(-50px) scale(1.15) scaleX(-1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
+            50% { transform: translateX(-60px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 1)); }
+            70% { transform: translateX(-40px) scale(1.05) scaleX(-1); }
+            100% { transform: translateX(0) scale(1) scaleX(-1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)); }
+        }
+        @keyframes hurt {
+            0% { filter: brightness(1) sepia(0) hue-rotate(0deg) saturate(1); transform: translateX(0); }
+            10% { transform: translateX(-15px); }
+            20% { transform: translateX(15px); }
+            30% { transform: translateX(-15px); }
+            40% { transform: translateX(15px); }
+            50% { filter: brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5) blur(2px); transform: translateX(-10px); }
+            60% { transform: translateX(10px); }
+            70% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+            100% { filter: brightness(1) sepia(0) hue-rotate(0deg) saturate(1) blur(0); transform: translateX(0); }
+        }
+        @keyframes heal {
+            0% { filter: drop-shadow(0 0 0px #22c55e); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 40px #22c55e) brightness(1.5); transform: scale(1.1); }
+            100% { filter: drop-shadow(0 0 0px #22c55e); transform: scale(1); }
+        }
+        @keyframes domain-flash {
+            0% { background-color: white; opacity: 0; }
+            50% { opacity: 1; }
+            100% { background-color: transparent; opacity: 0; }
+        }
+        @keyframes float-up {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
+        }
+        @keyframes screen-shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        @keyframes vanish {
+            0% { opacity: 1; filter: brightness(1) blur(0px); transform: scale(1) translateY(0); }
+            40% { opacity: 1; filter: brightness(2) blur(2px) drop-shadow(0 0 15px rgba(255,0,0,0.8)); transform: scale(1.05) translateY(-5px); }
+            100% { opacity: 0; filter: brightness(0) blur(15px); transform: scale(0.8) translateY(30px); }
+        }
+        /* Animations de l'écran VS */
+        @keyframes vs-slide-l {
+            0% { transform: translateX(-150%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes vs-slide-r {
+            0% { transform: translateX(150%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes vs-pop {
+            0% { transform: scale(0); opacity: 0; }
+            60% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        /* Animation de balancement pour l'accueil */
+        @keyframes sway-bg {
+            0% { transform: scale(1.15) translate(-2%, -1%); }
+            50% { transform: scale(1.15) translate(2%, 2%); }
+            100% { transform: scale(1.15) translate(-2%, -1%); }
+        }
+
+        /* Animation Aura pour les cartes (Énergie Occulte) */
+        @keyframes cursed-aura {
+            0% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.3), inset 0 0 5px rgba(168, 85, 247, 0.2); border-color: rgba(255, 255, 255, 0.1); }
+            50% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.9), inset 0 0 15px rgba(168, 85, 247, 0.6); border-color: rgba(168, 85, 247, 0.9); }
+            100% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.3), inset 0 0 5px rgba(168, 85, 247, 0.2); border-color: rgba(255, 255, 255, 0.1); }
+        }
+        .aura-card { animation: cursed-aura 2.5s infinite ease-in-out; }
+
+        /* Flèche animée tutoriel */
+        @keyframes point-left {
+            0%, 100% { transform: translate(0, -50%); }
+            50% { transform: translate(-8px, -50%); }
+        }
+        .anim-point-left { animation: point-left 1s infinite; }
+
+        .anim-strike-p { animation: strike-player 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .anim-strike-e { animation: strike-enemy 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .anim-strike-p-light { animation: strike-p-light 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .anim-strike-e-light { animation: strike-e-light 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .anim-strike-p-heavy { animation: strike-p-heavy 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .anim-strike-e-heavy { animation: strike-e-heavy 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+        .anim-hurt { animation: hurt 0.8s ease-in-out; }
+        .anim-heal { animation: heal 1.2s ease-out; }
+        .anim-domain-flash { animation: domain-flash 2s ease-in-out; }
+        .anim-screen-shake { animation: screen-shake 0.5s; }
+        .anim-vanish { animation: vanish 2s forwards; pointer-events: none; }
+        .anim-sway-bg { animation: sway-bg 20s ease-in-out infinite; }
+        
+        .anim-vs-l { animation: vs-slide-l 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .anim-vs-r { animation: vs-slide-r 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .anim-vs-pop { animation: vs-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s forwards; opacity: 0; }
+        
+        .floating-text {
+            position: absolute;
+            font-weight: 900;
+            font-size: 2rem;
+            pointer-events: none;
+            animation: float-up 1.2s ease-out forwards;
+            text-shadow: 3px 3px 6px rgba(0,0,0,1);
+            z-index: 50;
+        }
+
+        /* Styles UI */
+        body { background-color: #0f172a; overscroll-behavior: none; }
+        .bar-transition { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Arrière-plans d'Extensions de Territoire avec les NOUVEAUX noms de fichiers */
+        .bg-default { background-image: url('terrain_de_combat_Shibuya.jpeg'); background-size: cover; background-position: center; transition: background 1.5s; }
+        .domain-gojo { background-image: url("Sphere_de_lespace_infini_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
+        .domain-sukuna { background-image: url("lhotel_demoniaque_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
+        .domain-megumi { background-image: url("image_du_territoire_de_megumi.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
+        
+        .domain-hakari { background-image: url("image_du_territoire_dhakari.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
+        .domain-mahito { background-image: url("arriere_plan_territoire_de_mahito.png"); background-size: cover; background-position: center; transition: background 1.5s; }
+        .domain-jogo { background-image: url("arriere_plan_territoire_de_Jogo.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
+
+        /* Clash de Territoires */
+        .domain-clash { 
+            background: radial-gradient(circle at center, #4c1d95 0%, #7f1d1d 50%, #000 100%); 
+            animation: clash-pulse 3s infinite alternate; 
+            transition: background 1.5s;
+        }
+        @keyframes clash-pulse { 
+            0% { filter: hue-rotate(0deg) brightness(1); } 
+            100% { filter: hue-rotate(45deg) brightness(1.2); } 
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .sprite-img { object-fit: cover; border-radius: 50%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        /* Boutons de Menu Stylisés */
+        .menu-btn {
+            background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(30,41,59,0.8) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+        }
+        .menu-btn:hover:not(:disabled) {
+            background: linear-gradient(90deg, rgba(147,51,234,0.6) 0%, rgba(220,38,38,0.6) 100%);
+            border-color: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+    </style>
+</head>
+<body class="text-white h-screen w-full overflow-hidden flex flex-col font-sans select-none bg-black">
+
+    <!-- OVERLAY POUR TRANSITION (Fondu au noir) -->
+    <div id="transition-overlay" class="fixed inset-0 bg-black z-[100] transition-opacity duration-500 pointer-events-none opacity-0"></div>
+
+    <!-- DOUBLE VALIDATION EXIT MODAL -->
+    <div id="modal-exit" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-gray-600 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+            <h3 class="text-xl font-bold text-white mb-4">Quitter l'arène ?</h3>
+            <p class="text-sm text-gray-400 mb-6">Toute progression en cours sera perdue.</p>
+            <div class="flex justify-between gap-4">
+                <button onclick="hideExitModal()" class="flex-1 py-3 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 transition-colors active:scale-95">ANNULER</button>
+                <button onclick="confirmExit()" class="flex-1 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)] active:scale-95">QUITTER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOUBLE VALIDATION NEW GAME MODAL -->
+    <div id="modal-new-game" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-red-600 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(220,38,38,0.8)]">
+            <h3 class="text-xl font-bold text-white mb-4">Écraser la sauvegarde ?</h3>
+            <p class="text-sm text-gray-400 mb-6">Toute votre progression (pièces, personnages, pseudo) sera définitivement perdue.</p>
+            <div class="flex justify-between gap-4">
+                <button onclick="hideNewGameModal()" class="flex-1 py-3 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 transition-colors active:scale-95">ANNULER</button>
+                <button onclick="confirmNewGame()" class="flex-1 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)] active:scale-95">ÉCRASER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO D'AMBIANCE AVEC LES NOUVEAUX NOMS -->
+    <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
+    <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-simple"><source src="attaque simple .mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-moyen"><source src="coup moyen .mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-puissant"><source src="coup puissant .mp3" type="audio/mpeg"></audio>
+
+    <!-- ECRAN D'ACCUEIL (MENU PRINCIPAL) -->
+    <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-50 overflow-hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-40 anim-sway-bg dynamic-menu-bg" style="background-image: url('jjk_homme.jpeg');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/90"></div>
+        
+        <h1 class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-500 mb-1 text-center drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] relative z-10">JUJUTSU<br>KAISEN</h1>
+        <p class="text-gray-300 tracking-widest mb-8 text-xs sm:text-sm font-bold relative z-10 drop-shadow-md">CLASH OF SORCERERS</p>
+        
+        <div class="flex flex-col gap-3 w-64 relative z-10">
+            <button id="btn-new-game" onclick="handleNewGame()" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">NOUVELLE PARTIE</button>
+            <button id="btn-continue" onclick="handleContinue()" disabled class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed">CONTINUER</button>
+            <button onclick="showScreen('screen-options')" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">OPTIONS</button>
+            <button onclick="showScreen('screen-leaderboard'); renderLeaderboard();" class="menu-btn py-3 px-6 rounded-lg font-bold text-blue-400 tracking-wide flex justify-between items-center">
+                <span>CLASSEMENT</span> <i class="fas fa-trophy"></i>
+            </button>
+            <button onclick="showScreen('screen-market'); renderMarket();" class="menu-btn py-3 px-6 rounded-lg font-bold text-yellow-400 tracking-wide flex justify-between items-center">
+                <span>MARCHÉ</span> <i class="fas fa-store"></i>
+            </button>
+            <button onclick="showScreen('screen-credits')" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">CRÉDITS</button>
+        </div>
+    </div>
+
+    <!-- ECRAN CHOIX DU MODE -->
+    <div id="screen-mode-select" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-40 hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        
+        <h2 class="text-3xl font-black text-white mb-8 z-10 drop-shadow-lg text-center relative z-10">CHOIX DU MODE</h2>
+        
+        <div class="flex flex-col gap-4 w-72 sm:w-80 relative z-10">
+            <button onclick="alert('Bientôt disponible !')" class="menu-btn py-4 px-6 rounded-xl font-bold text-gray-400 tracking-wide text-left opacity-70">
+                <i class="fas fa-book-open mr-2"></i> Mode Histoire
+            </button>
+            <button onclick="goToOnlineMode()" class="menu-btn py-4 px-6 rounded-xl font-bold text-blue-400 tracking-wide text-left shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                <i class="fas fa-globe mr-2"></i> Combat en Ligne
+            </button>
+            <button onclick="startTutorial()" class="menu-btn py-4 px-6 rounded-xl font-bold text-green-400 tracking-wide text-left shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                <i class="fas fa-graduation-cap mr-2"></i> Didacticiel
+            </button>
+            <button onclick="alert('Aucun événement en cours.')" class="menu-btn py-4 px-6 rounded-xl font-bold text-purple-400 tracking-wide text-left opacity-70">
+                <i class="fas fa-calendar-alt mr-2"></i> Événements en Ligne
+            </button>
+            <button onclick="currentMode='tournament'; selectionStep='player'; showScreen('screen-select');" class="menu-btn py-4 px-6 rounded-xl font-bold text-red-400 tracking-wide text-left shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                <i class="fas fa-trophy mr-2"></i> Tournoi VS IA
+            </button>
+        </div>
+    </div>
+
+    <!-- ECRAN PSEUDO EN LIGNE -->
+    <div id="screen-pseudo" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-40 hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-mode-select')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-3xl font-black text-blue-400 mb-6 z-10 drop-shadow-lg text-center relative z-10">COMBAT EN LIGNE</h2>
+        <div class="bg-gray-900/90 p-6 rounded-xl border border-blue-500/50 flex flex-col items-center z-10 shadow-[0_0_20px_rgba(59,130,246,0.3)] w-80 relative z-10">
+            <p class="text-gray-300 text-sm mb-4 text-center">Entrez votre pseudo pour le classement mondial :</p>
+            <input type="text" id="input-pseudo" placeholder="Votre pseudo..." class="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 mb-5 focus:outline-none focus:border-blue-400 text-center font-bold text-lg placeholder-gray-500 shadow-inner">
+            <button onclick="validatePseudo()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors shadow-lg active:scale-95">SAUVEGARDER & JOUER</button>
+        </div>
+    </div>
+
+    <!-- ECRAN TOURNOI -->
+    <div id="screen-tournament" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-4">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="confirmExit()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
+        <h2 id="tournament-round-title" class="text-3xl font-black text-red-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">QUARTS DE FINALE</h2>
+        
+        <div id="tournament-matchups" class="flex flex-col gap-3 flex-1 overflow-y-auto no-scrollbar pb-6 relative z-10">
+            <!-- Rempli par le JS -->
+        </div>
+
+        <button id="btn-tournament-start" onclick="startTournamentMatch()" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10">COMBATTRE</button>
+    </div>
+
+    <!-- ECRAN CLASSEMENT -->
+    <div id="screen-leaderboard" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-3xl font-black text-blue-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">CLASSEMENT MONDIAL</h2>
+        <div id="leaderboard-list" class="flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar space-y-3 pb-10 relative z-10">
+            <!-- Rempli dynamiquement -->
+        </div>
+    </div>
+
+    <!-- ECRAN MATCHMAKING EN LIGNE -->
+    <div id="screen-matchmaking" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-[60] hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <div class="relative w-32 h-32 flex items-center justify-center mb-8 z-10">
+            <div class="absolute inset-0 rounded-full border-4 border-blue-500/30 animate-ping"></div>
+            <div class="absolute inset-2 rounded-full border-4 border-blue-500/60 animate-ping" style="animation-delay: 0.2s"></div>
+            <div class="absolute inset-4 rounded-full border-4 border-blue-500 animate-pulse"></div>
+            <i class="fas fa-globe text-4xl text-blue-400 z-10"></i>
+        </div>
+        <h2 class="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(59,130,246,0.8)] tracking-widest animate-pulse text-center relative z-10">RECHERCHE D'ADVERSAIRE</h2>
+        <p class="text-gray-400 mt-2 text-sm font-bold tracking-widest relative z-10" id="matchmaking-text">ANALYSE DU CLASSEMENT...</p>
+    </div>
+
+    <!-- ECRAN OPTIONS -->
+    <div id="screen-options" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-50 hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-3xl font-black text-white mb-8 text-center drop-shadow-lg relative z-10">OPTIONS</h2>
+        <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 w-80 shadow-2xl relative z-10">
+            <div class="flex justify-between items-center mb-6">
+                <span class="font-bold text-lg"><i class="fas fa-volume-up mr-2 text-blue-400"></i> Son & Musique</span>
+                <button onclick="toggleSound()" class="w-14 h-8 rounded-full bg-gray-600 relative transition-colors duration-300" id="btn-sound-toggle">
+                    <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-sound"></div>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 text-center">Active ou désactive l'audio global du jeu.</p>
+        </div>
+    </div>
+
+    <!-- ECRAN MARCHE -->
+    <div id="screen-market" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="flex justify-between items-center mt-2 mb-6 px-10 relative z-10">
+            <h2 class="text-2xl font-black text-yellow-400 drop-shadow-lg ml-4">MARCHÉ NOIR</h2>
+            <div class="bg-yellow-900/50 border border-yellow-500 text-yellow-300 px-3 py-1 rounded-full font-bold shadow-[0_0_10px_rgba(234,179,8,0.3)]">
+                <i class="fas fa-coins mr-1"></i> <span id="market-coins">25</span>
+            </div>
+        </div>
+        <p class="text-center text-gray-400 text-sm mb-4 relative z-10">Achetez des exorcistes ou fléaux scellés pour les débloquer.</p>
+        
+        <div id="market-grid" class="grid grid-cols-2 gap-4 flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-10 relative z-10">
+            <!-- Rempli dynamiquement -->
+        </div>
+    </div>
+
+    <!-- ECRAN CREDITS -->
+    <div id="screen-credits" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-50 hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-8 text-center drop-shadow-lg relative z-10">CRÉDITS</h2>
+        <div class="text-center space-y-6 text-gray-300 relative z-10">
+            <div>
+                <p class="text-sm text-gray-500">Développé par</p>
+                <p class="font-bold text-xl">L'IA Gemini</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Inspiré de l'œuvre de</p>
+                <p class="font-bold text-xl">Gege Akutami</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Ressources Audio & Visuelles</p>
+                <p class="font-bold text-md text-gray-400">Droits réservés à leurs créateurs respectifs</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ECRAN DE SELECTION -->
+    <div id="screen-select" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-3 sm:p-4 relative">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button id="btn-back-select" onclick="goBackSelect()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 id="select-title" class="text-xl sm:text-2xl font-bold text-center mt-2 mb-1 text-purple-400 z-10 relative z-10">Choisissez votre Exorciste</h2>
+        <p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Le destin du monde est entre vos mains.</p>
+        
+        <!-- Grille compactée -->
+        <div id="character-grid" class="grid grid-cols-2 grid-rows-6 gap-2 sm:gap-3 flex-1 w-full h-full pb-2 relative z-10"></div>
+
+        <div id="difficulty-grid" class="hidden flex-col justify-center gap-4 w-full max-w-sm mx-auto flex-1 pb-6 mt-2 relative z-10">
+            <button onclick="startGame('facile')" class="w-full py-4 rounded-xl bg-green-900/50 border-2 border-green-500 text-green-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(34,197,94,0.3)]">Facile</button>
+            <button onclick="startGame('normal')" class="w-full py-4 rounded-xl bg-blue-900/50 border-2 border-blue-500 text-blue-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.3)]">Normal</button>
+            <button onclick="startGame('difficile')" class="w-full py-4 rounded-xl bg-orange-900/50 border-2 border-orange-500 text-orange-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(249,115,22,0.3)]">Difficile</button>
+            <button onclick="startGame('extreme')" class="w-full py-4 rounded-xl bg-red-900/50 border-2 border-red-500 text-red-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.3)]">Extrême</button>
+        </div>
+    </div>
+
+    <!-- ECRAN VS (Animation de début de combat) -->
+    <div id="screen-vs" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-35 hidden overflow-hidden">
+        <div class="absolute inset-0 bg-[url('terrain_de_combat_Shibuya.jpeg')] bg-cover bg-center opacity-30 blur-sm"></div>
+        <div id="vs-content" class="w-full h-full">
+            <div class="flex w-full items-center justify-between px-6 relative h-full z-10">
+                <div class="flex flex-col items-center w-1/2 anim-vs-l">
+                    <img id="vs-player-img" src="" class="w-28 h-28 md:w-48 md:h-48 rounded-full border-4 border-blue-500 object-cover shadow-[0_0_20px_rgba(59,130,246,0.8)]">
+                    <span id="vs-player-name" class="text-blue-400 font-bold mt-4 text-center md:text-xl drop-shadow-md"></span>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                    <h1 class="text-6xl md:text-8xl italic font-black text-white drop-shadow-[0_0_20px_rgba(255,0,0,1)] anim-vs-pop">VS</h1>
+                </div>
+                <div class="flex flex-col items-center w-1/2 anim-vs-r">
+                    <img id="vs-enemy-img" src="" class="w-28 h-28 md:w-48 md:h-48 rounded-full border-4 border-red-500 object-cover shadow-[0_0_20px_rgba(239,68,68,0.8)]">
+                    <span id="vs-enemy-name" class="text-red-400 font-bold mt-4 text-center md:text-xl drop-shadow-md"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ECRAN DE COMBAT -->
+    <div id="screen-battle" class="absolute inset-0 flex flex-col bg-gray-900 z-30 hidden">
+        
+        <!-- BOUTON PAUSE / QUITTER -->
+        <button onclick="showExitModal()" class="absolute top-4 left-4 z-50 bg-gray-900/80 border border-gray-600 p-2 rounded-full shadow-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-all w-10 h-10 flex items-center justify-center active:scale-90">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
+
+        <div id="domain-flash" class="absolute inset-0 pointer-events-none z-40"></div>
+
+        <!-- ENEMY HUD -->
+        <div class="glass-panel p-3 shrink-0 flex items-center justify-between shadow-md z-20 pl-16">
+            <div class="flex flex-col w-[60%]">
+                <span id="enemy-name" class="font-bold text-red-400 text-sm">Ryomen Sukuna</span>
+                <span id="enemy-difficulty-label" class="text-[8px] text-gray-400 tracking-widest uppercase">NORMAL</span>
+                
+                <div class="w-full bg-gray-900 rounded-full h-3 mt-1 relative overflow-hidden border border-gray-700">
+                    <div id="enemy-hp-bar" class="bg-red-500 h-3 rounded-full bar-transition" style="width: 100%;"></div>
+                    <span id="enemy-hp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-bold drop-shadow-md">1000/1000</span>
+                </div>
+                
+                <div class="w-full bg-gray-900 rounded-full h-2 mt-1 relative overflow-hidden border border-gray-700">
+                    <div id="enemy-ce-bar" class="bg-purple-600 h-2 rounded-full bar-transition shadow-[0_0_5px_rgba(147,51,234,0.5)]" style="width: 50%;"></div>
+                    <span id="enemy-ce-text" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md">50/100</span>
+                </div>
+
+                <div class="flex justify-between mt-1">
+                    <span id="enemy-status" class="text-[10px] font-bold text-yellow-400"></span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="showEnemyStats()" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center text-gray-300 hover:bg-gray-700 active:scale-90 transition-transform shadow-md">
+                    <i class="fas fa-search text-sm"></i>
+                </button>
+                <img id="enemy-avatar" src="" alt="Ennemi" class="w-14 h-14 rounded-full border-2 border-red-500 object-cover shadow-[0_0_10px_rgba(239,68,68,0.5)] bg-gray-800">
+            </div>
+        </div>
+
+        <!-- ARENA -->
+        <div id="arena-container" class="flex-1 relative">
+            <div id="arena" class="absolute inset-0 flex items-center justify-center overflow-hidden bg-default">
+                
+                <!-- BACKGROUND DE CLASH -->
+                <div id="clash-bg-container" class="absolute inset-0 z-[1] hidden overflow-hidden">
+                    <div class="absolute inset-0 bg-yellow-300 animate-pulse opacity-30" style="filter: blur(8px);"></div>
+                    <div id="clash-bg-player" class="absolute inset-0 bg-cover bg-center" style="clip-path: polygon(0% 0%, 52% 0%, 42% 50%, 54% 50%, 43% 100%, 0% 100%);"></div>
+                    <div id="clash-bg-enemy" class="absolute inset-0 bg-cover bg-center" style="clip-path: polygon(52% 0%, 100% 0%, 100% 100%, 43% 100%, 54% 50%, 42% 50%);"></div>
+                    <svg class="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_15px_rgba(250,204,21,1)]" preserveAspectRatio="none" viewBox="0 0 100 100">
+                        <polyline points="52,0 42,50 54,50 43,100" fill="none" stroke="#facc15" stroke-width="1.5" />
+                        <polyline points="52,0 42,50 54,50 43,100" fill="none" stroke="#fff" stroke-width="0.5" />
+                    </svg>
+                </div>
+
+                <!-- VIDÉO DE TERRITOIRE -->
+                <video id="domain-video" class="absolute inset-0 w-full h-full object-cover hidden z-[2] opacity-90" playsinline></video>
+
+                <div id="domain-name-display" class="absolute inset-0 flex items-center justify-center z-[3] opacity-0 transition-opacity duration-500 pointer-events-none">
+                    <h2 class="text-4xl font-black text-white text-center drop-shadow-[0_0_20px_rgba(0,0,0,1)] tracking-widest px-4"></h2>
+                </div>
+                
+                <div class="flex justify-between w-full px-4 items-center z-[4] relative mt-10">
+                    <img id="sprite-player" src="" alt="Joueur" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-blue-500 transition-all z-20">
+                    <img id="sprite-enemy" src="" alt="Ennemi" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-red-500 transition-all scale-x-[-1] z-10">
+                </div>
+            </div>
+
+            <!-- BOITE DE DIALOGUE TUTORIEL -->
+            <div id="tutorial-box" class="absolute bottom-4 left-4 right-4 sm:left-auto sm:w-80 z-50 bg-blue-900/95 border-2 border-blue-400 p-3 rounded-lg flex items-center gap-3 hidden shadow-[0_0_20px_rgba(59,130,246,0.8)]">
+                <img src="satoru Gojo.jpg" class="w-12 h-12 rounded-full border-2 border-white object-cover shadow-lg" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Gojo&backgroundColor=1e293b&textColor=ffffff'">
+                <p id="tutorial-text" class="text-xs text-white font-bold leading-tight"></p>
+            </div>
+        </div>
+
+        <!-- COMBAT LOG & TURN INDICATOR -->
+        <div class="bg-black/80 flex flex-col shrink-0 border-t border-gray-700 z-20">
+            <div id="turn-indicator" class="text-center text-xs font-bold py-1 bg-blue-900/50 text-blue-300 transition-colors">
+                C'EST VOTRE TOUR
+            </div>
+            <div id="combat-log" class="h-24 p-2 overflow-y-auto no-scrollbar text-sm space-y-1 text-gray-300 font-mono"></div>
+        </div>
+
+        <!-- PLAYER HUD & ACTIONS -->
+        <div class="glass-panel shrink-0 rounded-t-xl pb-safe z-20">
+            <div class="p-3 border-b border-gray-700 flex justify-between items-end bg-gray-900/50">
+                <div class="w-1/2 pr-3">
+                    <div class="flex justify-between items-baseline mb-1">
+                        <span id="player-name" class="font-bold text-blue-400 text-sm">Yuji Itadori</span>
+                    </div>
+                    <div class="w-full bg-gray-900 rounded-full h-4 border border-gray-700 relative">
+                        <div id="player-hp-bar" class="bg-green-500 h-4 rounded-full bar-transition" style="width: 100%;"></div>
+                        <span id="player-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md">100/100</span>
+                    </div>
+                </div>
+                <div class="w-1/2 pl-3 border-l border-gray-700">
+                    <div class="flex justify-between items-baseline mb-1">
+                        <span class="font-bold text-purple-400 text-[10px] tracking-wider">ÉNERGIE OCCULTE</span>
+                    </div>
+                    <div class="w-full bg-gray-900 rounded-full h-4 border border-gray-700 relative">
+                        <div id="player-ce-bar" class="bg-purple-600 h-4 rounded-full bar-transition shadow-[0_0_8px_rgba(147,51,234,0.8)]" style="width: 50%;"></div>
+                        <span id="player-ce-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md">50/100</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="action-buttons" class="grid grid-cols-2 gap-2 p-3 relative"></div>
+        </div>
+    </div>
+
+    <!-- MODAL INSPECTION ENNEMI -->
+    <div id="modal-enemy-stats" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-red-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+            <div class="bg-gradient-to-r from-red-900 to-black p-3 flex justify-between items-center border-b border-red-500/30">
+                <h3 class="font-bold text-red-400 text-lg flex items-center gap-2"><i class="fas fa-search"></i> Informations Ennemi</h3>
+                <button onclick="closeEnemyStats()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <img id="inspect-avatar" src="" class="w-12 h-12 rounded-full border border-red-500 object-cover" alt="Ennemi">
+                    <div>
+                        <div id="inspect-name" class="font-bold text-white">Nom</div>
+                        <div class="text-xs text-gray-400">Techniques Innées</div>
+                    </div>
+                </div>
+                <div id="inspect-moves" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar pr-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FIN DE PARTIE -->
+    <div id="modal-gameover" class="absolute inset-0 bg-black/95 z-50 hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <img id="gameover-image" src="" class="w-40 h-40 rounded-full border-4 object-cover mb-4 hidden z-10 transition-all duration-500">
+        <h2 id="gameover-title" class="text-5xl font-black mb-4 z-10 relative">VICTOIRE</h2>
+        <p id="gameover-desc" class="text-gray-300 mb-8 text-lg z-10">L'ennemi a été exorcisé.</p>
+        <div id="gameover-buttons" class="flex flex-col sm:flex-row gap-4 w-full max-w-sm z-10">
+            <!-- Boutons dynamiques générés en JS -->
+        </div>
+    </div>
+
+    <script>
+        /* --- DONNÉES GLOBALES ET SAUVEGARDE --- */
+        let playerCoins = 25; 
+        let globalPlayerPseudo = "";
+        let isMuted = false;
+        let currentMode = 'tournament'; 
+        let hasSave = false; 
+        
+        const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
+        const menuBackgrounds = [
+            "G5cmiQlbcAEl_hl.jpg",
+            "images.jpeg",
+            "images_1.jpeg",
+            "jjk_homme.jpeg"
+        ];
+        
+        let tutorialStep = 0;
+        const tutorialSequence = [
+            { targetMove: 0, text: "Bienvenue apprenti ! Frappe avec ton attaque de base pour générer de l'Énergie Occulte." },
+            { targetMove: 1, text: "Bien joué ! Tu as accumulé de l'énergie. Lance 'Rouge' pour le repousser." },
+            { targetMove: 2, text: "Magnifique ! Voici un boost de ma part. Essaie notre attaque secrète : 'Violet' !", boost: 100 },
+            { targetMove: 3, text: "Il est temps de finir en beauté... Ouvre l'Extension du Territoire !", boost: 100, setEnemyHp: 1 }
+        ];
+
+        /* --- ETAT DU TOURNOI --- */
+        let tState = {
+            round: 0,
+            bracket: [], 
+            phase: 'matchups' 
+        };
+
+        /* --- DONNÉES DU JEU --- */
+        const charData = [
+            {
+                id: 'yuji', name: 'Yuji Itadori', img: 'Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg', color: 'from-orange-600 to-red-600',
+                locked: false, price: 0,
+                hp: 500, ce: 30, maxCe: 100,
+                moves: [
+                    { name: 'Arts Martiaux', cost: 0, dmg: 25, desc: 'Coup de poing basique. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Poing Divergent', cost: 20, dmg: 50, desc: 'Un double impact dévastateur.', type: 'attack' },
+                    { name: 'Rayon Noir', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack' },
+                    { name: 'Assaut Furieux', cost: 70, dmg: 120, desc: 'Un enchaînement inarrêtable.', type: 'attack' }
+                ]
+            },
+            {
+                id: 'megumi', name: 'Megumi Fushiguro', img: 'megumi.jpg', color: 'from-green-700 to-teal-900',
+                locked: false, price: 0,
+                hp: 450, ce: 40, maxCe: 100,
+                moves: [
+                    { name: 'Chiens de Jade', cost: 0, dmg: 25, desc: 'Morsure basique. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Nue (Oiseau)', cost: 25, dmg: 40, desc: 'Attaque électrique. 30% de chance d\'étourdir 1 tour.', effect: 'chance-stun', type: 'attack' },
+                    { name: 'Éléphant de Max', cost: 40, dmg: 70, desc: 'Écrase l\'ennemi sous une pression d\'eau.', type: 'attack' },
+                    { name: 'Jardin des Ombres', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour et octroie Esquive constante.', effect: 'domain-evade', type: 'domain', domainClass: 'domain-megumi', video: "territoire_de_Megumi.mp4" }
+                ]
+            },
+            {
+                id: 'nobara', name: 'Nobara Kugisaki', img: 'nobara.jpg', color: 'from-amber-700 to-red-800',
+                locked: false, price: 0,
+                hp: 430, ce: 30, maxCe: 100,
+                moves: [
+                    { name: 'Coup de Marteau', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Projection de Clous', cost: 15, dmg: 35, desc: 'Tire des clous imprégnés de CE.', type: 'attack' },
+                    { name: 'Résonance', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack' },
+                    { name: 'Pince à Cheveux', cost: 60, dmg: 140, desc: 'Fait exploser tous les clous plantés.', type: 'attack' }
+                ]
+            },
+            {
+                id: 'maki', name: 'Maki Zenin', img: 'maki.jpeg', color: 'from-emerald-700 to-green-900',
+                locked: true, price: 800,
+                hp: 510, ce: 30, maxCe: 100,
+                moves: [
+                    { name: 'Arts Martiaux', cost: 0, dmg: 30, desc: 'Coup de poing basique puissant. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Lancer d\'Arme', cost: 20, dmg: 45, desc: 'Projette une arme maudite avec force.', type: 'attack' },
+                    { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack' },
+                    { name: 'Éveil Physique', cost: 70, dmg: 130, desc: 'Une démonstration de force brute inarrêtable.', type: 'attack' }
+                ]
+            },
+            {
+                id: 'nanami', name: 'Kento Nanami', img: 'nanami.jpg', color: 'from-yellow-600 to-yellow-800',
+                locked: true, price: 800,
+                hp: 470, ce: 40, maxCe: 100,
+                moves: [
+                    { name: 'Lame Émoussée', cost: 0, dmg: 25, desc: 'Coup d\'épée basique. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Point Faible', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack' },
+                    { name: 'Heures Supplémentaires', cost: 40, dmg: 0, desc: 'Libération d\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal' },
+                    { name: 'Effondrement', cost: 65, dmg: 110, desc: 'Frappe le point critique. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack' }
+                ]
+            },
+            {
+                id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800',
+                locked: true, price: 1500,
+                hp: 460, ce: 40, maxCe: 100,
+                moves: [
+                    { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack' },
+                    { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal' },
+                    { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4" }
+                ]
+            },
+            {
+                id: 'toji', name: 'Toji Fushiguro', img: 'Toji.jpeg', color: 'from-gray-600 to-gray-900',
+                locked: true, price: 1500,
+                hp: 560, ce: 50, maxCe: 100,
+                moves: [
+                    { name: 'Katana Ordinaire', cost: 0, dmg: 35, desc: 'Coup de lame simple et brutal. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Pistolet', cost: 20, dmg: 50, desc: 'Tire sur l\'adversaire avec précision.', type: 'attack' },
+                    { name: 'Nuage Flottant', cost: 50, dmg: 90, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack' },
+                    { name: 'Lance du Ciel Inversée', cost: 80, dmg: 140, desc: 'Annule les techniques. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack' }
+                ]
+            },
+            {
+                id: 'mahito', name: 'Mahito', img: 'mahito.jpeg', color: 'from-blue-700 to-indigo-900',
+                locked: true, price: 2000,
+                hp: 520, ce: 50, maxCe: 100,
+                moves: [
+                    { name: 'Lames Corporelles', cost: 0, dmg: 25, desc: 'Transformation en lames. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Âme Multiple', cost: 30, dmg: 50, desc: 'Projette des âmes transfigurées.', type: 'attack' },
+                    { name: 'Transfiguration Idéale', cost: 50, dmg: 80, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack' },
+                    { name: 'Orbe de l\'Isolement', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature l\'âme : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-mahito', video: 'territoire_de_Mahito.mp4' }
+                ]
+            },
+            {
+                id: 'jogo', name: 'Jogo', img: 'jogo.png', color: 'from-red-600 to-orange-800',
+                locked: true, price: 2000,
+                hp: 450, ce: 50, maxCe: 100,
+                moves: [
+                    { name: 'Rayon de Flammes', cost: 0, dmg: 25, desc: 'Brûle l\'adversaire. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Insectes Explosifs', cost: 25, dmg: 45, desc: 'Déploie des insectes de feu sonores.', type: 'attack' },
+                    { name: 'Météore Maximum', cost: 60, dmg: 110, desc: 'Invoque un météore géant de flammes.', type: 'attack' },
+                    { name: 'Montagne Cercueil de Fer', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Jogo.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-jogo', video: 'Territoire_de_Jogo.mp4' }
+                ]
+            },
+            {
+                id: 'yuta', name: 'Yuta Okkotsu', img: 'yuta.jpeg', color: 'from-slate-400 to-gray-700',
+                locked: true, price: 3000,
+                hp: 490, ce: 60, maxCe: 100,
+                moves: [
+                    { name: 'Coup de Katana', cost: 0, dmg: 25, desc: 'Coup d\'épée. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Inversion de Sort', cost: 40, dmg: 0, desc: 'Se soigne de 80 PV.', effect: 'heal', type: 'heal' },
+                    { name: 'Appel de Rika', cost: 45, dmg: 80, desc: 'Rika frappe violemment l\'ennemi.', type: 'attack' },
+                    { name: 'Amour Sincère', cost: 85, dmg: 150, desc: 'Un rayon d\'énergie occulte pure.', type: 'attack' }
+                ]
+            },
+            {
+                id: 'gojo', name: 'Satoru Gojo', img: 'satoru Gojo.jpg', color: 'from-blue-500 to-purple-600',
+                locked: true, price: 5000,
+                hp: 480, ce: 50, maxCe: 100,
+                moves: [
+                    { name: 'Corps à corps', cost: 0, dmg: 20, desc: 'Frappe imprégnée d\'énergie. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Rouge (Répulsion)', cost: 30, dmg: 60, desc: 'Projette violemment l\'ennemi.', type: 'attack' },
+                    { name: 'Violet (Hollow)', cost: 60, dmg: 130, desc: 'Détruit la matière au niveau atomique.', type: 'attack' },
+                    { name: 'Sphère de l\'Espace Infini', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature le cerveau : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-gojo', video: "Sphere_de_lespace_infini.mp4" }
+                ]
+            },
+            {
+                id: 'sukuna', name: 'Ryomen Sukuna', img: 'Sukuna.jpeg', color: 'from-red-800 to-black',
+                locked: true, price: 5000,
+                hp: 550, ce: 50, maxCe: 100,
+                moves: [
+                    { name: 'Frappe Démoniaque', cost: 0, dmg: 30, desc: 'Attaque physique lourde. Restaure 15 CE.', type: 'basic' },
+                    { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack' },
+                    { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack' },
+                    { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4" }
+                ]
+            }
+        ];
+
+        const $ = id => document.getElementById(id);
+        const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        /* --- FONCTIONS DE SAUVEGARDE --- */
+        function loadGameData() {
+            const saved = localStorage.getItem('jjk_save_v2');
+            if (saved) {
+                hasSave = true;
+                const data = JSON.parse(saved);
+                if (data.pseudo) globalPlayerPseudo = data.pseudo;
+                if (data.coins !== undefined) playerCoins = data.coins;
+                if (data.unlocked) {
+                    data.unlocked.forEach(id => {
+                        const c = charData.find(char => char.id === id);
+                        if(c) c.locked = false;
+                    });
+                }
+            } else {
+                playerCoins = 25; 
+            }
+            updateMenuButtons();
+        }
+
+        function saveGameData() {
+            const unlocked = charData.filter(c => !c.locked).map(c => c.id);
+            localStorage.setItem('jjk_save_v2', JSON.stringify({
+                pseudo: globalPlayerPseudo,
+                coins: playerCoins,
+                unlocked: unlocked
+            }));
+            hasSave = true;
+            updateMenuButtons();
+        }
+
+        function updateMenuButtons() {
+            const btnContinue = $('btn-continue');
+            if (hasSave) {
+                btnContinue.disabled = false;
+                btnContinue.className = "menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide";
+            } else {
+                btnContinue.disabled = true;
+                btnContinue.className = "menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed";
+            }
+        }
+
+        function handleNewGame() {
+            if (hasSave) {
+                $('modal-new-game').classList.remove('hidden');
+                $('modal-new-game').classList.add('flex');
+            } else {
+                startFreshGame();
+            }
+        }
+
+        function hideNewGameModal() {
+            $('modal-new-game').classList.add('hidden');
+            $('modal-new-game').classList.remove('flex');
+        }
+
+        function confirmNewGame() {
+            hideNewGameModal();
+            localStorage.removeItem('jjk_save_v2');
+            hasSave = false;
+            playerCoins = 25;
+            globalPlayerPseudo = "";
+            charData.forEach(c => {
+                c.locked = !['yuji', 'megumi', 'nobara'].includes(c.id);
+            });
+            updateMenuButtons();
+            startFreshGame();
+        }
+
+        function handleContinue() {
+            showScreen('screen-mode-select');
+        }
+
+        function startFreshGame() {
+            showScreen('screen-mode-select');
+        }
+
+        /* --- MENUS & OPTIONS --- */
+        function toggleSound() {
+            isMuted = !isMuted;
+            const knob = $('knob-sound');
+            const btn = $('btn-sound-toggle');
+            
+            if(isMuted) {
+                knob.classList.remove('translate-x-6');
+                knob.classList.add('translate-x-0');
+                btn.classList.remove('bg-green-500');
+                btn.classList.add('bg-gray-600');
+                $('bg-music').pause();
+                $('battle-music').pause();
+            } else {
+                knob.classList.remove('translate-x-0');
+                knob.classList.add('translate-x-6');
+                btn.classList.remove('bg-gray-600');
+                btn.classList.add('bg-green-500');
+                if(!$('screen-menu').classList.contains('hidden') || !$('screen-select').classList.contains('hidden') || !$('screen-mode-select').classList.contains('hidden')) {
+                    $('bg-music').play().catch(e => console.log(e));
+                }
+            }
+            document.querySelectorAll('audio').forEach(a => a.muted = isMuted);
+        }
+
+        $('btn-sound-toggle').classList.add('bg-green-500');
+
+        function getDomainBgStyle(domainClass) {
+            if(domainClass === 'domain-gojo') return `url("Sphere_de_lespace_infini_arriere_plan.jpeg")`;
+            if(domainClass === 'domain-sukuna') return `url("lhotel_demoniaque_arriere_plan.jpeg")`;
+            if(domainClass === 'domain-megumi') return `url("image_du_territoire_de_megumi.jpg")`;
+            if(domainClass === 'domain-hakari') return `url("image_du_territoire_dhakari.jpg")`;
+            if(domainClass === 'domain-mahito') return `url("arriere_plan_territoire_de_mahito.png")`;
+            if(domainClass === 'domain-jogo') return `url("arriere_plan_territoire_de_Jogo.jpg")`;
+            return '#1e293b'; 
+        }
+
+        async function showScreen(screenId) {
+            const overlay = $('transition-overlay');
+            overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
+            await wait(500); 
+            
+            // Appliquer un fond dynamique aléatoire parmi vos images sur les menus de navigation
+            const randomBg = menuBackgrounds[Math.floor(Math.random() * menuBackgrounds.length)];
+            document.querySelectorAll('.dynamic-menu-bg').forEach(bg => {
+                bg.style.backgroundImage = `url('${randomBg}')`;
+            });
+
+            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament'].forEach(id => $(id).classList.add('hidden'));
+            $(screenId).classList.remove('hidden');
+            
+            const bgMusic = $('bg-music');
+            const battleMusic = $('battle-music');
+
+            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard'].includes(screenId)) {
+                if (screenId === 'screen-select') {
+                    selectionStep = 'player'; pIndex = -1; eIndex = -1;
+                    updateSelectionUI();
+                }
+                if (!isMuted && bgMusic.paused) bgMusic.play().catch(e => console.log(e));
+                battleMusic.pause(); battleMusic.currentTime = 0;
+            } else if (screenId !== 'screen-matchmaking' && screenId !== 'screen-tournament') { 
+                bgMusic.pause(); bgMusic.currentTime = 0;
+            }
+            
+            overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
+        }
+
+        /* --- CLASSEMENT MONDIAL --- */
+        function renderLeaderboard() {
+            const list = $('leaderboard-list');
+            list.innerHTML = '';
+            
+            const fakeLeaderboardTop = [
+                { name: "Ryomen_99", coins: 85000 },
+                { name: "GojoFan", coins: 72000 },
+                { name: "ShadowSlayer", coins: 54000 },
+                { name: "SpecialGrade", coins: 38000 },
+                { name: "DemonGod", coins: 25000 }
+            ];
+            
+            fakeLeaderboardTop.forEach((p, index) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-3 rounded-lg border bg-gray-800 border-gray-700`;
+                
+                let rankMedal = `<span class="font-black text-gray-500 w-6">${index + 1}.</span>`;
+                if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
+                if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
+                if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${rankMedal}
+                        <span class="font-bold text-gray-300">${p.name}</span>
+                    </div>
+                    <div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${p.coins}</div>
+                `;
+                list.appendChild(item);
+            });
+
+            const sep = document.createElement('div');
+            sep.className = "text-center text-gray-500 my-2";
+            sep.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+            list.appendChild(sep);
+
+            let playerRank = 1678;
+            if (playerCoins > 25) {
+                playerRank = Math.max(6, 1678 - Math.floor((playerCoins - 25) / 15));
+            }
+
+            const pName = globalPlayerPseudo || "Vous (Anonyme)";
+            const pItem = document.createElement('div');
+            pItem.className = `flex items-center justify-between p-3 rounded-lg border bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] mt-2`;
+            pItem.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="font-black text-blue-300 w-10 text-sm">#${playerRank}</span>
+                    <span class="font-bold text-white">${pName}</span>
+                </div>
+                <div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${playerCoins}</div>
+            `;
+            list.appendChild(pItem);
+        }
+
+        /* --- NAVIGATION LIGNE & MATCHMAKING --- */
+        function goToOnlineMode() {
+            currentMode = 'online';
+            if (globalPlayerPseudo) {
+                showScreen('screen-select');
+            } else {
+                showScreen('screen-pseudo');
+            }
+        }
+
+        function validatePseudo() {
+            const val = $('input-pseudo').value.trim();
+            if(val.length < 3) {
+                alert("Le pseudo doit contenir au moins 3 caractères.");
+                return;
+            }
+            globalPlayerPseudo = val;
+            saveGameData();
+            showScreen('screen-select');
+        }
+
+        async function startMatchmaking() {
+            const battleMusic = $('battle-music');
+            $('bg-music').pause(); 
+            battleMusic.currentTime = 0;
+            if (!isMuted) battleMusic.play().catch(e => console.log("Erreur lecture musique: ", e));
+
+            showScreen('screen-matchmaking');
+            
+            $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
+            await wait(1500);
+            $('matchmaking-text').innerText = "RECHERCHE DE JOUEURS DISPONIBLES...";
+            await wait(1500);
+            $('matchmaking-text').innerText = "CONNEXION AU SERVEUR...";
+            await wait(1000);
+            $('matchmaking-text').innerText = "ADVERSAIRE TROUVÉ !";
+            await wait(800);
+            
+            eIndex = rand(0, charData.length - 1); 
+            startGame('difficile'); 
+        }
+
+        /* --- SYSTEME DE TOURNOI VS IA --- */
+        function initTournament() {
+            tState.round = 0;
+            tState.phase = 'matchups';
+            let participants = [charData[pIndex]];
+            
+            let availableBots = charData.filter(c => c.id !== charData[pIndex].id);
+            
+            for(let i=0; i<7; i++) {
+                let rIdx = rand(0, availableBots.length - 1);
+                participants.push(availableBots[rIdx]);
+                availableBots.splice(rIdx, 1); 
+            }
+            
+            tState.bracket = [];
+            let r0 = [];
+            for(let i=0; i<8; i+=2) {
+                r0.push({ p1: participants[i], p2: participants[i+1], winner: null });
+            }
+            tState.bracket.push(r0);
+            
+            renderTournament();
+            showScreen('screen-tournament');
+        }
+
+        function renderTournament() {
+            let roundNames = ["QUARTS DE FINALE", "DEMI-FINALES", "FINALE"];
+            $('tournament-round-title').innerText = roundNames[tState.round];
+            
+            let container = $('tournament-matchups');
+            container.innerHTML = '';
+            
+            let matches = tState.bracket[tState.round];
+            matches.forEach((m, idx) => {
+                let isPlayerMatch = (idx === 0); 
+                let p1Class = (tState.phase === 'results' && m.winner !== m.p1) ? 'opacity-30 grayscale' : '';
+                let p2Class = (tState.phase === 'results' && m.winner !== m.p2) ? 'opacity-30 grayscale' : '';
+                
+                let html = `
+                    <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl border ${isPlayerMatch ? 'border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'border-gray-700'} relative z-10">
+                        <div class="flex flex-col items-center w-[30%] ${p1Class}">
+                            <img src="${m.p1.img}" class="w-12 h-12 rounded-full border-2 border-white object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${m.p1.name}&backgroundColor=1e293b&textColor=ffffff'">
+                            <span class="text-[10px] font-bold mt-1 text-center truncate w-full">${m.p1.name}</span>
+                        </div>
+                        <div class="text-xl font-black ${isPlayerMatch ? 'text-blue-400' : 'text-gray-500'} w-[30%] text-center">VS</div>
+                        <div class="flex flex-col items-center w-[30%] ${p2Class}">
+                            <img src="${m.p2.img}" class="w-12 h-12 rounded-full border-2 border-white object-cover scale-x-[-1]" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${m.p2.name}&backgroundColor=1e293b&textColor=ffffff'">
+                            <span class="text-[10px] font-bold mt-1 text-center truncate w-full">${m.p2.name}</span>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+            
+            let btn = $('btn-tournament-start');
+            if (tState.phase === 'matchups') {
+                btn.innerText = "COMBATTRE";
+                btn.className = "w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10";
+            } else {
+                btn.innerText = "TOUR SUIVANT";
+                btn.className = "w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.5)] mt-4 mb-2 shrink-0 relative z-10";
+            }
+        }
+
+        function startTournamentMatch() {
+            if(tState.phase === 'results') {
+                tState.round++;
+                tState.phase = 'matchups';
+                renderTournament();
+                return;
+            }
+            
+            let currentMatch = tState.bracket[tState.round][0];
+            pIndex = charData.findIndex(c => c.id === currentMatch.p1.id);
+            eIndex = charData.findIndex(c => c.id === currentMatch.p2.id);
+            
+            player = JSON.parse(JSON.stringify(charData[pIndex])); player.maxHp = player.hp; player.buffs = {}; player.activeDomain = null;
+            enemy = JSON.parse(JSON.stringify(charData[eIndex])); enemy.maxHp = enemy.hp; enemy.buffs = {}; enemy.activeDomain = null;
+            
+            launchBattleSequence();
+        }
+
+        async function hideGameOverAndShowTournament() {
+            $('modal-gameover').classList.add('hidden');
+            $('modal-gameover').classList.remove('flex');
+            $('gameover-image').classList.add('hidden'); 
+            renderTournament();
+            await showScreen('screen-tournament');
+        }
+
+        /* --- DOUBLE VALIDATION EXIT --- */
+        function showExitModal() {
+            $('modal-exit').classList.remove('hidden');
+            $('modal-exit').classList.add('flex');
+        }
+        function hideExitModal() {
+            $('modal-exit').classList.add('hidden');
+            $('modal-exit').classList.remove('flex');
+        }
+        async function confirmExit() {
+            hideExitModal();
+            $('battle-music').pause();
+            await resetGame();
+        }
+
+        /* --- GESTION BOUTONS GAME OVER --- */
+        async function hideGameOverAndReplay() {
+            $('modal-gameover').classList.add('hidden');
+            $('modal-gameover').classList.remove('flex');
+            $('gameover-image').classList.add('hidden');
+            startMatchmaking(); 
+        }
+
+        async function hideGameOverAndChangeMode() {
+            const overlay = $('transition-overlay');
+            overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
+            await wait(500); 
+            $('modal-gameover').classList.add('hidden');
+            $('modal-gameover').classList.remove('flex');
+            $('gameover-image').classList.add('hidden'); 
+            await showScreen('screen-mode-select');
+        }
+
+        function updateSelectionUI() {
+            $('btn-back-select').classList.remove('hidden');
+            if (selectionStep === 'player') {
+                $('select-title').innerText = "Choisissez votre Exorciste"; $('select-desc').innerText = "Le destin du monde est entre vos mains.";
+                $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex');
+                renderCharacterSelect();
+            } else if (selectionStep === 'enemy') {
+                $('select-title').innerText = "Choisissez l'Adversaire"; $('select-desc').innerText = "Qui allez-vous affronter ?";
+                $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex');
+                renderCharacterSelect();
+            } else if (selectionStep === 'difficulty') {
+                $('select-title').innerText = "Choisissez la Difficulté"; $('select-desc').innerText = "Préparez-vous au combat mortel.";
+                $('character-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('flex');
+            }
+        }
+
+        function goBackSelect() {
+            if(selectionStep === 'player') {
+                if (currentMode === 'online') showScreen('screen-mode-select');
+                else showScreen('screen-mode-select');
+            }
+            else if(selectionStep === 'enemy') selectionStep = 'player';
+            else if(selectionStep === 'difficulty') {
+                if(currentMode === 'tournament') selectionStep = 'player'; 
+                else selectionStep = 'enemy';
+            }
+            
+            if (selectionStep !== 'player' || !$('screen-mode-select').classList.contains('hidden') === false) updateSelectionUI();
+        }
+
+        function renderCharacterSelect() {
+            const grid = $('character-grid');
+            grid.innerHTML = '';
+            charData.forEach((char, index) => {
+                const card = document.createElement('div');
+                let isCardLocked = char.locked;
+                
+                let baseClasses = `aura-card bg-gradient-to-br ${char.color} rounded-xl p-2 flex flex-col items-center justify-center transform transition-all relative overflow-hidden w-full h-full border border-white/10`;
+                
+                if (isCardLocked) {
+                    card.className = `${baseClasses} opacity-50 grayscale filter cursor-not-allowed z-10`;
+                    card.style.animation = 'none';
+                    card.innerHTML = `<img src="${char.img}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/30 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="absolute inset-0 flex items-center justify-center z-20"><i class="fas fa-lock text-3xl text-white drop-shadow-md"></i></div><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name}</div><div class="absolute inset-0 bg-black/50 z-0"></div>`;
+                } else {
+                    card.className = `${baseClasses} cursor-pointer active:scale-95 shadow-lg z-10`;
+                    card.style.animationDelay = `${index * 0.15}s`;
+                    
+                    if(selectionStep === 'enemy' && index === pIndex) {
+                        card.classList.add('opacity-50', 'pointer-events-none');
+                        card.style.animation = 'none';
+                    }
+
+                    card.innerHTML = `<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
+                    if(!(selectionStep === 'enemy' && index === pIndex)) card.onclick = () => selectCharacter(index);
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        function renderMarket() {
+            $('market-coins').innerText = playerCoins;
+            const grid = $('market-grid');
+            grid.innerHTML = '';
+            
+            const lockedChars = charData.filter(c => c.locked);
+            
+            if(lockedChars.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center text-gray-500 py-10">Vous avez débloqué tous les personnages !</div>`;
+                return;
+            }
+
+            lockedChars.forEach((char) => {
+                const card = document.createElement('div');
+                card.className = `bg-gray-800 rounded-xl p-3 flex flex-col items-center justify-center border border-gray-700 shadow-lg relative overflow-hidden z-10`;
+                
+                card.innerHTML = `
+                    <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">BLOQUÉ</div>
+                    <img src="${char.img}" class="w-16 h-16 object-cover rounded-full mb-2 border-2 border-gray-600 grayscale" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'">
+                    <div class="font-bold text-white text-center text-sm mb-2">${char.name}</div>
+                    <button onclick="buyCharacter('${char.id}')" class="w-full py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-xs flex justify-center items-center transition-colors active:scale-95">
+                        ${char.price} <i class="fas fa-coins ml-1"></i>
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function buyCharacter(charId) {
+            const charIndex = charData.findIndex(c => c.id === charId);
+            if(charIndex === -1) return;
+            const char = charData[charIndex];
+            
+            if(playerCoins >= char.price) {
+                playerCoins -= char.price;
+                charData[charIndex].locked = false;
+                saveGameData(); 
+                renderMarket(); 
+            } else {
+                alert("Pièces insuffisantes !");
+            }
+        }
+
+        function startTutorial() {
+            currentMode = 'tutorial';
+            pIndex = charData.findIndex(c => c.id === 'gojo');
+            eIndex = charData.findIndex(c => c.id === 'sukuna');
+            
+            if(pIndex !== -1 && eIndex !== -1) {
+                startGame('facile'); 
+            }
+        }
+
+        function selectCharacter(index) {
+            if(selectionStep === 'player') { 
+                pIndex = index; 
+                if (currentMode === 'online') {
+                    startMatchmaking();
+                } else if (currentMode === 'tournament') {
+                    selectionStep = 'difficulty'; 
+                    updateSelectionUI();
+                } else {
+                    selectionStep = 'enemy'; 
+                    updateSelectionUI(); 
+                }
+            } 
+            else if (selectionStep === 'enemy') { 
+                eIndex = index; 
+                selectionStep = 'difficulty'; 
+                updateSelectionUI(); 
+            }
+        }
+
+        async function startGame(diff) {
+            if (currentMode === 'tournament' && selectionStep === 'difficulty') {
+                difficultyLevel = diff;
+                initTournament();
+                return;
+            }
+
+            difficultyLevel = diff;
+            player = JSON.parse(JSON.stringify(charData[pIndex])); player.maxHp = player.hp; player.buffs = {}; player.activeDomain = null;
+            enemy = JSON.parse(JSON.stringify(charData[eIndex])); enemy.maxHp = enemy.hp; enemy.buffs = {}; enemy.activeDomain = null;
+            
+            launchBattleSequence();
+        }
+
+        async function launchBattleSequence() {
+            if (currentMode === 'online') {
+                player.name = globalPlayerPseudo; 
+                enemy.name = fakePseudos[rand(0, fakePseudos.length - 1)]; 
+            }
+
+            $('sprite-player').classList.remove('anim-vanish');
+            $('sprite-enemy').classList.remove('anim-vanish');
+
+            const pImg = new Image(); pImg.src = player.img; pImg.onerror = function() { $('vs-player-img').src = `https://api.dicebear.com/7.x/initials/svg?seed=${player.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            const eImg = new Image(); eImg.src = enemy.img; eImg.onerror = function() { $('vs-enemy-img').src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+
+            $('vs-player-img').src = player.img; $('vs-player-name').innerText = player.name;
+            $('vs-enemy-img').src = enemy.img; $('vs-enemy-name').innerText = enemy.name;
+            
+            const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
+
+            await showScreen('screen-vs');
+            await wait(2800); 
+            
+            initBattle();
+        }
+
+        function showEnemyStats() {
+            if(!enemy) return;
+            $('inspect-avatar').src = enemy.img; $('inspect-avatar').alt = enemy.name; $('inspect-name').innerText = enemy.name;
+            $('inspect-avatar').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            const container = $('inspect-moves'); container.innerHTML = '';
+            const charRef = charData[eIndex]; 
+            charRef.moves.forEach(move => {
+                const moveEl = document.createElement('div');
+                moveEl.className = 'bg-gray-800 rounded p-2 border border-gray-700';
+                let typeColor = move.type === 'domain' ? 'text-purple-400 font-bold' : (move.type === 'heal' ? 'text-green-400' : (move.cost > 30 ? 'text-red-400' : 'text-gray-300'));
+                moveEl.innerHTML = `<div class="flex justify-between items-center mb-1"><span class="text-sm ${typeColor}">${move.name}</span><div class="flex gap-1">${move.dmg > 0 ? `<span class="text-[10px] bg-red-900/50 text-red-200 px-1.5 py-0.5 rounded border border-red-500/30 whitespace-nowrap"><i class="fas fa-fire-alt"></i> DGT: ${move.dmg}</span>` : ''}<span class="text-[10px] bg-purple-900/50 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30 whitespace-nowrap"><i class="fas fa-bolt"></i> CE: ${move.cost}</span></div></div><p class="text-[10px] text-gray-400 leading-tight">${move.desc}</p>`;
+                container.appendChild(moveEl);
+            });
+            $('modal-enemy-stats').classList.remove('hidden'); $('modal-enemy-stats').classList.add('flex');
+        }
+
+        function closeEnemyStats() {
+            $('modal-enemy-stats').classList.add('hidden'); $('modal-enemy-stats').classList.remove('flex');
+        }
+
+        function initBattle() {
+            isPlayerTurn = true; isAnimating = false;
+            $('combat-log').innerHTML = '';
+            
+            $('player-name').innerText = player.name; 
+            $('enemy-name').innerText = enemy.name;
+
+            if (currentMode === 'tutorial') {
+                $('enemy-difficulty-label').innerText = 'TUTORIEL';
+                tutorialStep = 0;
+                $('tutorial-box').classList.remove('hidden');
+                $('tutorial-text').innerText = tutorialSequence[0].text;
+            } else if (currentMode === 'online') {
+                $('enemy-difficulty-label').innerText = 'JOUEUR EN LIGNE';
+                $('tutorial-box').classList.add('hidden');
+            } else {
+                $('enemy-difficulty-label').innerText = difficultyLevel.toUpperCase();
+                $('tutorial-box').classList.add('hidden');
+            }
+            
+            $('sprite-player').src = player.img;
+            $('sprite-player').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${player.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            $('enemy-avatar').src = enemy.img;
+            $('enemy-avatar').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            $('sprite-enemy').src = enemy.img;
+            $('sprite-enemy').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            
+            updateArenaBackground(); 
+            updateTurnIndicator(); updateBars();
+            addLog(`Le combat commence : ${player.name} vs ${enemy.name} !`, 'text-yellow-400 font-bold');
+            
+            if (currentMode === 'tutorial') {
+                addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
+            }
+
+            const battleMusic = $('battle-music');
+            if (!isMuted && battleMusic.paused) {
+                battleMusic.currentTime = 0;
+                battleMusic.play().catch(e => console.log("Erreur lecture musique arène: ", e));
+            }
+
+            showScreen('screen-battle');
+        }
+
+        function updateArenaBackground() {
+            const arena = $('arena');
+            const clashContainer = $('clash-bg-container');
+            
+            clashContainer.classList.add('hidden');
+            
+            if (player.activeDomain && enemy.activeDomain) {
+                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-black`;
+                clashContainer.classList.remove('hidden');
+                $('clash-bg-player').style.background = getDomainBgStyle(player.activeDomain.domainClass);
+                $('clash-bg-player').style.backgroundSize = 'cover';
+                $('clash-bg-player').style.backgroundPosition = 'center';
+                $('clash-bg-enemy').style.background = getDomainBgStyle(enemy.activeDomain.domainClass);
+                $('clash-bg-enemy').style.backgroundSize = 'cover';
+                $('clash-bg-enemy').style.backgroundPosition = 'center';
+            } else if (player.activeDomain) {
+                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden ${player.activeDomain.domainClass}`;
+            } else if (enemy.activeDomain) {
+                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden ${enemy.activeDomain.domainClass}`;
+            } else {
+                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-default`;
+            }
+        }
+
+        function updateTurnIndicator() {
+            const indicator = $('turn-indicator');
+            if (isPlayerTurn) {
+                indicator.innerText = "C'EST VOTRE TOUR";
+                indicator.className = "text-center text-xs font-bold py-1 bg-blue-900/80 text-blue-300 transition-colors border-b border-blue-500/50";
+            } else {
+                indicator.innerText = "TOUR DE L'ENNEMI...";
+                indicator.className = "text-center text-xs font-bold py-1 bg-red-900/80 text-red-300 transition-colors border-b border-red-500/50";
+            }
+        }
+
+        function updateBars() {
+            $('player-hp-bar').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`; setTimeout(() => { $('player-hp-text').innerText = `${Math.ceil(player.hp)}/${player.maxHp}`; }, 500);
+            $('player-hp-bar').className = `h-4 rounded-full bar-transition ${player.hp < player.maxHp * 0.3 ? 'bg-red-500' : 'bg-green-500'}`;
+            $('player-ce-bar').style.width = `${Math.max(0, (player.ce / player.maxCe) * 100)}%`; setTimeout(() => { $('player-ce-text').innerText = `${Math.ceil(player.ce)}/${player.maxCe}`; }, 500);
+            $('enemy-hp-bar').style.width = `${Math.max(0, (enemy.hp / enemy.maxHp) * 100)}%`; setTimeout(() => { $('enemy-hp-text').innerText = `${Math.ceil(enemy.hp)}/${enemy.maxHp}`; }, 500);
+            $('enemy-ce-bar').style.width = `${Math.max(0, (enemy.ce / enemy.maxCe) * 100)}%`; setTimeout(() => { $('enemy-ce-text').innerText = `${Math.ceil(enemy.ce)}/${enemy.maxCe}`; }, 500);
+            
+            let enemyStatus = [];
+            if(enemy.buffs.stun || (player.activeDomain && player.activeDomain.effect === 'domain-stun')) enemyStatus.push('SOUS L\'INFINI');
+            if(enemy.buffs.evade) enemyStatus.push('ESQUIVE PREVUE');
+            if(enemy.activeDomain) enemyStatus.push('TERRITOIRE ACTIF');
+            $('enemy-status').innerText = enemyStatus.join(' | ');
+            
+            renderActionButtons();
+        }
+
+        function renderActionButtons() {
+            const container = $('action-buttons'); container.innerHTML = '';
+            player.moves.forEach((move, index) => {
+                let isDomainActive = player.activeDomain && move.type === 'domain';
+                let canAfford = isDomainActive ? true : player.ce >= move.cost;
+                let isEnabled = canAfford && isPlayerTurn && !isAnimating;
+                let isTutorialTarget = false;
+
+                // Logique du Tutoriel
+                if (currentMode === 'tutorial' && !isDomainActive) {
+                    if (tutorialStep < tutorialSequence.length) {
+                        if (index !== tutorialSequence[tutorialStep].targetMove) {
+                            isEnabled = false; 
+                        } else {
+                            isTutorialTarget = true;
+                            isEnabled = true; 
+                        }
+                    }
+                }
+                
+                const btn = document.createElement('button');
+                btn.className = `p-2 rounded-lg text-left flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${isEnabled ? 'bg-gray-800 border border-gray-600 hover:bg-gray-700 active:scale-95 shadow-md' : 'bg-gray-900 border border-gray-800 opacity-40 cursor-not-allowed'}`;
+                
+                if (isTutorialTarget) {
+                    btn.classList.add('border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.6)]');
+                }
+
+                if (isDomainActive) {
+                    btn.innerHTML = `<div class="flex justify-between items-center w-full mb-1"><span class="text-xs text-yellow-400 font-bold truncate pr-1">Annuler Territoire</span></div><span class="text-[9px] text-gray-400 leading-tight">Désactiver le territoire pour stopper la perte de PV.</span>`;
+                    if(isEnabled) btn.onclick = () => cancelDomain('player');
+                } else {
+                    let typeColor = move.type === 'domain' ? 'text-purple-400 font-bold' : (move.type === 'heal' ? 'text-green-400' : (move.cost > 30 ? 'text-red-400' : 'text-gray-300'));
+                    
+                    let arrowHtml = isTutorialTarget ? `<div class="absolute right-1 top-1/2 transform -translate-y-1/2 anim-point-left text-yellow-400 text-xl z-50 drop-shadow-md"><i class="fas fa-arrow-left"></i></div>` : '';
+
+                    btn.innerHTML = `<div class="flex justify-between items-center w-full mb-1 pr-6"><span class="text-xs ${typeColor} truncate pr-1">${move.name}</span><span class="text-[10px] bg-purple-900/80 text-purple-200 px-1.5 py-0.5 rounded shrink-0 border border-purple-500/30"><i class="fas fa-bolt text-[8px]"></i> ${move.cost}</span></div><span class="text-[9px] text-gray-400 leading-tight pr-6">${move.desc}</span>${arrowHtml}`;
+                    
+                    if(isEnabled) btn.onclick = () => executeTurn(player, enemy, move, 'player');
+                }
+                container.appendChild(btn);
+            });
+        }
+
+        function addLog(msg, colorClass = 'text-gray-300') {
+            const log = $('combat-log');
+            const entry = document.createElement('div');
+            entry.className = `${colorClass} py-0.5 border-b border-gray-800/30`;
+            entry.innerHTML = `> ${msg}`;
+            log.appendChild(entry); log.scrollTop = log.scrollHeight;
+        }
+
+        function createFloatingText(targetId, text, colorClass) {
+            const target = $(targetId); const rect = target.getBoundingClientRect(); const el = document.createElement('div');
+            el.className = `floating-text ${colorClass}`; el.innerText = text;
+            el.style.left = `${rect.left + (rect.width/2) - 30 + (Math.random()-0.5)*50}px`; el.style.top = `${rect.top + (rect.height/2) - 30 + (Math.random()-0.5)*50}px`;
+            document.body.appendChild(el); setTimeout(() => el.remove(), 1200);
+        }
+
+        function shakeScreen() {
+            const container = $('arena-container'); container.classList.add('anim-screen-shake');
+            setTimeout(() => container.classList.remove('anim-screen-shake'), 500);
+        }
+
+        function playAttackSound(damage) {
+            if (isMuted) return; 
+            let soundId = '';
+            if (damage > 0 && damage <= 35) {
+                soundId = 'sfx-simple';
+            } else if (damage > 35 && damage <= 75) {
+                soundId = 'sfx-moyen';
+            } else if (damage > 75) {
+                soundId = 'sfx-puissant';
+            }
+            
+            if (soundId) {
+                const sfx = $(soundId);
+                sfx.currentTime = 0;
+                let playPromise = sfx.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.log("Lecture du son bloquée :", e));
+                }
+            }
+        }
+
+        async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
+            const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
+            flash.classList.add('anim-domain-flash');
+            nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
+            nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
+            
+            await wait(1000);
+            nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
+
+            if (videoSrc) {
+                const battleMusic = $('battle-music');
+                let wasMusicPlaying = !battleMusic.paused;
+                if (wasMusicPlaying) battleMusic.pause();
+
+                video.src = videoSrc; video.classList.remove('hidden');
+                
+                await new Promise((resolve) => {
+                    let safetyTimer = setTimeout(resolve, 8000); 
+
+                    video.onended = () => { clearTimeout(safetyTimer); resolve(); };
+                    video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
+
+                    video.muted = isMuted; 
+                    let playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => {
+                            console.log("Lecture avec son bloquée par le navigateur. Passage en mode muet pour forcer l'affichage.", e);
+                            video.muted = true; 
+                            let playPromiseMuted = video.play();
+                            if (playPromiseMuted !== undefined) {
+                                playPromiseMuted.catch(err => {
+                                    console.log("Vidéo complètement bloquée:", err);
+                                    clearTimeout(safetyTimer);
+                                    setTimeout(resolve, 2000); 
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                video.classList.add('hidden');
+
+                if (!isMuted && wasMusicPlaying) battleMusic.play().catch(e => console.log(e));
+            }
+
+            updateArenaBackground();
+            shakeScreen();
+            
+            await wait(1000);
+            flash.classList.remove('anim-domain-flash');
+        }
+
+        async function cancelDomain(role) {
+            if (isAnimating && role === 'player') return; 
+            isAnimating = true; renderActionButtons();
+            
+            const entity = role === 'player' ? player : enemy;
+            entity.activeDomain = null;
+            addLog(`${entity.name} annule son Territoire pour préserver ses PV.`, 'text-yellow-400');
+            updateArenaBackground();
+            
+            await wait(1000); 
+            
+            isAnimating = false;
+            updateBars(); 
+            
+            if (role === 'enemy') {
+                enemyAI();
+            }
+        }
+
+        async function applyDomainEffects() {
+            if (!player.activeDomain && !enemy.activeDomain) return;
+
+            addLog("Phase de Territoire : Les domaines s'activent !", 'text-purple-400 font-bold bg-purple-900/30');
+
+            let isClash = player.activeDomain && enemy.activeDomain;
+
+            if (player.activeDomain) {
+                player.hp -= 15; 
+                createFloatingText('sprite-player', '-15 (Domaine)', 'text-red-500');
+                
+                let dmgMult = isClash ? 0.5 : 1;
+
+                if (player.activeDomain.effect === 'domain-stun') { 
+                    let dmg = Math.floor(25 * dmgMult);
+                    enemy.hp -= dmg; 
+                    createFloatingText('sprite-enemy', `-${dmg} (Infini)`, 'text-purple-500');
+                    if (isClash) addLog(`L'Espace Infini frappe ${enemy.name} avec une force réduite !`, 'text-purple-400');
+                } else if (player.activeDomain.effect === 'domain-lifesteal') { 
+                    let dmg = Math.floor(40 * dmgMult);
+                    let heal = Math.floor(20 * dmgMult);
+                    enemy.hp -= dmg; player.hp = Math.min(player.maxHp, player.hp + heal);
+                    createFloatingText('sprite-enemy', `-${dmg} (Autel)`, 'text-red-500');
+                    createFloatingText('sprite-player', `+${heal} (Soin)`, 'text-green-500');
+                    if (isClash) addLog(`L'Autel Démoniaque tranche ${enemy.name} avec une force réduite !`, 'text-red-400');
+                } else if (player.activeDomain.effect === 'domain-evade') { 
+                    let dmg = Math.floor(25 * dmgMult);
+                    enemy.hp -= dmg;
+                    
+                    let evadeChance = isClash ? 0.40 : 0.65;
+                    if (Math.random() < evadeChance) {
+                        player.buffs.evade = true;
+                    }
+
+                    createFloatingText('sprite-enemy', `-${dmg} (Ombres)`, 'text-gray-500');
+                    if (isClash) addLog(`Le Jardin des Ombres affaiblit ${enemy.name} !`, 'text-gray-400');
+                }
+            }
+
+            if (enemy.activeDomain) {
+                enemy.hp -= 15; 
+                createFloatingText('sprite-enemy', '-15 (Domaine)', 'text-red-500');
+                
+                let dmgMult = isClash ? 0.5 : 1;
+
+                if (enemy.activeDomain.effect === 'domain-stun') { 
+                    let dmg = Math.floor(25 * dmgMult);
+                    player.hp -= dmg; 
+                    createFloatingText('sprite-player', `-${dmg} (Infini)`, 'text-purple-500');
+                    if (isClash) addLog(`L'Espace Infini frappe ${player.name} avec une force réduite !`, 'text-purple-400');
+                } else if (enemy.activeDomain.effect === 'domain-lifesteal') { 
+                    let dmg = Math.floor(40 * dmgMult);
+                    let heal = Math.floor(20 * dmgMult);
+                    player.hp -= dmg; enemy.hp = Math.min(enemy.maxHp, enemy.hp + heal);
+                    createFloatingText('sprite-player', `-${dmg} (Autel)`, 'text-red-500');
+                    createFloatingText('sprite-enemy', `+${heal} (Soin)`, 'text-green-500');
+                    if (isClash) addLog(`L'Autel Démoniaque tranche ${player.name} avec une force réduite !`, 'text-red-400');
+                } else if (enemy.activeDomain.effect === 'domain-evade') { 
+                    let dmg = Math.floor(25 * dmgMult);
+                    player.hp -= dmg;
+                    
+                    let evadeChance = isClash ? 0.40 : 0.65;
+                    if (Math.random() < evadeChance) {
+                        enemy.buffs.evade = true;
+                    }
+
+                    createFloatingText('sprite-player', `-${dmg} (Ombres)`, 'text-gray-500');
+                    if (isClash) addLog(`Le Jardin des Ombres affaiblit ${player.name} !`, 'text-gray-400');
+                }
+            }
+
+            shakeScreen(); updateBars(); await wait(1500);
+        }
+
+        async function executeTurn(attacker, defender, move, role) {
+            if (isAnimating && role === 'player') return;
+            isAnimating = true; renderActionButtons();
+            
+            const attackerSpriteId = role === 'player' ? 'sprite-player' : 'sprite-enemy';
+            const defenderSpriteId = role === 'player' ? 'sprite-enemy' : 'sprite-player';
+            const attackerName = role === 'player' ? 'Vous' : attacker.name;
+            const logColor = role === 'player' ? 'text-blue-300' : 'text-red-400';
+            
+            let stunReason = null;
+            if (attacker.buffs.stun) {
+                stunReason = 'normal';
+            } else if (defender.activeDomain && defender.activeDomain.effect === 'domain-stun') {
+                let stunChance = attacker.activeDomain ? 0.325 : 0.65; 
+                if (Math.random() < stunChance) {
+                    stunReason = 'gojo';
+                }
+            }
+
+            if (stunReason) {
+                if (stunReason === 'gojo') {
+                    addLog(`${attacker.name} a le cerveau saturé par l'Espace Infini ! Impossible d'agir !`, 'text-purple-400 font-bold');
+                    createFloatingText(attackerSpriteId, 'SATURÉ', 'text-purple-400');
+                } else {
+                    addLog(`${attacker.name} est paralysé et passe son tour !`, 'text-yellow-400 font-bold');
+                    createFloatingText(attackerSpriteId, 'ÉTOURDI', 'text-yellow-400');
+                }
+                attacker.buffs.stun = false; 
+                updateBars(); 
+                await wait(1500); 
+                finalizeTurn(role); 
+                return; 
+            }
+            
+            attacker.ce -= move.cost; 
+            updateBars();
+
+            addLog(`${attackerName} utilise [${move.name}]`, logColor);
+            
+            if (move.type === 'domain') {
+                attacker.activeDomain = { name: move.name, domainClass: move.domainClass, effect: move.effect, video: move.video };
+                await triggerDomainExpansion(move.name, move.domainClass, role, move.video); 
+            }
+            else if (move.type === 'heal') { 
+                $(attackerSpriteId).classList.add('anim-heal'); 
+                await wait(600); 
+                $(attackerSpriteId).classList.remove('anim-heal'); 
+            }
+            else { 
+                let animClass = '';
+                let hitWait = 350;
+                let totalAnimTime = 700;
+
+                if (move.dmg <= 35) {
+                    animClass = role === 'player' ? 'anim-strike-p-light' : 'anim-strike-e-light';
+                    hitWait = 200;
+                    totalAnimTime = 400;
+                } else if (move.dmg <= 75) {
+                    animClass = role === 'player' ? 'anim-strike-p' : 'anim-strike-e';
+                    hitWait = 350;
+                    totalAnimTime = 700;
+                } else {
+                    animClass = role === 'player' ? 'anim-strike-p-heavy' : 'anim-strike-e-heavy';
+                    hitWait = 600; 
+                    totalAnimTime = 1200;
+                }
+
+                $(attackerSpriteId).classList.add(animClass); 
+                await wait(hitWait); 
+                
+                playAttackSound(move.dmg); 
+
+                setTimeout(() => {
+                    $(attackerSpriteId).classList.remove(animClass);
+                }, totalAnimTime - hitWait);
+            }
+            
+            let damage = move.dmg;
+            if (move.effect === 'resonance' && defender.hp > defender.maxHp * 0.5) { damage = Math.floor(damage * 1.5); addLog(`Résonance ! Dégâts critiques !`, 'text-purple-400 font-bold'); }
+            if (move.effect === 'blackflash' && Math.random() < 0.5) { attacker.ce = Math.min(attacker.maxCe, attacker.ce + 30); addLog(`RAYON NOIR ! (+30 CE)`, 'text-red-500 font-black'); createFloatingText(attackerSpriteId, 'RAYON NOIR', 'text-red-600'); shakeScreen(); }
+            
+            if (defender.buffs.evade && move.type !== 'heal' && move.type !== 'domain') { damage = 0; addLog(`${defender.name} a esquivé !`, 'text-gray-400'); createFloatingText(defenderSpriteId, 'Esquivé !', 'text-gray-300'); defender.buffs.evade = false; } 
+            else if (move.type === 'heal') { attacker.hp = Math.min(attacker.maxHp, attacker.hp + 80); addLog(`${attacker.name} se soigne.`, 'text-green-400'); createFloatingText(attackerSpriteId, `+80`, 'text-green-500'); }
+            else {
+                if (damage > 0) {
+                    damage = Math.floor(damage * (0.9 + Math.random() * 0.2));
+                    defender.hp = Math.max(0, defender.hp - damage);
+                    $(defenderSpriteId).classList.add('anim-hurt');
+                    createFloatingText(defenderSpriteId, `-${damage}`, 'text-red-500');
+                    addLog(`${defender.name} subit ${damage} dégâts initiaux.`, 'text-orange-400');
+                    if(damage >= 60) shakeScreen(); 
+                    setTimeout(() => $(defenderSpriteId).classList.remove('anim-hurt'), 800);
+                    if (move.effect === 'chance-stun' && Math.random() < 0.3) { defender.buffs.stun = true; addLog(`${defender.name} est paralysé !`, 'text-yellow-400'); }
+                }
+            }
+            
+            if (move.type === 'basic') attacker.ce = Math.min(attacker.maxCe, attacker.ce + 15);
+            updateBars(); await wait(1200); 
+            
+            if (defender.hp <= 0) { await endGame(role === 'player' ? 'win' : 'lose'); return; }
+            finalizeTurn(role);
+        }
+
+        async function finalizeTurn(currentRole) {
+            if (currentRole === 'player') {
+                isPlayerTurn = false; updateTurnIndicator();
+                enemy.ce = Math.min(enemy.maxCe, enemy.ce + 10); updateBars();
+                isAnimating = false; 
+                setTimeout(enemyAI, 1500);
+            } else {
+                await applyDomainEffects();
+                if (player.hp <= 0 || enemy.hp <= 0) {
+                    if (player.hp <= 0 && enemy.hp <= 0) await endGame('lose'); 
+                    else if (player.hp <= 0) await endGame('lose'); 
+                    else await endGame('win');
+                    return;
+                }
+
+                // Progression du tutoriel
+                if (currentMode === 'tutorial') {
+                    tutorialStep++;
+                    if (tutorialStep < tutorialSequence.length) {
+                        let seq = tutorialSequence[tutorialStep];
+                        $('tutorial-text').innerText = seq.text;
+                        if (seq.boost) player.ce = seq.boost;
+                        if (seq.setEnemyHp) enemy.hp = seq.setEnemyHp; 
+                    } else {
+                        $('tutorial-box').classList.add('hidden');
+                    }
+                }
+
+                isPlayerTurn = true; updateTurnIndicator();
+                player.ce = Math.min(player.maxCe, player.ce + 10);
+                isAnimating = false; updateBars();
+            }
+        }
+
+        function enemyAI() {
+            if (enemy.hp <= 0) return;
+
+            let isStunnedByPlayerGojo = player.activeDomain && player.activeDomain.effect === 'domain-stun';
+            if (enemy.activeDomain && enemy.hp <= 80 && !isStunnedByPlayerGojo) {
+                cancelDomain('enemy');
+                return;
+            }
+
+            const affordableMoves = enemy.moves.filter(m => m.cost <= enemy.ce);
+            let selectedMove = affordableMoves[0];
+            
+            if (currentMode === 'tutorial') {
+                selectedMove = enemy.moves[0]; 
+            }
+            else if(isStunnedByPlayerGojo && !enemy.activeDomain) {
+                const domainMoveFallback = affordableMoves.find(m => m.type === 'domain');
+                if(domainMoveFallback) {
+                    executeTurn(enemy, player, domainMoveFallback, 'enemy');
+                    return;
+                }
+            } else {
+                const maxMoveCost = Math.max(...enemy.moves.map(m => m.cost));
+                const healMove = affordableMoves.find(m => m.type === 'heal');
+                const domainMove = !enemy.activeDomain ? affordableMoves.find(m => m.type === 'domain') : null; 
+                const sortedAffordable = [...affordableMoves].sort((a, b) => b.cost - a.cost);
+
+                if (difficultyLevel === 'facile') {
+                    selectedMove = affordableMoves[rand(0, affordableMoves.length - 1)];
+                    if (selectedMove.type === 'domain' && Math.random() < 0.7) {
+                        selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
+                    }
+                } 
+                else if (difficultyLevel === 'normal') {
+                    if (enemy.activeDomain) {
+                        const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain');
+                        if(movesWithoutDomain.length > 0) selectedMove = (Math.random() < 0.6) ? movesWithoutDomain[0] : movesWithoutDomain[rand(0, movesWithoutDomain.length - 1)];
+                    } else if (affordableMoves.length > 1) {
+                        if (healMove && enemy.hp < enemy.maxHp * 0.4) selectedMove = healMove;
+                        else if (domainMove && Math.random() < 0.8) selectedMove = domainMove;
+                        else selectedMove = (Math.random() < 0.6) ? sortedAffordable[0] : sortedAffordable[rand(0, sortedAffordable.length - 1)];
+                    }
+                }
+                else if (difficultyLevel === 'difficile') {
+                    if (healMove && enemy.hp < enemy.maxHp * 0.4) {
+                        selectedMove = healMove;
+                    } else if (domainMove) {
+                        selectedMove = domainMove;
+                    } else if (enemy.ce < maxMoveCost && Math.random() < 0.6 && !enemy.activeDomain) {
+                        selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
+                    } else {
+                        const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain' || !enemy.activeDomain);
+                        selectedMove = movesWithoutDomain[0] || affordableMoves[0];
+                    }
+                }
+                else if (difficultyLevel === 'extreme') {
+                    if (healMove && enemy.hp < enemy.maxHp * 0.3) {
+                        selectedMove = healMove;
+                    } else if (domainMove) {
+                        selectedMove = domainMove;
+                    } else if (enemy.ce < maxMoveCost && !enemy.activeDomain) {
+                        selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
+                    } else {
+                        const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain' || !enemy.activeDomain);
+                        selectedMove = movesWithoutDomain[0] || affordableMoves[0];
+                    }
+                }
+            }
+
+            executeTurn(enemy, player, selectedMove, 'enemy');
+        }
+
+        async function endGame(result) {
+            $('battle-music').pause();
+
+            const deadSprite = result === 'win' ? $('sprite-enemy') : $('sprite-player');
+            const winner = result === 'win' ? player : enemy;
+            
+            deadSprite.classList.add('anim-vanish');
+            await wait(1800); 
+            
+            const modal = $('modal-gameover');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            
+            const winImg = $('gameover-image');
+            
+            winImg.onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${winner.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            winImg.src = winner.img;
+            
+            winImg.classList.remove('hidden');
+            winImg.className = `w-40 h-40 rounded-full border-4 object-cover mb-4 z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)] ${result === 'win' ? 'border-green-500 shadow-green-500/50' : 'border-red-500 shadow-red-500/50'}`;
+
+            const btnContainer = $('gameover-buttons');
+            btnContainer.innerHTML = '';
+
+            if (result === 'win') {
+                if(currentMode === 'tutorial') {
+                    $('gameover-title').innerText = 'TUTO TERMINÉ !';
+                    $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-lg z-10 relative';
+                    $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
+                    btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Continuer</button>`;
+                } else if (currentMode === 'online') {
+                    let earnedCoins = 50 + Math.floor((player.hp / player.maxHp) * 50);
+                    playerCoins += earnedCoins;
+                    saveGameData(); 
+                    $('gameover-title').innerText = 'VICTOIRE !';
+                    $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
+                    $('gameover-desc').innerHTML = `Vous avez vaincu ${enemy.name}.<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                    
+                    btnContainer.innerHTML = `
+                        <button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button>
+                        <button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>
+                    `;
+                } else if (currentMode === 'tournament') {
+                    // Calcul tournoi
+                    let currentMatches = tState.bracket[tState.round];
+                    currentMatches[0].winner = currentMatches[0].p1; 
+                    
+                    let nextRoundPlayers = [currentMatches[0].winner];
+                    for(let i=1; i<currentMatches.length; i++) {
+                        let m = currentMatches[i];
+                        m.winner = Math.random() > 0.5 ? m.p1 : m.p2;
+                        nextRoundPlayers.push(m.winner);
+                    }
+                    
+                    if (tState.round < 2) {
+                        let nextMatches = [];
+                        for(let i=0; i<nextRoundPlayers.length; i+=2) {
+                            nextMatches.push({ p1: nextRoundPlayers[i], p2: nextRoundPlayers[i+1], winner: null });
+                        }
+                        tState.bracket.push(nextMatches);
+                    }
+                    
+                    tState.phase = 'results';
+                    
+                    if (tState.round === 2) {
+                        let earnedCoins = 0;
+                        if (difficultyLevel === 'facile') earnedCoins = 10;
+                        else if (difficultyLevel === 'normal') earnedCoins = 15;
+                        else if (difficultyLevel === 'difficile') earnedCoins = 35;
+                        else if (difficultyLevel === 'extreme') earnedCoins = 250;
+
+                        playerCoins += earnedCoins;
+                        saveGameData();
+                        $('gameover-title').innerText = 'CHAMPION !';
+                        $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg z-10 relative';
+                        $('gameover-desc').innerHTML = `Vous avez remporté le tournoi !<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                        btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                    } else {
+                        $('gameover-title').innerText = 'VICTOIRE !';
+                        $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
+                        $('gameover-desc').innerText = `Vous passez au tour suivant.`;
+                        btnContainer.innerHTML = `<button onclick="hideGameOverAndShowTournament()" class="w-full px-10 py-4 bg-blue-600 text-white rounded-full font-bold text-xl shadow-[0_0_20px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Voir les résultats</button>`;
+                    }
+                } else {
+                    $('gameover-title').innerText = 'EXORCISÉ !';
+                    $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
+                    $('gameover-desc').innerText = `Vous avez vaincu ${enemy.name}.`;
+                    btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                }
+            } else {
+                $('gameover-title').innerText = 'MORT';
+                $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-900 drop-shadow-lg z-10 relative';
+                
+                if (currentMode === 'tournament') {
+                    $('gameover-title').innerText = 'ÉLIMINÉ';
+                    $('gameover-desc').innerText = `Vous avez été éliminé du tournoi.`;
+                    btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                } else {
+                    $('gameover-desc').innerText = `Votre énergie occulte s'est dissipée...`;
+                    if (currentMode === 'online') {
+                        btnContainer.innerHTML = `
+                            <button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button>
+                            <button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>
+                        `;
+                    } else {
+                        btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                    }
+                }
+            }
+        }
+
+        async function resetGame() {
+            const overlay = $('transition-overlay');
+            overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
+            await wait(500); 
+
+            $('modal-gameover').classList.add('hidden');
+            $('modal-gameover').classList.remove('flex');
+            $('gameover-image').classList.add('hidden'); 
+            
+            await showScreen('screen-menu');
+        }
+
+        // --- DÉMARRAGE INITIAL ---
+        loadGameData();
+        showScreen('screen-menu');
+    </script>
+</body>
+</html>
