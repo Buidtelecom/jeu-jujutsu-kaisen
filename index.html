@@ -135,13 +135,11 @@
         .bar-transition { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
         .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); }
         
-        /* Arrière-plans d'Extensions de Territoire avec les NOUVEAUX noms de fichiers */
+        /* Arrière-plans d'Extensions de Territoire */
         .bg-default { background-image: url('terrain_de_combat_Shibuya.jpeg'); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-gojo { background-image: url("Sphere_de_lespace_infini_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-sukuna { background-image: url("lhotel_demoniaque_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-megumi { background-image: url("image_du_territoire_de_megumi.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
-        
-        /* Nouveaux Domaines */
         .domain-hakari { background-image: url("image_du_territoire_dhakari.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-mahito { background-image: url("arriere_plan_territoire_de_mahito.png"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-jogo { background-image: url("arriere_plan_territoire_de_Jogo.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
@@ -220,7 +218,7 @@
         </div>
     </div>
 
-    <!-- AUDIO D'AMBIANCE AVEC LES NOUVEAUX NOMS -->
+    <!-- AUDIO D'AMBIANCE -->
     <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
     <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
     <audio id="sfx-simple"><source src="attaque simple .mp3" type="audio/mpeg"></audio>
@@ -770,13 +768,11 @@
 
             if (type === 'menu') {
                 batM.pause();
-                batM.currentTime = 0;
                 if (bgM.paused) {
                     try { await bgM.play(); } catch(e) { console.log(e); }
                 }
             } else if (type === 'battle') {
                 bgM.pause();
-                bgM.currentTime = 0;
                 if (batM.paused) {
                     try { await batM.play(); } catch(e) { console.log(e); }
                 }
@@ -1048,6 +1044,9 @@
         }
 
         async function startMatchmaking() {
+            $('battle-music').currentTime = 0; 
+            playMusic('battle');
+
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1349,6 +1348,7 @@
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
+            $('battle-music').currentTime = 0; // On remet à zéro la musique de combat car c'est un nouveau match
             await showScreen('screen-vs');
             await wait(2800); 
             
@@ -1558,9 +1558,8 @@
             nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
             if (videoSrc) {
-                const battleMusic = $('battle-music');
-                let wasMusicPlaying = !battleMusic.paused;
-                if (wasMusicPlaying) battleMusic.pause();
+                let wasMusicPlaying = !$('battle-music').paused;
+                playMusic('none');
 
                 video.src = videoSrc; video.classList.remove('hidden');
                 
@@ -1590,7 +1589,7 @@
                 
                 video.classList.add('hidden');
 
-                if (!isMuted && wasMusicPlaying) battleMusic.play().catch(e => console.log(e));
+                if (!isMuted && wasMusicPlaying) playMusic('battle');
             }
 
             updateArenaBackground();
