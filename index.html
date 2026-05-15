@@ -757,24 +757,64 @@
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        /* --- GESTION MUSIQUE ET SON --- */
+        async function playMusic(type) {
+            const bgM = $('bg-music');
+            const batM = $('battle-music');
+            
+            if (isMuted || type === 'none') {
+                bgM.pause();
+                batM.pause();
+                return;
+            }
+
+            if (type === 'menu') {
+                batM.pause();
+                batM.currentTime = 0;
+                if (bgM.paused) {
+                    try { await bgM.play(); } catch(e) { console.log(e); }
+                }
+            } else if (type === 'battle') {
+                bgM.pause();
+                bgM.currentTime = 0;
+                if (batM.paused) {
+                    try { await batM.play(); } catch(e) { console.log(e); }
+                }
+            }
+        }
+
         /* --- PRELOADER (TELECHARGEMENT CACHE) --- */
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
+            
+            if (localStorage.getItem('jjk_assets_preloaded_v1') === 'true') {
+                progressFill.style.width = '100%';
+                progressText.innerText = "Ressources prêtes !";
+                progressText.classList.add('text-green-400');
+                $('loader-text').classList.remove('animate-pulse');
+                $('loader-btn').classList.remove('hidden');
+                return;
+            }
+
             const total = assetsToPreload.length;
             let loaded = 0;
 
-            for (let i = 0; i < total; i++) {
+            const loadFile = async (url) => {
                 try {
-                    await fetch(assetsToPreload[i], { mode: 'no-cors', cache: 'force-cache' });
+                    await fetch(url, { mode: 'no-cors', cache: 'force-cache' });
                 } catch (e) {
-                    console.log("Preload Error on: ", assetsToPreload[i]);
+                    console.log("Preload Error on: ", url);
                 }
                 loaded++;
                 let percent = Math.floor((loaded / total) * 100);
                 progressFill.style.width = percent + '%';
                 progressText.innerText = `Téléchargement des ressources... ${percent}%`;
-            }
+            };
+
+            await Promise.all(assetsToPreload.map(url => loadFile(url)));
+
+            localStorage.setItem('jjk_assets_preloaded_v1', 'true');
 
             progressText.innerText = "Ressources prêtes !";
             progressText.classList.add('text-green-400');
@@ -786,7 +826,6 @@
             $('screen-loader').classList.add('hidden');
             $('screen-loader').classList.remove('flex');
             
-            if (!isMuted) $('bg-music').play().catch(e => console.log(e));
             showScreen('screen-menu');
         }
 
@@ -878,15 +917,17 @@
                 knob.classList.add('translate-x-0');
                 btn.classList.remove('bg-green-500');
                 btn.classList.add('bg-gray-600');
-                $('bg-music').pause();
-                $('battle-music').pause();
+                playMusic('none');
             } else {
                 knob.classList.remove('translate-x-0');
                 knob.classList.add('translate-x-6');
                 btn.classList.remove('bg-gray-600');
                 btn.classList.add('bg-green-500');
-                if(!$('screen-menu').classList.contains('hidden') || !$('screen-select').classList.contains('hidden') || !$('screen-mode-select').classList.contains('hidden')) {
-                    $('bg-music').play().catch(e => console.log(e));
+                
+                if (!$('screen-battle').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-matchmaking').classList.contains('hidden')) {
+                    playMusic('battle');
+                } else {
+                    playMusic('menu');
                 }
             }
             document.querySelectorAll('audio').forEach(a => a.muted = isMuted);
@@ -917,18 +958,14 @@
             ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament'].forEach(id => $(id).classList.add('hidden'));
             $(screenId).classList.remove('hidden');
             
-            const bgMusic = $('bg-music');
-            const battleMusic = $('battle-music');
-
-            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard'].includes(screenId)) {
+            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament'].includes(screenId)) {
                 if (screenId === 'screen-select') {
                     selectionStep = 'player'; pIndex = -1; eIndex = -1;
                     updateSelectionUI();
                 }
-                if (!isMuted && bgMusic.paused) bgMusic.play().catch(e => console.log(e));
-                battleMusic.pause(); battleMusic.currentTime = 0;
-            } else if (screenId !== 'screen-matchmaking' && screenId !== 'screen-tournament') { 
-                bgMusic.pause(); bgMusic.currentTime = 0;
+                playMusic('menu');
+            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle'].includes(screenId)) { 
+                playMusic('battle');
             }
             
             overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
@@ -1011,11 +1048,6 @@
         }
 
         async function startMatchmaking() {
-            const battleMusic = $('battle-music');
-            $('bg-music').pause(); 
-            battleMusic.currentTime = 0;
-            if (!isMuted) battleMusic.play().catch(e => console.log("Erreur lecture musique: ", e));
-
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1132,7 +1164,7 @@
         }
         async function confirmExit() {
             hideExitModal();
-            $('battle-music').pause();
+            playMusic('none');
             await resetGame();
         }
 
@@ -1376,12 +1408,6 @@
             
             if (currentMode === 'tutorial') {
                 addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
-            }
-
-            const battleMusic = $('battle-music');
-            if (!isMuted && battleMusic.paused) {
-                battleMusic.currentTime = 0;
-                battleMusic.play().catch(e => console.log("Erreur lecture musique arène: ", e));
             }
 
             showScreen('screen-battle');
@@ -1877,7 +1903,7 @@
         }
 
         async function endGame(result) {
-            $('battle-music').pause();
+            playMusic('none');
 
             const deadSprite = result === 'win' ? $('sprite-enemy') : $('sprite-player');
             const winner = result === 'win' ? player : enemy;
