@@ -23,21 +23,6 @@
             100% { transform: translateX(0) scale(1) scaleX(-1); }
         }
 
-        @keyframes strike-player {
-            0% { transform: translateX(0) scale(1); }
-            25% { transform: translateX(-25px) scale(0.95); filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); }
-            50% { transform: translateX(80px) scale(1.1); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 1)); }
-            70% { transform: translateX(30px) scale(1.05); }
-            100% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
-        }
-        @keyframes strike-enemy {
-            0% { transform: translateX(0) scale(1) scaleX(-1); }
-            25% { transform: translateX(25px) scale(0.95) scaleX(-1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
-            50% { transform: translateX(-80px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 1)); }
-            70% { transform: translateX(-30px) scale(1.05) scaleX(-1); }
-            100% { transform: translateX(0) scale(1) scaleX(-1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)); }
-        }
-
         @keyframes strike-p-heavy {
             0% { transform: translateX(0) scale(1); }
             20% { transform: translateX(-40px) scale(0.9); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
@@ -53,6 +38,21 @@
             50% { transform: translateX(-120px) scale(1.3) scaleX(-1); filter: drop-shadow(0 0 40px rgba(239, 68, 68, 1)); }
             80% { transform: translateX(-40px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.8)); }
             100% { transform: translateX(0) scale(1) scaleX(-1); }
+        }
+
+        @keyframes strike-player {
+            0% { transform: translateX(0) scale(1); }
+            25% { transform: translateX(-25px) scale(0.95); filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); }
+            50% { transform: translateX(80px) scale(1.1); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 1)); }
+            70% { transform: translateX(30px) scale(1.05); }
+            100% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+        }
+        @keyframes strike-enemy {
+            0% { transform: translateX(0) scale(1) scaleX(-1); }
+            25% { transform: translateX(25px) scale(0.95) scaleX(-1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+            50% { transform: translateX(-80px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 1)); }
+            70% { transform: translateX(-30px) scale(1.05) scaleX(-1); }
+            100% { transform: translateX(0) scale(1) scaleX(-1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)); }
         }
 
         @keyframes hurt {
@@ -791,25 +791,44 @@
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
         /* --- GESTION MUSIQUE ET SON --- */
+        function pauseAudio(audioElement) {
+            try {
+                if (!audioElement.paused) {
+                    audioElement.pause();
+                }
+            } catch (e) {}
+        }
+
+        function stopAudioAndReset(audioElement) {
+            try {
+                if (!audioElement.paused) {
+                    audioElement.pause();
+                }
+                if (!isNaN(audioElement.duration)) {
+                    audioElement.currentTime = 0;
+                }
+            } catch (e) {}
+        }
+
         async function playMusic(type) {
             const bgM = $('bg-music');
             const batM = $('battle-music');
             
             if (isMuted || type === 'none') {
-                bgM.pause();
-                batM.pause();
+                pauseAudio(bgM);
+                stopAudioAndReset(batM);
                 return;
             }
 
             if (type === 'menu') {
-                batM.pause();
+                stopAudioAndReset(batM);
                 if (bgM.paused) {
-                    try { await bgM.play(); } catch(e) { console.log("Audio Play Error:", e); }
+                    try { await bgM.play(); } catch(e) {}
                 }
             } else if (type === 'battle') {
-                bgM.pause();
+                pauseAudio(bgM);
                 if (batM.paused) {
-                    try { await batM.play(); } catch(e) { console.log("Audio Play Error:", e); }
+                    try { await batM.play(); } catch(e) {}
                 }
             }
         }
@@ -856,6 +875,7 @@
         function hideLoaderAndStart() {
             $('screen-loader').classList.add('hidden');
             $('screen-loader').classList.remove('flex');
+            
             showScreen('screen-menu');
         }
 
@@ -1078,9 +1098,6 @@
         }
 
         async function startMatchmaking() {
-            $('battle-music').currentTime = 0; 
-            playMusic('battle');
-
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1382,7 +1399,6 @@
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
-            $('battle-music').currentTime = 0; 
             await showScreen('screen-vs');
             await wait(2800); 
             
@@ -1444,7 +1460,7 @@
                 addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
             }
 
-            playMusic('battle');
+            showScreen('screen-battle'); 
         }
 
         function updateArenaBackground() {
@@ -1561,25 +1577,46 @@
             setTimeout(() => container.classList.remove('anim-screen-shake'), 500);
         }
 
+        function playAttackSound(damage) {
+            if (isMuted) return; 
+            let soundId = '';
+            if (damage > 0 && damage <= 35) {
+                soundId = 'sfx-simple';
+            } else if (damage > 35 && damage <= 75) {
+                soundId = 'sfx-moyen';
+            } else if (damage > 75) {
+                soundId = 'sfx-puissant';
+            }
+            
+            if (soundId) {
+                const sfx = $(soundId);
+                try {
+                    sfx.currentTime = 0;
+                    sfx.play().catch(e => console.log(e));
+                } catch(e) {}
+            }
+        }
+
         async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
             
-            // Apparition du texte seul
+            // 1. Affiche le nom de l'extension
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
             nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             
             await wait(1500);
             nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
+            // 2. Joue la vidéo (sans interrompre ou zapper)
             if (videoSrc) {
                 const batM = $('battle-music');
                 let wasMusicPlaying = !isMuted && !batM.paused;
-                if (wasMusicPlaying) batM.pause();
+                if (wasMusicPlaying) pauseAudio(batM);
 
                 video.src = videoSrc; video.classList.remove('hidden');
                 
                 await new Promise((resolve) => {
-                    let safetyTimer = setTimeout(resolve, 20000); // 20s max
+                    let safetyTimer = setTimeout(resolve, 20000); 
 
                     video.onended = () => { clearTimeout(safetyTimer); resolve(); };
                     video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
@@ -1606,23 +1643,26 @@
                 
                 video.classList.add('hidden');
 
-                if (wasMusicPlaying) {
-                    try { batM.play(); } catch(e) {}
+                if (wasMusicPlaying && !isMuted) {
+                    try { await batM.play(); } catch(e) {}
                 }
             }
 
-            // Flashe pour l'apparition du territoire
+            // 3. Flashe en blanc UNE FOIS LA VIDEO TOTALEMENT TERMINEE
             flash.classList.remove('anim-domain-flash');
-            void flash.offsetWidth; // Force reflow
+            void flash.offsetWidth; 
             flash.classList.add('anim-domain-flash');
             
+            await wait(1000); // Laisse le flash remplir l'écran
+            
+            // 4. Affiche le fond de territoire en arrière-plan
             updateArenaBackground();
             shakeScreen();
             
-            await wait(1000); // Laisse le flash blanc
+            await wait(1000); // Enlève le flash
             flash.classList.remove('anim-domain-flash');
             
-            // Pause pour admirer le fond
+            // 5. Laisse une pause d'une seconde pour que le joueur voit bien l'image de fond du territoire s'installer
             await wait(1000);
         }
 
@@ -1768,40 +1808,29 @@
                 $(attackerSpriteId).classList.remove('anim-heal'); 
             }
             else { 
+                // ANIMATION DYNAMIQUE (PULL-BACK)
                 let animClass = '';
                 let hitWait = 350;
                 let totalAnimTime = 700;
 
                 if (move.dmg <= 35) {
                     animClass = role === 'player' ? 'anim-strike-p-light' : 'anim-strike-e-light';
-                    hitWait = 200;
+                    hitWait = 200; // Frappe très rapide
                     totalAnimTime = 400;
                 } else if (move.dmg <= 75) {
                     animClass = role === 'player' ? 'anim-strike-p' : 'anim-strike-e';
-                    hitWait = 350;
+                    hitWait = 350; // Frappe normale
                     totalAnimTime = 700;
                 } else {
                     animClass = role === 'player' ? 'anim-strike-p-heavy' : 'anim-strike-e-heavy';
-                    hitWait = 600; 
+                    hitWait = 600; // Grand recul avant l'impact
                     totalAnimTime = 1200;
                 }
 
                 $(attackerSpriteId).classList.add(animClass); 
                 await wait(hitWait); 
                 
-                // LE SON SE JOUE A L'IMPACT
-                if (!isMuted) {
-                    let soundId = '';
-                    if (move.dmg <= 35) soundId = 'sfx-simple';
-                    else if (move.dmg <= 75) soundId = 'sfx-moyen';
-                    else soundId = 'sfx-puissant';
-                    
-                    if (soundId) {
-                        const sfx = $(soundId);
-                        sfx.currentTime = 0;
-                        try { sfx.play(); } catch(e) {}
-                    }
-                }
+                playAttackSound(move.dmg); 
 
                 setTimeout(() => {
                     $(attackerSpriteId).classList.remove(animClass);
