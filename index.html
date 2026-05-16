@@ -229,6 +229,16 @@
         </button>
     </div>
 
+    <!-- ECRAN ERREUR DE CONNEXION -->
+    <div id="modal-connection" class="absolute inset-0 bg-black/95 z-[300] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-red-500 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+            <i class="fas fa-wifi text-5xl text-red-500 mb-4 animate-pulse"></i>
+            <h3 class="text-xl font-bold text-white mb-4">Connexion Faible ou Inexistante</h3>
+            <p class="text-sm text-gray-400 mb-6">Vous devez être connecté à Internet pour télécharger les ressources du jeu avant de jouer.<br><br>Si le téléchargement bloque ou si vous avez des difficultés, <strong>nous vous conseillons d'utiliser un VPN</strong>.</p>
+            <button onclick="retryConnection()" class="w-full py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)] active:scale-95">RÉESSAYER</button>
+        </div>
+    </div>
+
     <!-- DOUBLE VALIDATION EXIT MODAL -->
     <div id="modal-exit" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
         <div class="bg-gray-900 border border-gray-600 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(0,0,0,0.8)]">
@@ -816,7 +826,7 @@
             
             if (isMuted || type === 'none') {
                 pauseAudio(bgM);
-                pauseAudio(batM); // Pause simple, on ne reset pas encore
+                pauseAudio(batM); 
                 return;
             }
 
@@ -849,12 +859,13 @@
 
             const total = assetsToPreload.length;
             let loaded = 0;
+            let errors = 0;
 
             const loadFile = async (url) => {
                 try {
                     await fetch(url, { mode: 'no-cors', cache: 'force-cache' });
                 } catch (e) {
-                    console.log("Preload Error on: ", url);
+                    errors++;
                 }
                 loaded++;
                 let percent = Math.floor((loaded / total) * 100);
@@ -864,12 +875,26 @@
 
             await Promise.all(assetsToPreload.map(url => loadFile(url)));
 
+            if (errors > 0 || !navigator.onLine) {
+                $('modal-connection').classList.remove('hidden');
+                $('modal-connection').classList.add('flex');
+                return; 
+            }
+
             localStorage.setItem('jjk_assets_preloaded_v1', 'true');
 
             progressText.innerText = "Ressources prêtes !";
             progressText.classList.add('text-green-400');
             $('loader-text').classList.remove('animate-pulse');
             $('loader-btn').classList.remove('hidden');
+        }
+
+        function retryConnection() {
+            $('modal-connection').classList.add('hidden');
+            $('modal-connection').classList.remove('flex');
+            $('loader-fill').style.width = '0%';
+            $('loader-text').innerText = 'Initialisation du cache... 0%';
+            preloadAssets();
         }
 
         function hideLoaderAndStart() {
@@ -1382,7 +1407,6 @@
             player = JSON.parse(JSON.stringify(charData[pIndex])); player.maxHp = player.hp; player.buffs = {}; player.activeDomain = null;
             enemy = JSON.parse(JSON.stringify(charData[eIndex])); enemy.maxHp = enemy.hp; enemy.buffs = {}; enemy.activeDomain = null;
             
-            stopAudioAndReset($('battle-music'));
             launchBattleSequence();
         }
 
@@ -1403,6 +1427,7 @@
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
+            stopAudioAndReset($('battle-music'));
             await showScreen('screen-vs');
             await wait(2800); 
             
@@ -1463,6 +1488,9 @@
             if (currentMode === 'tutorial') {
                 addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
             }
+
+            // Gestionnaire audio intelligent
+            playMusic('battle');
 
             showScreen('screen-battle'); 
         }
@@ -1604,14 +1632,12 @@
         async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
             
-            // 1. Affiche le nom de l'extension
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
             nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             
             await wait(1500);
             nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
-            // 2. Joue la vidéo (sans interrompre ou zapper)
             if (videoSrc) {
                 const batM = $('battle-music');
                 let wasMusicPlaying = !isMuted && !batM.paused;
@@ -1652,21 +1678,18 @@
                 }
             }
 
-            // 3. Flashe en blanc UNE FOIS LA VIDEO TOTALEMENT TERMINEE
             flash.classList.remove('anim-domain-flash');
             void flash.offsetWidth; 
             flash.classList.add('anim-domain-flash');
             
-            await wait(1000); // Laisse le flash remplir l'écran
+            await wait(1000); 
             
-            // 4. Affiche le fond de territoire en arrière-plan
             updateArenaBackground();
             shakeScreen();
             
-            await wait(1000); // Enlève le flash
+            await wait(1000); 
             flash.classList.remove('anim-domain-flash');
             
-            // 5. Laisse une pause d'une seconde pour que le joueur voit bien l'image de fond du territoire s'installer
             await wait(1000);
         }
 
@@ -1812,7 +1835,6 @@
                 $(attackerSpriteId).classList.remove('anim-heal'); 
             }
             else { 
-                // ANIMATION DYNAMIQUE (PULL-BACK)
                 let animClass = '';
                 let hitWait = 350;
                 let totalAnimTime = 700;
