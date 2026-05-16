@@ -7,21 +7,52 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Animations Personnalisées */
+        /* Animations Personnalisées : Frappes avec recul (Pull-back) */
         @keyframes strike-player {
             0% { transform: translateX(0) scale(1); }
-            30% { transform: translateX(50px) scale(1.15); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
-            50% { transform: translateX(60px) scale(1.1); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 1)); }
-            70% { transform: translateX(40px) scale(1.05); }
+            30% { transform: translateX(-25px) scale(0.95); filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); }
+            50% { transform: translateX(80px) scale(1.1); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 1)); }
+            70% { transform: translateX(30px) scale(1.05); }
             100% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
         }
         @keyframes strike-enemy {
             0% { transform: translateX(0) scale(1) scaleX(-1); }
-            30% { transform: translateX(-50px) scale(1.15) scaleX(-1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
-            50% { transform: translateX(-60px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 1)); }
-            70% { transform: translateX(-40px) scale(1.05) scaleX(-1); }
+            30% { transform: translateX(25px) scale(0.95) scaleX(-1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+            50% { transform: translateX(-80px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 1)); }
+            70% { transform: translateX(-30px) scale(1.05) scaleX(-1); }
             100% { transform: translateX(0) scale(1) scaleX(-1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)); }
         }
+        
+        @keyframes strike-p-light {
+            0% { transform: translateX(0) scale(1); }
+            40% { transform: translateX(-15px) scale(0.95); }
+            50% { transform: translateX(50px) scale(1.05); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        @keyframes strike-e-light {
+            0% { transform: translateX(0) scale(1) scaleX(-1); }
+            40% { transform: translateX(15px) scale(0.95) scaleX(-1); }
+            50% { transform: translateX(-50px) scale(1.05) scaleX(-1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
+            100% { transform: translateX(0) scale(1) scaleX(-1); }
+        }
+
+        @keyframes strike-p-heavy {
+            0% { transform: translateX(0) scale(1); }
+            20% { transform: translateX(-40px) scale(0.9); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
+            40% { transform: translateX(-50px) scale(0.85); filter: drop-shadow(0 0 25px rgba(59, 130, 246, 1)); }
+            50% { transform: translateX(120px) scale(1.3); filter: drop-shadow(0 0 40px rgba(59, 130, 246, 1)); }
+            80% { transform: translateX(40px) scale(1.1); filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.8)); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        @keyframes strike-e-heavy {
+            0% { transform: translateX(0) scale(1) scaleX(-1); }
+            20% { transform: translateX(40px) scale(0.9) scaleX(-1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
+            40% { transform: translateX(50px) scale(0.85) scaleX(-1); filter: drop-shadow(0 0 25px rgba(239, 68, 68, 1)); }
+            50% { transform: translateX(-120px) scale(1.3) scaleX(-1); filter: drop-shadow(0 0 40px rgba(239, 68, 68, 1)); }
+            80% { transform: translateX(-40px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.8)); }
+            100% { transform: translateX(0) scale(1) scaleX(-1); }
+        }
+
         @keyframes hurt {
             0% { filter: brightness(1) sepia(0) hue-rotate(0deg) saturate(1); transform: translateX(0); }
             10% { transform: translateX(-15px); }
@@ -135,11 +166,13 @@
         .bar-transition { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
         .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); }
         
-        /* Arrière-plans d'Extensions de Territoire */
+        /* Arrière-plans d'Extensions de Territoire avec les NOUVEAUX noms de fichiers */
         .bg-default { background-image: url('terrain_de_combat_Shibuya.jpeg'); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-gojo { background-image: url("Sphere_de_lespace_infini_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-sukuna { background-image: url("lhotel_demoniaque_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-megumi { background-image: url("image_du_territoire_de_megumi.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
+        
+        /* Nouveaux Domaines */
         .domain-hakari { background-image: url("image_du_territoire_dhakari.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-mahito { background-image: url("arriere_plan_territoire_de_mahito.png"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-jogo { background-image: url("arriere_plan_territoire_de_Jogo.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
@@ -218,7 +251,7 @@
         </div>
     </div>
 
-    <!-- AUDIO D'AMBIANCE -->
+    <!-- AUDIO D'AMBIANCE AVEC LES NOUVEAUX NOMS -->
     <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
     <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
     <audio id="sfx-simple"><source src="attaque simple .mp3" type="audio/mpeg"></audio>
@@ -768,11 +801,13 @@
 
             if (type === 'menu') {
                 batM.pause();
+                batM.currentTime = 0;
                 if (bgM.paused) {
                     try { await bgM.play(); } catch(e) { console.log(e); }
                 }
             } else if (type === 'battle') {
                 bgM.pause();
+                bgM.currentTime = 0;
                 if (batM.paused) {
                     try { await batM.play(); } catch(e) { console.log(e); }
                 }
@@ -1044,9 +1079,6 @@
         }
 
         async function startMatchmaking() {
-            $('battle-music').currentTime = 0; 
-            playMusic('battle');
-
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1348,7 +1380,6 @@
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
-            $('battle-music').currentTime = 0; // On remet à zéro la musique de combat car c'est un nouveau match
             await showScreen('screen-vs');
             await wait(2800); 
             
@@ -1410,7 +1441,7 @@
                 addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
             }
 
-            showScreen('screen-battle');
+            showScreen('screen-battle'); // PlayMusic('battle') is already triggered inside showScreen
         }
 
         function updateArenaBackground() {
@@ -1550,16 +1581,17 @@
 
         async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
-            flash.classList.add('anim-domain-flash');
+            
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
             nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             
-            await wait(1000);
+            await wait(1500);
             nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
             if (videoSrc) {
-                let wasMusicPlaying = !$('battle-music').paused;
-                playMusic('none');
+                const battleMusic = $('battle-music');
+                let wasMusicPlaying = !battleMusic.paused;
+                if (wasMusicPlaying) battleMusic.pause();
 
                 video.src = videoSrc; video.classList.remove('hidden');
                 
@@ -1573,12 +1605,10 @@
                     let playPromise = video.play();
                     if (playPromise !== undefined) {
                         playPromise.catch(e => {
-                            console.log("Lecture avec son bloquée par le navigateur. Passage en mode muet pour forcer l'affichage.", e);
                             video.muted = true; 
                             let playPromiseMuted = video.play();
                             if (playPromiseMuted !== undefined) {
                                 playPromiseMuted.catch(err => {
-                                    console.log("Vidéo complètement bloquée:", err);
                                     clearTimeout(safetyTimer);
                                     setTimeout(resolve, 2000); 
                                 });
@@ -1589,14 +1619,20 @@
                 
                 video.classList.add('hidden');
 
-                if (!isMuted && wasMusicPlaying) playMusic('battle');
+                if (!isMuted && wasMusicPlaying) battleMusic.play().catch(e => console.log(e));
             }
 
+            flash.classList.add('anim-domain-flash');
+            await wait(1000);
+            
             updateArenaBackground();
             shakeScreen();
             
             await wait(1000);
             flash.classList.remove('anim-domain-flash');
+            
+            // Laisse le joueur admirer le nouveau fond pendant 1 sec avant de continuer le combat
+            await wait(1000);
         }
 
         async function cancelDomain(role) {
