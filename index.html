@@ -8,32 +8,34 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* Animations Personnalisées : Frappes avec recul (Pull-back) */
+        @keyframes strike-p-light {
+            0% { transform: translateX(0) scale(1); }
+            30% { transform: translateX(-15px) scale(0.95); }
+            50% { transform: translateX(50px) scale(1.05); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
+            70% { transform: translateX(20px) scale(1.02); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        @keyframes strike-e-light {
+            0% { transform: translateX(0) scale(1) scaleX(-1); }
+            30% { transform: translateX(15px) scale(0.95) scaleX(-1); }
+            50% { transform: translateX(-50px) scale(1.05) scaleX(-1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
+            70% { transform: translateX(-20px) scale(1.02) scaleX(-1); }
+            100% { transform: translateX(0) scale(1) scaleX(-1); }
+        }
+
         @keyframes strike-player {
             0% { transform: translateX(0) scale(1); }
-            30% { transform: translateX(-25px) scale(0.95); filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); }
+            25% { transform: translateX(-25px) scale(0.95); filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); }
             50% { transform: translateX(80px) scale(1.1); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 1)); }
             70% { transform: translateX(30px) scale(1.05); }
             100% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
         }
         @keyframes strike-enemy {
             0% { transform: translateX(0) scale(1) scaleX(-1); }
-            30% { transform: translateX(25px) scale(0.95) scaleX(-1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+            25% { transform: translateX(25px) scale(0.95) scaleX(-1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
             50% { transform: translateX(-80px) scale(1.1) scaleX(-1); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 1)); }
             70% { transform: translateX(-30px) scale(1.05) scaleX(-1); }
             100% { transform: translateX(0) scale(1) scaleX(-1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)); }
-        }
-        
-        @keyframes strike-p-light {
-            0% { transform: translateX(0) scale(1); }
-            40% { transform: translateX(-15px) scale(0.95); }
-            50% { transform: translateX(50px) scale(1.05); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
-            100% { transform: translateX(0) scale(1); }
-        }
-        @keyframes strike-e-light {
-            0% { transform: translateX(0) scale(1) scaleX(-1); }
-            40% { transform: translateX(15px) scale(0.95) scaleX(-1); }
-            50% { transform: translateX(-50px) scale(1.05) scaleX(-1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
-            100% { transform: translateX(0) scale(1) scaleX(-1); }
         }
 
         @keyframes strike-p-heavy {
@@ -801,15 +803,13 @@
 
             if (type === 'menu') {
                 batM.pause();
-                batM.currentTime = 0;
                 if (bgM.paused) {
-                    try { await bgM.play(); } catch(e) { console.log(e); }
+                    try { await bgM.play(); } catch(e) { console.log("Audio Play Error:", e); }
                 }
             } else if (type === 'battle') {
                 bgM.pause();
-                bgM.currentTime = 0;
                 if (batM.paused) {
-                    try { await batM.play(); } catch(e) { console.log(e); }
+                    try { await batM.play(); } catch(e) { console.log("Audio Play Error:", e); }
                 }
             }
         }
@@ -856,7 +856,6 @@
         function hideLoaderAndStart() {
             $('screen-loader').classList.add('hidden');
             $('screen-loader').classList.remove('flex');
-            
             showScreen('screen-menu');
         }
 
@@ -1079,6 +1078,9 @@
         }
 
         async function startMatchmaking() {
+            $('battle-music').currentTime = 0; 
+            playMusic('battle');
+
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1380,6 +1382,7 @@
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
+            $('battle-music').currentTime = 0; 
             await showScreen('screen-vs');
             await wait(2800); 
             
@@ -1441,7 +1444,7 @@
                 addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
             }
 
-            showScreen('screen-battle'); // PlayMusic('battle') is already triggered inside showScreen
+            playMusic('battle');
         }
 
         function updateArenaBackground() {
@@ -1558,30 +1561,10 @@
             setTimeout(() => container.classList.remove('anim-screen-shake'), 500);
         }
 
-        function playAttackSound(damage) {
-            if (isMuted) return; 
-            let soundId = '';
-            if (damage > 0 && damage <= 35) {
-                soundId = 'sfx-simple';
-            } else if (damage > 35 && damage <= 75) {
-                soundId = 'sfx-moyen';
-            } else if (damage > 75) {
-                soundId = 'sfx-puissant';
-            }
-            
-            if (soundId) {
-                const sfx = $(soundId);
-                sfx.currentTime = 0;
-                let playPromise = sfx.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => console.log("Lecture du son bloquée :", e));
-                }
-            }
-        }
-
         async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
             
+            // Apparition du texte seul
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
             nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             
@@ -1589,14 +1572,14 @@
             nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
             if (videoSrc) {
-                const battleMusic = $('battle-music');
-                let wasMusicPlaying = !battleMusic.paused;
-                if (wasMusicPlaying) battleMusic.pause();
+                const batM = $('battle-music');
+                let wasMusicPlaying = !isMuted && !batM.paused;
+                if (wasMusicPlaying) batM.pause();
 
                 video.src = videoSrc; video.classList.remove('hidden');
                 
                 await new Promise((resolve) => {
-                    let safetyTimer = setTimeout(resolve, 8000); 
+                    let safetyTimer = setTimeout(resolve, 20000); // 20s max
 
                     video.onended = () => { clearTimeout(safetyTimer); resolve(); };
                     video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
@@ -1610,28 +1593,36 @@
                             if (playPromiseMuted !== undefined) {
                                 playPromiseMuted.catch(err => {
                                     clearTimeout(safetyTimer);
-                                    setTimeout(resolve, 2000); 
+                                    resolve(); 
                                 });
+                            } else {
+                                resolve();
                             }
                         });
+                    } else {
+                        resolve();
                     }
                 });
                 
                 video.classList.add('hidden');
 
-                if (!isMuted && wasMusicPlaying) battleMusic.play().catch(e => console.log(e));
+                if (wasMusicPlaying) {
+                    try { batM.play(); } catch(e) {}
+                }
             }
 
+            // Flashe pour l'apparition du territoire
+            flash.classList.remove('anim-domain-flash');
+            void flash.offsetWidth; // Force reflow
             flash.classList.add('anim-domain-flash');
-            await wait(1000);
             
             updateArenaBackground();
             shakeScreen();
             
-            await wait(1000);
+            await wait(1000); // Laisse le flash blanc
             flash.classList.remove('anim-domain-flash');
             
-            // Laisse le joueur admirer le nouveau fond pendant 1 sec avant de continuer le combat
+            // Pause pour admirer le fond
             await wait(1000);
         }
 
@@ -1798,7 +1789,19 @@
                 $(attackerSpriteId).classList.add(animClass); 
                 await wait(hitWait); 
                 
-                playAttackSound(move.dmg); 
+                // LE SON SE JOUE A L'IMPACT
+                if (!isMuted) {
+                    let soundId = '';
+                    if (move.dmg <= 35) soundId = 'sfx-simple';
+                    else if (move.dmg <= 75) soundId = 'sfx-moyen';
+                    else soundId = 'sfx-puissant';
+                    
+                    if (soundId) {
+                        const sfx = $(soundId);
+                        sfx.currentTime = 0;
+                        try { sfx.play(); } catch(e) {}
+                    }
+                }
 
                 setTimeout(() => {
                     $(attackerSpriteId).classList.remove(animClass);
