@@ -793,20 +793,14 @@
         /* --- GESTION MUSIQUE ET SON --- */
         function pauseAudio(audioElement) {
             try {
-                if (!audioElement.paused) {
-                    audioElement.pause();
-                }
+                if (!audioElement.paused) audioElement.pause();
             } catch (e) {}
         }
 
         function stopAudioAndReset(audioElement) {
             try {
-                if (!audioElement.paused) {
-                    audioElement.pause();
-                }
-                if (!isNaN(audioElement.duration)) {
-                    audioElement.currentTime = 0;
-                }
+                if (!audioElement.paused) audioElement.pause();
+                if (!isNaN(audioElement.duration)) audioElement.currentTime = 0;
             } catch (e) {}
         }
 
@@ -875,7 +869,6 @@
         function hideLoaderAndStart() {
             $('screen-loader').classList.add('hidden');
             $('screen-loader').classList.remove('flex');
-            
             showScreen('screen-menu');
         }
 
@@ -1098,6 +1091,9 @@
         }
 
         async function startMatchmaking() {
+            stopAudioAndReset($('battle-music'));
+            playMusic('battle');
+
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1397,7 +1393,22 @@
             $('vs-player-img').src = player.img; $('vs-player-name').innerText = player.name;
             $('vs-enemy-img').src = enemy.img; $('vs-enemy-name').innerText = enemy.name;
             
-            const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
+            // Relance douce de l'animation VS pour les WebViews
+            const vsL = $('vs-player-img').parentElement;
+            const vsR = $('vs-enemy-img').parentElement;
+            const vsPop = $('vs-content').querySelector('h1');
+            
+            vsL.classList.remove('anim-vs-l');
+            vsR.classList.remove('anim-vs-r');
+            vsPop.classList.remove('anim-vs-pop');
+            
+            void vsL.offsetWidth; 
+            
+            vsL.classList.add('anim-vs-l');
+            vsR.classList.add('anim-vs-r');
+            vsPop.classList.add('anim-vs-pop');
+
+            stopAudioAndReset($('battle-music'));
 
             await showScreen('screen-vs');
             await wait(2800); 
@@ -1591,7 +1602,7 @@
             if (soundId) {
                 const sfx = $(soundId);
                 try {
-                    sfx.currentTime = 0;
+                    if (!isNaN(sfx.duration)) sfx.currentTime = 0;
                     sfx.play().catch(e => console.log(e));
                 } catch(e) {}
             }
@@ -1600,14 +1611,12 @@
         async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
             
-            // 1. Affiche le nom de l'extension
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
             nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             
             await wait(1500);
             nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
-            // 2. Joue la vidéo (sans interrompre ou zapper)
             if (videoSrc) {
                 const batM = $('battle-music');
                 let wasMusicPlaying = !isMuted && !batM.paused;
@@ -1648,21 +1657,18 @@
                 }
             }
 
-            // 3. Flashe en blanc UNE FOIS LA VIDEO TOTALEMENT TERMINEE
             flash.classList.remove('anim-domain-flash');
             void flash.offsetWidth; 
             flash.classList.add('anim-domain-flash');
             
-            await wait(1000); // Laisse le flash remplir l'écran
+            await wait(1000); 
             
-            // 4. Affiche le fond de territoire en arrière-plan
             updateArenaBackground();
             shakeScreen();
             
-            await wait(1000); // Enlève le flash
+            await wait(1000); 
             flash.classList.remove('anim-domain-flash');
             
-            // 5. Laisse une pause d'une seconde pour que le joueur voit bien l'image de fond du territoire s'installer
             await wait(1000);
         }
 
@@ -1808,22 +1814,21 @@
                 $(attackerSpriteId).classList.remove('anim-heal'); 
             }
             else { 
-                // ANIMATION DYNAMIQUE (PULL-BACK)
                 let animClass = '';
                 let hitWait = 350;
                 let totalAnimTime = 700;
 
                 if (move.dmg <= 35) {
                     animClass = role === 'player' ? 'anim-strike-p-light' : 'anim-strike-e-light';
-                    hitWait = 200; // Frappe très rapide
+                    hitWait = 200;
                     totalAnimTime = 400;
                 } else if (move.dmg <= 75) {
                     animClass = role === 'player' ? 'anim-strike-p' : 'anim-strike-e';
-                    hitWait = 350; // Frappe normale
+                    hitWait = 350;
                     totalAnimTime = 700;
                 } else {
                     animClass = role === 'player' ? 'anim-strike-p-heavy' : 'anim-strike-e-heavy';
-                    hitWait = 600; // Grand recul avant l'impact
+                    hitWait = 600; 
                     totalAnimTime = 1200;
                 }
 
