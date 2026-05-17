@@ -441,7 +441,11 @@
             <i class="fas fa-arrow-left"></i>
         </button>
         <h2 id="select-title" class="text-xl sm:text-2xl font-bold text-center mt-2 mb-1 text-purple-400 z-10 relative z-10">Choisissez votre Exorciste</h2>
-        <p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Le destin du monde est entre vos mains.</p>
+        
+        <!-- Conteneur Dynamique Embelli pour les Stats (Ligne/Tournoi) -->
+        <div id="select-desc-container" class="text-center mb-3 z-10 relative z-10">
+            <p id="select-desc" class="text-gray-500 text-xs sm:text-sm">Le destin du monde est entre vos mains.</p>
+        </div>
         
         <!-- Grille compactée -->
         <div id="character-grid" class="grid grid-cols-2 grid-rows-6 gap-2 sm:gap-3 flex-1 w-full h-full pb-2 relative z-10"></div>
@@ -621,6 +625,10 @@
         let currentMode = 'tournament'; 
         let hasSave = false; 
         
+        let onlineWins = 0;
+        let onlineLosses = 0;
+        let tournamentTrophies = 0;
+
         const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
         
         // Liste exacte des assets à précharger pour le cache
@@ -912,6 +920,9 @@
                 const data = JSON.parse(saved);
                 if (data.pseudo) globalPlayerPseudo = data.pseudo;
                 if (data.coins !== undefined) playerCoins = data.coins;
+                if (data.onlineWins !== undefined) onlineWins = data.onlineWins;
+                if (data.onlineLosses !== undefined) onlineLosses = data.onlineLosses;
+                if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.unlocked) {
                     data.unlocked.forEach(id => {
                         const c = charData.find(char => char.id === id);
@@ -929,7 +940,10 @@
             localStorage.setItem('jjk_save_v2', JSON.stringify({
                 pseudo: globalPlayerPseudo,
                 coins: playerCoins,
-                unlocked: unlocked
+                unlocked: unlocked,
+                onlineWins: onlineWins,
+                onlineLosses: onlineLosses,
+                tournamentTrophies: tournamentTrophies
             }));
             hasSave = true;
             updateMenuButtons();
@@ -966,6 +980,9 @@
             hasSave = false;
             playerCoins = 25;
             globalPlayerPseudo = "";
+            onlineWins = 0;
+            onlineLosses = 0;
+            tournamentTrophies = 0;
             charData.forEach(c => {
                 c.locked = !['yuji', 'megumi', 'nobara'].includes(c.id);
             });
@@ -1123,8 +1140,9 @@
         }
 
         async function startMatchmaking() {
-            stopAudioAndReset($('battle-music'));
-            
+            stopAudioAndReset($('battle-music')); 
+            playMusic('battle');
+
             showScreen('screen-matchmaking');
             
             $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
@@ -1267,15 +1285,26 @@
         function updateSelectionUI() {
             $('btn-back-select').classList.remove('hidden');
             if (selectionStep === 'player') {
-                $('select-title').innerText = "Choisissez votre Exorciste"; $('select-desc').innerText = "Le destin du monde est entre vos mains.";
+                $('select-title').innerText = "Choisissez votre Exorciste"; 
+                
+                if (currentMode === 'online') {
+                    $('select-desc-container').innerHTML = `<div class="flex justify-center items-center gap-3 text-[10px] sm:text-xs font-bold bg-gray-800/80 rounded-full px-4 py-1.5 inline-flex border border-gray-600 shadow-inner mt-1"><span class="text-green-400"><i class="fas fa-circle text-[8px] animate-pulse mb-0.5"></i> ${rand(224, 1854)} en ligne</span><span class="text-blue-400"><i class="fas fa-trophy"></i> ${onlineWins} V</span><span class="text-red-400"><i class="fas fa-skull"></i> ${onlineLosses} D</span></div>`;
+                } else if (currentMode === 'tournament') {
+                    $('select-desc-container').innerHTML = `<div class="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-bold bg-yellow-900/40 rounded-full px-4 py-1.5 inline-flex border border-yellow-600 shadow-[0_0_10px_rgba(202,138,4,0.2)] mt-1"><span class="text-yellow-400"><i class="fas fa-crown text-sm"></i> Trophées remportés : ${tournamentTrophies}</span></div>`;
+                } else {
+                    $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Le destin du monde est entre vos mains.</p>`;
+                }
+
                 $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex');
                 renderCharacterSelect();
             } else if (selectionStep === 'enemy') {
-                $('select-title').innerText = "Choisissez l'Adversaire"; $('select-desc').innerText = "Qui allez-vous affronter ?";
+                $('select-title').innerText = "Choisissez l'Adversaire"; 
+                $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Qui allez-vous affronter ?</p>`;
                 $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex');
                 renderCharacterSelect();
             } else if (selectionStep === 'difficulty') {
-                $('select-title').innerText = "Choisissez la Difficulté"; $('select-desc').innerText = "Préparez-vous au combat mortel.";
+                $('select-title').innerText = "Choisissez la Difficulté"; 
+                $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Préparez-vous au combat mortel.</p>`;
                 $('character-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('flex');
             }
         }
@@ -1427,7 +1456,6 @@
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
-            stopAudioAndReset($('battle-music'));
             await showScreen('screen-vs');
             await wait(2800); 
             
@@ -1489,7 +1517,6 @@
                 addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
             }
 
-            // Gestionnaire audio intelligent
             playMusic('battle');
 
             showScreen('screen-battle'); 
@@ -1841,15 +1868,15 @@
 
                 if (move.dmg <= 35) {
                     animClass = role === 'player' ? 'anim-strike-p-light' : 'anim-strike-e-light';
-                    hitWait = 200; // Frappe très rapide
+                    hitWait = 200; 
                     totalAnimTime = 400;
                 } else if (move.dmg <= 75) {
                     animClass = role === 'player' ? 'anim-strike-p' : 'anim-strike-e';
-                    hitWait = 350; // Frappe normale
+                    hitWait = 350; 
                     totalAnimTime = 700;
                 } else {
                     animClass = role === 'player' ? 'anim-strike-p-heavy' : 'anim-strike-e-heavy';
-                    hitWait = 600; // Grand recul avant l'impact
+                    hitWait = 600; 
                     totalAnimTime = 1200;
                 }
 
@@ -2025,6 +2052,7 @@
                     $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Continuer</button>`;
                 } else if (currentMode === 'online') {
+                    onlineWins++;
                     let earnedCoins = 50 + Math.floor((player.hp / player.maxHp) * 50);
                     playerCoins += earnedCoins;
                     saveGameData(); 
@@ -2059,6 +2087,7 @@
                     tState.phase = 'results';
                     
                     if (tState.round === 2) {
+                        tournamentTrophies++;
                         let earnedCoins = 0;
                         if (difficultyLevel === 'facile') earnedCoins = 10;
                         else if (difficultyLevel === 'normal') earnedCoins = 15;
@@ -2094,6 +2123,8 @@
                 } else {
                     $('gameover-desc').innerText = `Votre énergie occulte s'est dissipée...`;
                     if (currentMode === 'online') {
+                        onlineLosses++;
+                        saveGameData();
                         btnContainer.innerHTML = `
                             <button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button>
                             <button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>
