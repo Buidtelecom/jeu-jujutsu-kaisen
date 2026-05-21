@@ -135,12 +135,12 @@
         }
         .anim-point-left { animation: point-left 1s infinite; }
 
-        .anim-strike-p { animation: strike-player 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .anim-strike-e { animation: strike-enemy 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .anim-strike-p-light { animation: strike-p-light 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .anim-strike-e-light { animation: strike-e-light 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .anim-strike-p-heavy { animation: strike-p-heavy 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .anim-strike-e-heavy { animation: strike-e-heavy 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .anim-strike-p { animation: strike-player 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
+        .anim-strike-e { animation: strike-enemy 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
+        .anim-strike-p-light { animation: strike-p-light 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
+        .anim-strike-e-light { animation: strike-e-light 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
+        .anim-strike-p-heavy { animation: strike-p-heavy 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
+        .anim-strike-e-heavy { animation: strike-e-heavy 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
 
         .anim-hurt { animation: hurt 0.8s ease-in-out; }
         .anim-heal { animation: heal 1.2s ease-out; }
@@ -178,6 +178,7 @@
         .domain-hakari { background-image: url("image_du_territoire_dhakari.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-mahito { background-image: url("arriere_plan_territoire_de_mahito.png"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-jogo { background-image: url("arriere_plan_territoire_de_Jogo.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
+        .domain-higuruma { background-image: url("arriere_plan_territoire_higuruma.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
 
         /* Clash de Territoires */
         .domain-clash { 
@@ -414,7 +415,7 @@
         </div>
         <p class="text-center text-gray-400 text-sm mb-4 relative z-10">Achetez des exorcistes ou fléaux scellés pour les débloquer.</p>
         
-        <div id="market-grid" class="grid grid-cols-2 gap-4 flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-10 relative z-10">
+        <div id="market-grid" class="grid grid-cols-2 gap-4 flex-1 w-full max-w-lg mx-auto overflow-y-auto pb-24 relative z-10 content-start px-2">
             <!-- Rempli dynamiquement -->
         </div>
     </div>
@@ -658,18 +659,20 @@
 
         const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
         
+        // Liste exacte des assets à précharger pour le cache
         const assetsToPreload = [
             "terrain_de_combat_Shibuya.jpeg", "Sphere_de_lespace_infini_arriere_plan.jpeg",
             "lhotel_demoniaque_arriere_plan.jpeg", "image_du_territoire_de_megumi.jpg",
             "image_du_territoire_dhakari.jpg", "arriere_plan_territoire_de_mahito.png",
-            "arriere_plan_territoire_de_Jogo.jpg", "jjk_homme.jpeg", "homejjk5.jpg",
+            "arriere_plan_territoire_de_Jogo.jpg", "arriere_plan_territoire_higuruma.jpg", "jjk_homme.jpeg", "homejjk5.jpg",
             "images.jpeg", "images_1.jpeg", "Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg",
             "satoru Gojo.jpg", "megumi.jpg", "nobara.jpg", "Sukuna.jpeg", "yuta.jpeg",
             "maki.jpeg", "nanami.jpg", "hakari.jpg", "mahito.jpeg", "Toji.jpeg", "jogo.png",
+            "higuruma.jpg", "todo.jpg", "kashimo.jpg", "choso.jpg", "geto.jpg", "uraume.jpg",
             "theme_de_personnages_jjk.mp3", "JJK_musique_darene_de_combat.mp3",
             "attaque simple .mp3", "coup moyen .mp3", "coup puissant .mp3",
             "Sphere_de_lespace_infini.mp4", "territoire_de_Megumi.mp4", "Lhotel_demoniaque.mp4",
-            "territoire_dHakari.mp4", "territoire_de_Mahito.mp4", "Territoire_de_Jogo.mp4"
+            "territoire_dHakari.mp4", "territoire_de_Mahito.mp4", "Territoire_de_Jogo.mp4", "territoire_higuruma.mp4"
         ];
 
         const menuBackgrounds = [
@@ -859,6 +862,78 @@
                     { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack', attr: 'Ténèbres' },
                     { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack', attr: 'Ténèbres' },
                     { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4", attr: 'Feu' }
+                ]
+            },
+            {
+                id: 'higuruma', name: 'Hiromi Higuruma', img: 'higuruma.jpg', color: 'from-gray-600 to-black',
+                locked: true, price: 2000,
+                hp: 460, ce: 40, maxCe: 100,
+                attr: 'Lumière',
+                moves: [
+                    { name: 'Coup de Maillet', cost: 0, dmg: 25, desc: 'Frappe de base avec le maillet. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
+                    { name: 'Jugement', cost: 25, dmg: 45, desc: 'Invoque Judgeman pour attaquer.', type: 'attack', attr: 'Lumière' },
+                    { name: 'Confiscation', cost: 50, dmg: 80, desc: 'Frappe lourde. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' },
+                    { name: 'Peine de Mort', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature la zone : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-higuruma', video: 'territoire_higuruma.mp4', attr: 'Lumière' }
+                ]
+            },
+            {
+                id: 'todo', name: 'Aoi Todo', img: 'todo.jpg', color: 'from-blue-700 to-indigo-900',
+                locked: true, price: 1500,
+                hp: 530, ce: 30, maxCe: 100,
+                attr: 'Neutre',
+                moves: [
+                    { name: 'Coup de Poing', cost: 0, dmg: 25, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
+                    { name: 'Boogie Woogie', cost: 20, dmg: 40, desc: 'Frappe désorientante. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Neutre' },
+                    { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' },
+                    { name: 'Rayon Noir', cost: 70, dmg: 130, desc: 'Impact explosif critique.', type: 'attack', attr: 'Ténèbres' }
+                ]
+            },
+            {
+                id: 'kashimo', name: 'Kashimo Hajime', img: 'kashimo.jpg', color: 'from-cyan-400 to-blue-600',
+                locked: true, price: 3000,
+                hp: 470, ce: 50, maxCe: 100,
+                attr: 'Foudre',
+                moves: [
+                    { name: 'Coup Électrifié', cost: 0, dmg: 30, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Foudre' },
+                    { name: 'Décharge', cost: 25, dmg: 50, desc: 'Projette une charge électrique.', type: 'attack', attr: 'Foudre' },
+                    { name: 'Accumulation', cost: 40, dmg: 0, desc: 'Canalyse l\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' },
+                    { name: 'Bête Fantôme Ambre', cost: 85, dmg: 150, desc: 'Attaque ultime surchargée.', type: 'attack', attr: 'Foudre' }
+                ]
+            },
+            {
+                id: 'choso', name: 'Choso', img: 'choso.jpg', color: 'from-red-700 to-red-900',
+                locked: true, price: 2000,
+                hp: 480, ce: 40, maxCe: 100,
+                attr: 'Eau',
+                moves: [
+                    { name: 'Tranchant de Sang', cost: 0, dmg: 25, desc: 'Frappe sanglante. Restaure 15 CE.', type: 'basic', attr: 'Eau' },
+                    { name: 'Écaille Rouge Fluide', cost: 40, dmg: 0, desc: 'Booste le métabolisme. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Feu' },
+                    { name: 'Supernova', cost: 45, dmg: 70, desc: 'Explosion d\'orbes de sang.', type: 'attack', attr: 'Eau' },
+                    { name: 'Sang Perforant', cost: 70, dmg: 130, desc: 'Tir concentré perforant.', type: 'attack', attr: 'Eau' }
+                ]
+            },
+            {
+                id: 'geto', name: 'Suguru Geto', img: 'geto.jpg', color: 'from-yellow-700 to-yellow-900',
+                locked: true, price: 5000,
+                hp: 490, ce: 60, maxCe: 100,
+                attr: 'Ténèbres',
+                moves: [
+                    { name: 'Arts Martiaux', cost: 0, dmg: 20, desc: 'Frappe technique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
+                    { name: 'Nuée de Fléaux', cost: 25, dmg: 50, desc: 'Projette plusieurs petits fléaux.', type: 'attack', attr: 'Ténèbres' },
+                    { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' },
+                    { name: 'Maximum: Uzumaki', cost: 85, dmg: 140, desc: 'Concentration totale des fléaux.', type: 'attack', attr: 'Ténèbres' }
+                ]
+            },
+            {
+                id: 'uraume', name: 'Uraume', img: 'uraume.jpg', color: 'from-blue-200 to-white',
+                locked: true, price: 1500,
+                hp: 450, ce: 50, maxCe: 100,
+                attr: 'Eau',
+                moves: [
+                    { name: 'Givre', cost: 0, dmg: 20, desc: 'Attaque gelée basique. Restaure 15 CE.', type: 'basic', attr: 'Eau' },
+                    { name: 'Lance de Glace', cost: 25, dmg: 45, desc: 'Projette une stalactite acérée.', type: 'attack', attr: 'Eau' },
+                    { name: 'Calme Glacial', cost: 50, dmg: 80, desc: 'Gèle les alentours. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Eau' },
+                    { name: 'Cascade de Glace', cost: 75, dmg: 130, desc: 'Déferlement de glace massive.', type: 'attack', attr: 'Eau' }
                 ]
             }
         ];
@@ -1167,6 +1242,7 @@
             if(domainClass === 'domain-hakari') return `url("image_du_territoire_dhakari.jpg")`;
             if(domainClass === 'domain-mahito') return `url("arriere_plan_territoire_de_mahito.png")`;
             if(domainClass === 'domain-jogo') return `url("arriere_plan_territoire_de_Jogo.jpg")`;
+            if(domainClass === 'domain-higuruma') return `url("arriere_plan_territoire_higuruma.jpg")`;
             return '#1e293b'; 
         }
 
@@ -1367,7 +1443,7 @@
             pIndex = charData.findIndex(c => c.id === currentMatch.p1.id);
             eIndex = charData.findIndex(c => c.id === currentMatch.p2.id);
             
-            launchBattleSequence(); // Remplacement de startGame('normal') !
+            launchBattleSequence(); 
         }
 
         async function hideGameOverAndShowTournament() {
@@ -1506,14 +1582,16 @@
 
             lockedChars.forEach((char) => {
                 const card = document.createElement('div');
-                card.className = `bg-gray-800 rounded-xl p-3 flex flex-col items-center justify-center border border-gray-700 shadow-lg relative overflow-hidden z-10`;
+                card.className = `bg-gray-800 rounded-xl p-4 flex flex-col items-center justify-between border border-gray-700 shadow-lg relative overflow-hidden z-10 min-h-[170px]`;
                 
                 card.innerHTML = `
-                    <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">BLOQUÉ</div>
-                    <img src="${char.img}" class="w-16 h-16 object-cover rounded-full mb-2 border-2 border-gray-600 grayscale" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'">
-                    <div class="font-bold text-white text-center text-sm mb-2">${char.name} ${attrEmojis[char.attr]}</div>
-                    <button onclick="buyCharacter('${char.id}')" class="w-full py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-xs flex justify-center items-center transition-colors active:scale-95">
-                        ${char.price} <i class="fas fa-coins ml-1"></i>
+                    <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-20">BLOQUÉ</div>
+                    <div class="flex flex-col items-center flex-1 w-full mt-2">
+                        <img src="${char.img}" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full mb-3 border-2 border-gray-600 grayscale" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'">
+                        <div class="font-bold text-white text-center text-xs sm:text-sm mb-3 w-full truncate px-1">${char.name} ${attrEmojis[char.attr]}</div>
+                    </div>
+                    <button onclick="buyCharacter('${char.id}')" class="w-full py-2.5 mt-auto rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-sm flex justify-center items-center transition-colors active:scale-95 shadow-md">
+                        ${char.price} <i class="fas fa-coins ml-1.5"></i>
                     </button>
                 `;
                 grid.appendChild(card);
@@ -1983,6 +2061,7 @@
                 }
             }
 
+            // FORCER LE REFLOW POUR ETRE SUR QUE L'ANIMATION SE JOUE TOUJOURS
             flash.classList.remove('anim-domain-flash');
             void flash.offsetWidth; 
             flash.classList.add('anim-domain-flash');
@@ -2213,6 +2292,10 @@
                     totalAnimTime = 1200;
                 }
 
+                // FORCE REFLOW TO RESTART ANIMATION
+                $(attackerSpriteId).classList.remove('anim-strike-p-light', 'anim-strike-e-light', 'anim-strike-p', 'anim-strike-e', 'anim-strike-p-heavy', 'anim-strike-e-heavy');
+                void $(attackerSpriteId).offsetWidth; 
+                
                 $(attackerSpriteId).classList.add(animClass); 
                 await wait(hitWait); 
                 
