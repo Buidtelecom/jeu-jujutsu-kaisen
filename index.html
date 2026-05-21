@@ -6,6 +6,11 @@
     <title>Jujutsu Kaisen: Clash</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- FIREBASE COMPAT SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    
     <style>
         /* Animations Personnalisées : Frappes avec recul (Pull-back) */
         @keyframes strike-p-light {
@@ -372,7 +377,7 @@
             <i class="fas fa-globe text-4xl text-blue-400 z-10"></i>
         </div>
         <h2 class="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(59,130,246,0.8)] tracking-widest animate-pulse text-center relative z-10">RECHERCHE D'ADVERSAIRE</h2>
-        <p class="text-gray-400 mt-2 text-sm font-bold tracking-widest relative z-10" id="matchmaking-text">ANALYSE DU CLASSEMENT...</p>
+        <p class="text-gray-400 mt-2 text-sm font-bold tracking-widest relative z-10" id="matchmaking-text">CONNEXION AU SERVEUR...</p>
     </div>
 
     <!-- ECRAN OPTIONS -->
@@ -645,6 +650,25 @@
     </div>
 
     <script>
+        /* --- CONFIGURATION FIREBASE MULTIJOUEUR --- */
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2Vfnr7pYAGU8FFHMEBSbXuZQUyq29z2c",
+            authDomain: "jjk-clash-online.firebaseapp.com",
+            projectId: "jjk-clash-online",
+            storageBucket: "jjk-clash-online.firebasestorage.app",
+            messagingSenderId: "563480739840",
+            appId: "1:563480739840:web:56420951b977964cc298e5",
+            databaseURL: "https://jjk-clash-online-default-rtdb.firebaseio.com/"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        
+        let myRole = null;       // 'p1' (host) ou 'p2' (guest)
+        let matchId = null;      // ID de la partie en cours
+        let matchRef = null;     // Référence Firebase vers la partie
+
         /* --- DONNÉES GLOBALES ET SAUVEGARDE --- */
         let playerCoins = 25; 
         let globalPlayerPseudo = "";
@@ -652,14 +676,25 @@
         let emotesEnabled = true; 
         let currentMode = 'tournament'; 
         let hasSave = false; 
+        let isPlayerTurn = false;
         
         let onlineWins = 0;
         let onlineLosses = 0;
         let tournamentTrophies = 0;
 
+        let player = null;
+        let enemy = null;
+
+        /* RNG Synchronisé pour le multijoueur */
+        let sharedRNG = 1;
+        function gameRandom() { 
+            if (currentMode !== 'online') return Math.random(); 
+            let x = Math.sin(sharedRNG++) * 10000; 
+            return x - Math.floor(x); 
+        }
+
         const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
         
-        // Liste exacte des assets à précharger pour le cache
         const assetsToPreload = [
             "terrain_de_combat_Shibuya.jpeg", "Sphere_de_lespace_infini_arriere_plan.jpeg",
             "lhotel_demoniaque_arriere_plan.jpeg", "image_du_territoire_de_megumi.jpg",
@@ -675,12 +710,7 @@
             "territoire_dHakari.mp4", "territoire_de_Mahito.mp4", "Territoire_de_Jogo.mp4", "territoire_higuruma.mp4"
         ];
 
-        const menuBackgrounds = [
-            "homejjk5.jpg",
-            "images.jpeg",
-            "images_1.jpeg",
-            "jjk_homme.jpeg"
-        ];
+        const menuBackgrounds = ["homejjk5.jpg", "images.jpeg", "images_1.jpeg", "jjk_homme.jpeg"];
         
         let tutorialStep = 0;
         const tutorialSequence = [
@@ -690,7 +720,6 @@
             { targetMove: 3, text: "Il est temps de finir en beauté... Ouvre l'Extension du Territoire !", boost: 100, setEnemyHp: 1 }
         ];
 
-        /* --- SYSTÈME D'ATTRIBUTS (DOMINATION) --- */
         const attrEmojis = { 'Feu':'🔥', 'Eau':'💧', 'Plante':'🍃', 'Foudre':'⚡', 'Terre':'🪨', 'Ténèbres':'🌑', 'Lumière':'✨', 'Neutre':'👊' };
         
         const attrAdvantage = {
@@ -704,12 +733,7 @@
             'Neutre': { strong: [], weak: [] }
         };
 
-        /* --- ETAT DU TOURNOI ET EQUIPE --- */
-        let tState = {
-            round: 0,
-            bracket: [], 
-            phase: 'matchups' 
-        };
+        let tState = { round: 0, bracket: [], phase: 'matchups' };
 
         let playerTeamSelection = [];
         let playerTeam = [];
@@ -717,286 +741,191 @@
         let playerIdx = 0;
         let enemyIdx = 0;
         let hasSwitchedThisTurn = false;
+        let isAnimating = false;
 
-        /* --- DONNÉES DU JEU --- */
         const charData = [
-            {
-                id: 'yuji', name: 'Yuji Itadori', img: 'Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg', color: 'from-orange-600 to-red-600',
-                locked: false, price: 0,
-                hp: 500, ce: 30, maxCe: 100,
-                attr: 'Neutre',
-                moves: [
-                    { name: 'Arts Martiaux', cost: 0, dmg: 25, desc: 'Coup de poing basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Poing Divergent', cost: 20, dmg: 50, desc: 'Un double impact dévastateur.', type: 'attack', attr: 'Neutre' },
-                    { name: 'Rayon Noir', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Assaut Furieux', cost: 70, dmg: 120, desc: 'Un enchaînement inarrêtable.', type: 'attack', attr: 'Neutre' }
-                ]
-            },
-            {
-                id: 'megumi', name: 'Megumi Fushiguro', img: 'megumi.jpg', color: 'from-green-700 to-teal-900',
-                locked: false, price: 0,
-                hp: 450, ce: 40, maxCe: 100,
-                attr: 'Ténèbres',
-                moves: [
-                    { name: 'Chiens de Jade', cost: 0, dmg: 25, desc: 'Morsure basique. Restaure 15 CE.', type: 'basic', attr: 'Ténèbres' },
-                    { name: 'Nue (Oiseau)', cost: 25, dmg: 40, desc: 'Attaque électrique. 30% de chance d\'étourdir 1 tour.', effect: 'chance-stun', type: 'attack', attr: 'Foudre' },
-                    { name: 'Éléphant de Max', cost: 40, dmg: 70, desc: 'Écrase l\'ennemi sous une pression d\'eau.', type: 'attack', attr: 'Eau' },
-                    { name: 'Jardin des Ombres', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour et octroie Esquive constante.', effect: 'domain-evade', type: 'domain', domainClass: 'domain-megumi', video: "territoire_de_Megumi.mp4", attr: 'Ténèbres' }
-                ]
-            },
-            {
-                id: 'nobara', name: 'Nobara Kugisaki', img: 'nobara.jpg', color: 'from-amber-700 to-red-800',
-                locked: false, price: 0,
-                hp: 430, ce: 30, maxCe: 100,
-                attr: 'Terre',
-                moves: [
-                    { name: 'Coup de Marteau', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Terre' },
-                    { name: 'Projection de Clous', cost: 15, dmg: 35, desc: 'Tire des clous imprégnés de CE.', type: 'attack', attr: 'Terre' },
-                    { name: 'Résonance', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Pince à Cheveux', cost: 60, dmg: 140, desc: 'Fait exploser tous les clous plantés.', type: 'attack', attr: 'Feu' }
-                ]
-            },
-            {
-                id: 'maki', name: 'Maki Zenin', img: 'maki.jpeg', color: 'from-emerald-700 to-green-900',
-                locked: true, price: 800,
-                hp: 510, ce: 30, maxCe: 100,
-                attr: 'Plante',
-                moves: [
-                    { name: 'Arts Martiaux', cost: 0, dmg: 30, desc: 'Coup de poing basique puissant. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Lancer d\'Arme', cost: 20, dmg: 45, desc: 'Projette une arme maudite avec force.', type: 'attack', attr: 'Terre' },
-                    { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' },
-                    { name: 'Éveil Physique', cost: 70, dmg: 130, desc: 'Une démonstration de force brute inarrêtable.', type: 'attack', attr: 'Neutre' }
-                ]
-            },
-            {
-                id: 'nanami', name: 'Kento Nanami', img: 'nanami.jpg', color: 'from-yellow-600 to-yellow-800',
-                locked: true, price: 800,
-                hp: 470, ce: 40, maxCe: 100,
-                attr: 'Terre',
-                moves: [
-                    { name: 'Lame Émoussée', cost: 0, dmg: 25, desc: 'Coup d\'épée basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Point Faible', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Terre' },
-                    { name: 'Heures Supplémentaires', cost: 40, dmg: 0, desc: 'Libération d\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' },
-                    { name: 'Effondrement', cost: 65, dmg: 110, desc: 'Frappe le point critique. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Terre' }
-                ]
-            },
-            {
-                id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800',
-                locked: true, price: 1500,
-                hp: 460, ce: 40, maxCe: 100,
-                attr: 'Foudre',
-                moves: [
-                    { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack', attr: 'Terre' },
-                    { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' },
-                    { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4", attr: 'Foudre' }
-                ]
-            },
-            {
-                id: 'toji', name: 'Toji Fushiguro', img: 'Toji.jpeg', color: 'from-gray-600 to-gray-900',
-                locked: true, price: 1500,
-                hp: 560, ce: 50, maxCe: 100,
-                attr: 'Neutre',
-                moves: [
-                    { name: 'Katana Ordinaire', cost: 0, dmg: 35, desc: 'Coup de lame simple et brutal. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Pistolet', cost: 20, dmg: 50, desc: 'Tire sur l\'adversaire avec précision.', type: 'attack', attr: 'Feu' },
-                    { name: 'Nuage Flottant', cost: 50, dmg: 90, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' },
-                    { name: 'Lance du Ciel Inversée', cost: 80, dmg: 140, desc: 'Annule les techniques. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' }
-                ]
-            },
-            {
-                id: 'mahito', name: 'Mahito', img: 'mahito.jpeg', color: 'from-blue-700 to-indigo-900',
-                locked: true, price: 2000,
-                hp: 520, ce: 50, maxCe: 100,
-                attr: 'Ténèbres',
-                moves: [
-                    { name: 'Lames Corporelles', cost: 0, dmg: 25, desc: 'Transformation en lames. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Âme Multiple', cost: 30, dmg: 50, desc: 'Projette des âmes transfigurées.', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Transfiguration Idéale', cost: 50, dmg: 80, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Orbe de l\'Isolement', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature l\'âme : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-mahito', video: 'territoire_de_Mahito.mp4', attr: 'Ténèbres' }
-                ]
-            },
-            {
-                id: 'jogo', name: 'Jogo', img: 'jogo.png', color: 'from-red-600 to-orange-800',
-                locked: true, price: 2000,
-                hp: 450, ce: 50, maxCe: 100,
-                attr: 'Feu',
-                moves: [
-                    { name: 'Rayon de Flammes', cost: 0, dmg: 25, desc: 'Brûle l\'adversaire. Restaure 15 CE.', type: 'basic', attr: 'Feu' },
-                    { name: 'Insectes Explosifs', cost: 25, dmg: 45, desc: 'Déploie des insectes de feu sonores.', type: 'attack', attr: 'Feu' },
-                    { name: 'Météore Maximum', cost: 60, dmg: 110, desc: 'Invoque un météore géant de flammes.', type: 'attack', attr: 'Terre' },
-                    { name: 'Montagne Cercueil de Fer', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Jogo.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-jogo', video: 'Territoire_de_Jogo.mp4', attr: 'Feu' }
-                ]
-            },
-            {
-                id: 'yuta', name: 'Yuta Okkotsu', img: 'yuta.jpeg', color: 'from-slate-400 to-gray-700',
-                locked: true, price: 3000,
-                hp: 490, ce: 60, maxCe: 100,
-                attr: 'Lumière',
-                moves: [
-                    { name: 'Coup de Katana', cost: 0, dmg: 25, desc: 'Coup d\'épée. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Inversion de Sort', cost: 40, dmg: 0, desc: 'Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' },
-                    { name: 'Appel de Rika', cost: 45, dmg: 80, desc: 'Rika frappe violemment l\'ennemi.', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Amour Sincère', cost: 85, dmg: 150, desc: 'Un rayon d\'énergie occulte pure.', type: 'attack', attr: 'Lumière' }
-                ]
-            },
-            {
-                id: 'gojo', name: 'Satoru Gojo', img: 'satoru Gojo.jpg', color: 'from-blue-500 to-purple-600',
-                locked: true, price: 5000,
-                hp: 480, ce: 50, maxCe: 100,
-                attr: 'Lumière',
-                moves: [
-                    { name: 'Corps à corps', cost: 0, dmg: 20, desc: 'Frappe imprégnée d\'énergie. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Rouge (Répulsion)', cost: 30, dmg: 60, desc: 'Projette violemment l\'ennemi.', type: 'attack', attr: 'Feu' },
-                    { name: 'Violet (Hollow)', cost: 60, dmg: 130, desc: 'Détruit la matière au niveau atomique.', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Sphère de l\'Espace Infini', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature le cerveau : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-gojo', video: "Sphere_de_lespace_infini.mp4", attr: 'Lumière' }
-                ]
-            },
-            {
-                id: 'sukuna', name: 'Ryomen Sukuna', img: 'Sukuna.jpeg', color: 'from-red-800 to-black',
-                locked: true, price: 5000,
-                hp: 550, ce: 50, maxCe: 100,
-                attr: 'Feu',
-                moves: [
-                    { name: 'Frappe Démoniaque', cost: 0, dmg: 30, desc: 'Attaque physique lourde. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4", attr: 'Feu' }
-                ]
-            },
-            {
-                id: 'higuruma', name: 'Hiromi Higuruma', img: 'higuruma.jpg', color: 'from-gray-600 to-black',
-                locked: true, price: 2000,
-                hp: 460, ce: 40, maxCe: 100,
-                attr: 'Lumière',
-                moves: [
-                    { name: 'Coup de Maillet', cost: 0, dmg: 25, desc: 'Frappe de base avec le maillet. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Jugement', cost: 25, dmg: 45, desc: 'Invoque Judgeman pour attaquer.', type: 'attack', attr: 'Lumière' },
-                    { name: 'Confiscation', cost: 50, dmg: 80, desc: 'Frappe lourde. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' },
-                    { name: 'Peine de Mort', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature la zone : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-higuruma', video: 'territoire_higuruma.mp4', attr: 'Lumière' }
-                ]
-            },
-            {
-                id: 'todo', name: 'Aoi Todo', img: 'todo.jpg', color: 'from-blue-700 to-indigo-900',
-                locked: true, price: 1500,
-                hp: 530, ce: 30, maxCe: 100,
-                attr: 'Neutre',
-                moves: [
-                    { name: 'Coup de Poing', cost: 0, dmg: 25, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Boogie Woogie', cost: 20, dmg: 40, desc: 'Frappe désorientante. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Neutre' },
-                    { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' },
-                    { name: 'Rayon Noir', cost: 70, dmg: 130, desc: 'Impact explosif critique.', type: 'attack', attr: 'Ténèbres' }
-                ]
-            },
-            {
-                id: 'kashimo', name: 'Kashimo Hajime', img: 'kashimo.jpg', color: 'from-cyan-400 to-blue-600',
-                locked: true, price: 3000,
-                hp: 470, ce: 50, maxCe: 100,
-                attr: 'Foudre',
-                moves: [
-                    { name: 'Coup Électrifié', cost: 0, dmg: 30, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Foudre' },
-                    { name: 'Décharge', cost: 25, dmg: 50, desc: 'Projette une charge électrique.', type: 'attack', attr: 'Foudre' },
-                    { name: 'Accumulation', cost: 40, dmg: 0, desc: 'Canalyse l\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' },
-                    { name: 'Bête Fantôme Ambre', cost: 85, dmg: 150, desc: 'Attaque ultime surchargée.', type: 'attack', attr: 'Foudre' }
-                ]
-            },
-            {
-                id: 'choso', name: 'Choso', img: 'choso.jpg', color: 'from-red-700 to-red-900',
-                locked: true, price: 2000,
-                hp: 480, ce: 40, maxCe: 100,
-                attr: 'Eau',
-                moves: [
-                    { name: 'Tranchant de Sang', cost: 0, dmg: 25, desc: 'Frappe sanglante. Restaure 15 CE.', type: 'basic', attr: 'Eau' },
-                    { name: 'Écaille Rouge Fluide', cost: 40, dmg: 0, desc: 'Booste le métabolisme. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Feu' },
-                    { name: 'Supernova', cost: 45, dmg: 70, desc: 'Explosion d\'orbes de sang.', type: 'attack', attr: 'Eau' },
-                    { name: 'Sang Perforant', cost: 70, dmg: 130, desc: 'Tir concentré perforant.', type: 'attack', attr: 'Eau' }
-                ]
-            },
-            {
-                id: 'geto', name: 'Suguru Geto', img: 'geto.jpg', color: 'from-yellow-700 to-yellow-900',
-                locked: true, price: 5000,
-                hp: 490, ce: 60, maxCe: 100,
-                attr: 'Ténèbres',
-                moves: [
-                    { name: 'Arts Martiaux', cost: 0, dmg: 20, desc: 'Frappe technique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' },
-                    { name: 'Nuée de Fléaux', cost: 25, dmg: 50, desc: 'Projette plusieurs petits fléaux.', type: 'attack', attr: 'Ténèbres' },
-                    { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' },
-                    { name: 'Maximum: Uzumaki', cost: 85, dmg: 140, desc: 'Concentration totale des fléaux.', type: 'attack', attr: 'Ténèbres' }
-                ]
-            },
-            {
-                id: 'uraume', name: 'Uraume', img: 'uraume.jpg', color: 'from-blue-200 to-white',
-                locked: true, price: 1500,
-                hp: 450, ce: 50, maxCe: 100,
-                attr: 'Eau',
-                moves: [
-                    { name: 'Givre', cost: 0, dmg: 20, desc: 'Attaque gelée basique. Restaure 15 CE.', type: 'basic', attr: 'Eau' },
-                    { name: 'Lance de Glace', cost: 25, dmg: 45, desc: 'Projette une stalactite acérée.', type: 'attack', attr: 'Eau' },
-                    { name: 'Calme Glacial', cost: 50, dmg: 80, desc: 'Gèle les alentours. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Eau' },
-                    { name: 'Cascade de Glace', cost: 75, dmg: 130, desc: 'Déferlement de glace massive.', type: 'attack', attr: 'Eau' }
-                ]
-            }
+            { id: 'yuji', name: 'Yuji Itadori', img: 'Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg', color: 'from-orange-600 to-red-600', locked: false, price: 0, hp: 500, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 25, desc: 'Coup de poing basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Poing Divergent', cost: 20, dmg: 50, desc: 'Un double impact dévastateur.', type: 'attack', attr: 'Neutre' }, { name: 'Rayon Noir', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Ténèbres' }, { name: 'Assaut Furieux', cost: 70, dmg: 120, desc: 'Un enchaînement inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
+            { id: 'megumi', name: 'Megumi Fushiguro', img: 'megumi.jpg', color: 'from-green-700 to-teal-900', locked: false, price: 0, hp: 450, ce: 40, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Chiens de Jade', cost: 0, dmg: 25, desc: 'Morsure basique. Restaure 15 CE.', type: 'basic', attr: 'Ténèbres' }, { name: 'Nue (Oiseau)', cost: 25, dmg: 40, desc: 'Attaque électrique. 30% de chance d\'étourdir 1 tour.', effect: 'chance-stun', type: 'attack', attr: 'Foudre' }, { name: 'Éléphant de Max', cost: 40, dmg: 70, desc: 'Écrase l\'ennemi sous une pression d\'eau.', type: 'attack', attr: 'Eau' }, { name: 'Jardin des Ombres', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour et octroie Esquive constante.', effect: 'domain-evade', type: 'domain', domainClass: 'domain-megumi', video: "territoire_de_Megumi.mp4", attr: 'Ténèbres' } ] },
+            { id: 'nobara', name: 'Nobara Kugisaki', img: 'nobara.jpg', color: 'from-amber-700 to-red-800', locked: false, price: 0, hp: 430, ce: 30, maxCe: 100, attr: 'Terre', moves: [ { name: 'Coup de Marteau', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Terre' }, { name: 'Projection de Clous', cost: 15, dmg: 35, desc: 'Tire des clous imprégnés de CE.', type: 'attack', attr: 'Terre' }, { name: 'Résonance', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Pince à Cheveux', cost: 60, dmg: 140, desc: 'Fait exploser tous les clous plantés.', type: 'attack', attr: 'Feu' } ] },
+            { id: 'maki', name: 'Maki Zenin', img: 'maki.jpeg', color: 'from-emerald-700 to-green-900', locked: true, price: 800, hp: 510, ce: 30, maxCe: 100, attr: 'Plante', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 30, desc: 'Coup de poing basique puissant. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Lancer d\'Arme', cost: 20, dmg: 45, desc: 'Projette une arme maudite avec force.', type: 'attack', attr: 'Terre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Éveil Physique', cost: 70, dmg: 130, desc: 'Une démonstration de force brute inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
+            { id: 'nanami', name: 'Kento Nanami', img: 'nanami.jpg', color: 'from-yellow-600 to-yellow-800', locked: true, price: 800, hp: 470, ce: 40, maxCe: 100, attr: 'Terre', moves: [ { name: 'Lame Émoussée', cost: 0, dmg: 25, desc: 'Coup d\'épée basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Point Faible', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Terre' }, { name: 'Heures Supplémentaires', cost: 40, dmg: 0, desc: 'Libération d\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Effondrement', cost: 65, dmg: 110, desc: 'Frappe le point critique. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Terre' } ] },
+            { id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800', locked: true, price: 1500, hp: 460, ce: 40, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack', attr: 'Terre' }, { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4", attr: 'Foudre' } ] },
+            { id: 'toji', name: 'Toji Fushiguro', img: 'Toji.jpeg', color: 'from-gray-600 to-gray-900', locked: true, price: 1500, hp: 560, ce: 50, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Katana Ordinaire', cost: 0, dmg: 35, desc: 'Coup de lame simple et brutal. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Pistolet', cost: 20, dmg: 50, desc: 'Tire sur l\'adversaire avec précision.', type: 'attack', attr: 'Feu' }, { name: 'Nuage Flottant', cost: 50, dmg: 90, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Lance du Ciel Inversée', cost: 80, dmg: 140, desc: 'Annule les techniques. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' } ] },
+            { id: 'mahito', name: 'Mahito', img: 'mahito.jpeg', color: 'from-blue-700 to-indigo-900', locked: true, price: 2000, hp: 520, ce: 50, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Lames Corporelles', cost: 0, dmg: 25, desc: 'Transformation en lames. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Âme Multiple', cost: 30, dmg: 50, desc: 'Projette des âmes transfigurées.', type: 'attack', attr: 'Ténèbres' }, { name: 'Transfiguration Idéale', cost: 50, dmg: 80, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Orbe de l\'Isolement', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature l\'âme : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-mahito', video: 'territoire_de_Mahito.mp4', attr: 'Ténèbres' } ] },
+            { id: 'jogo', name: 'Jogo', img: 'jogo.png', color: 'from-red-600 to-orange-800', locked: true, price: 2000, hp: 450, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Rayon de Flammes', cost: 0, dmg: 25, desc: 'Brûle l\'adversaire. Restaure 15 CE.', type: 'basic', attr: 'Feu' }, { name: 'Insectes Explosifs', cost: 25, dmg: 45, desc: 'Déploie des insectes de feu sonores.', type: 'attack', attr: 'Feu' }, { name: 'Météore Maximum', cost: 60, dmg: 110, desc: 'Invoque un météore géant de flammes.', type: 'attack', attr: 'Terre' }, { name: 'Montagne Cercueil de Fer', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Jogo.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-jogo', video: 'Territoire_de_Jogo.mp4', attr: 'Feu' } ] },
+            { id: 'yuta', name: 'Yuta Okkotsu', img: 'yuta.jpeg', color: 'from-slate-400 to-gray-700', locked: true, price: 3000, hp: 490, ce: 60, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Coup de Katana', cost: 0, dmg: 25, desc: 'Coup d\'épée. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Inversion de Sort', cost: 40, dmg: 0, desc: 'Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Appel de Rika', cost: 45, dmg: 80, desc: 'Rika frappe violemment l\'ennemi.', type: 'attack', attr: 'Ténèbres' }, { name: 'Amour Sincère', cost: 85, dmg: 150, desc: 'Un rayon d\'énergie occulte pure.', type: 'attack', attr: 'Lumière' } ] },
+            { id: 'gojo', name: 'Satoru Gojo', img: 'satoru Gojo.jpg', color: 'from-blue-500 to-purple-600', locked: true, price: 5000, hp: 480, ce: 50, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Corps à corps', cost: 0, dmg: 20, desc: 'Frappe imprégnée d\'énergie. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Rouge (Répulsion)', cost: 30, dmg: 60, desc: 'Projette violemment l\'ennemi.', type: 'attack', attr: 'Feu' }, { name: 'Violet (Hollow)', cost: 60, dmg: 130, desc: 'Détruit la matière au niveau atomique.', type: 'attack', attr: 'Ténèbres' }, { name: 'Sphère de l\'Espace Infini', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature le cerveau : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-gojo', video: "Sphere_de_lespace_infini.mp4", attr: 'Lumière' } ] },
+            { id: 'sukuna', name: 'Ryomen Sukuna', img: 'Sukuna.jpeg', color: 'from-red-800 to-black', locked: true, price: 5000, hp: 550, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Frappe Démoniaque', cost: 0, dmg: 30, desc: 'Attaque physique lourde. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack', attr: 'Ténèbres' }, { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack', attr: 'Ténèbres' }, { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4", attr: 'Feu' } ] },
+            { id: 'higuruma', name: 'Hiromi Higuruma', img: 'higuruma.jpg', color: 'from-gray-600 to-black', locked: true, price: 2000, hp: 460, ce: 40, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Coup de Maillet', cost: 0, dmg: 25, desc: 'Frappe de base avec le maillet. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Jugement', cost: 25, dmg: 45, desc: 'Invoque Judgeman pour attaquer.', type: 'attack', attr: 'Lumière' }, { name: 'Confiscation', cost: 50, dmg: 80, desc: 'Frappe lourde. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' }, { name: 'Peine de Mort', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature la zone : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-higuruma', video: 'territoire_higuruma.mp4', attr: 'Lumière' } ] },
+            { id: 'todo', name: 'Aoi Todo', img: 'todo.jpg', color: 'from-blue-700 to-indigo-900', locked: true, price: 1500, hp: 530, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 25, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Boogie Woogie', cost: 20, dmg: 40, desc: 'Frappe désorientante. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Neutre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Rayon Noir', cost: 70, dmg: 130, desc: 'Impact explosif critique.', type: 'attack', attr: 'Ténèbres' } ] },
+            { id: 'kashimo', name: 'Kashimo Hajime', img: 'kashimo.jpg', color: 'from-cyan-400 to-blue-600', locked: true, price: 3000, hp: 470, ce: 50, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup Électrifié', cost: 0, dmg: 30, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Foudre' }, { name: 'Décharge', cost: 25, dmg: 50, desc: 'Projette une charge électrique.', type: 'attack', attr: 'Foudre' }, { name: 'Accumulation', cost: 40, dmg: 0, desc: 'Canalyse l\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Bête Fantôme Ambre', cost: 85, dmg: 150, desc: 'Attaque ultime surchargée.', type: 'attack', attr: 'Foudre' } ] },
+            { id: 'choso', name: 'Choso', img: 'choso.jpg', color: 'from-red-700 to-red-900', locked: true, price: 2000, hp: 480, ce: 40, maxCe: 100, attr: 'Eau', moves: [ { name: 'Tranchant de Sang', cost: 0, dmg: 25, desc: 'Frappe sanglante. Restaure 15 CE.', type: 'basic', attr: 'Eau' }, { name: 'Écaille Rouge Fluide', cost: 40, dmg: 0, desc: 'Booste le métabolisme. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Feu' }, { name: 'Supernova', cost: 45, dmg: 70, desc: 'Explosion d\'orbes de sang.', type: 'attack', attr: 'Eau' }, { name: 'Sang Perforant', cost: 70, dmg: 130, desc: 'Tir concentré perforant.', type: 'attack', attr: 'Eau' } ] },
+            { id: 'geto', name: 'Suguru Geto', img: 'geto.jpg', color: 'from-yellow-700 to-yellow-900', locked: true, price: 5000, hp: 490, ce: 60, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 20, desc: 'Frappe technique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Nuée de Fléaux', cost: 25, dmg: 50, desc: 'Projette plusieurs petits fléaux.', type: 'attack', attr: 'Ténèbres' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Maximum: Uzumaki', cost: 85, dmg: 140, desc: 'Concentration totale des fléaux.', type: 'attack', attr: 'Ténèbres' } ] },
+            { id: 'uraume', name: 'Uraume', img: 'uraume.jpg', color: 'from-blue-200 to-white', locked: true, price: 1500, hp: 450, ce: 50, maxCe: 100, attr: 'Eau', moves: [ { name: 'Givre', cost: 0, dmg: 20, desc: 'Attaque gelée basique. Restaure 15 CE.', type: 'basic', attr: 'Eau' }, { name: 'Lance de Glace', cost: 25, dmg: 45, desc: 'Projette une stalactite acérée.', type: 'attack', attr: 'Eau' }, { name: 'Calme Glacial', cost: 50, dmg: 80, desc: 'Gèle les alentours. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Eau' }, { name: 'Cascade de Glace', cost: 75, dmg: 130, desc: 'Déferlement de glace massive.', type: 'attack', attr: 'Eau' } ] }
         ];
 
         const $ = id => document.getElementById(id);
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        /* --- GESTION MUSIQUE ET SON INTELLIGENTE --- */
-        function pauseAudio(audioElement) {
-            try {
-                if (!audioElement.paused) {
-                    audioElement.pause();
-                }
-            } catch (e) {}
-        }
+        /* --- FONCTIONS RÉSEAU ET MATCHMAKING --- */
+        async function startMatchmaking() {
+            stopAudioAndReset($('battle-music'));
+            playMusic('battle');
+            showScreen('screen-matchmaking');
+            $('matchmaking-text').innerText = "CONNEXION AU SERVEUR...";
 
-        function stopAudioAndReset(audioElement) {
-            try {
-                if (!audioElement.paused) {
-                    audioElement.pause();
+            if (!auth.currentUser) {
+                try {
+                    await auth.signInAnonymously();
+                } catch(e) {
+                    alert("Erreur de connexion serveur !");
+                    showScreen('screen-mode-select');
+                    return;
                 }
-                if (!isNaN(audioElement.duration)) {
-                    audioElement.currentTime = 0;
-                }
-            } catch (e) {}
-        }
+            }
 
-        async function playMusic(type) {
-            const bgM = $('bg-music');
-            const batM = $('battle-music');
+            $('matchmaking-text').innerText = "RECHERCHE D'ADVERSAIRE...";
+
+            const queueRef = db.ref('matchmaking/waiting');
             
-            if (isMuted || type === 'none') {
-                pauseAudio(bgM);
-                pauseAudio(batM); 
-                return;
-            }
+            queueRef.transaction((currentData) => {
+                if (currentData === null) {
+                    // Création de salle
+                    const newMatchRef = db.ref('matches').push();
+                    matchId = newMatchRef.key;
+                    myRole = 'p1';
+                    return { matchId: matchId };
+                } else {
+                    // Rejoindre
+                    matchId = currentData.matchId;
+                    myRole = 'p2';
+                    return null; // Vide la file
+                }
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    alert("Erreur de matchmaking !");
+                    showScreen('screen-mode-select');
+                    return;
+                }
+                
+                // Si on est Hôte et qu'on quitte pendant l'attente
+                if(myRole === 'p1') {
+                    queueRef.onDisconnect().remove();
+                }
+                
+                setupMatchRoom(queueRef);
+            });
+        }
 
-            if (type === 'menu') {
-                pauseAudio(batM);
-                if (bgM.paused) {
-                    try { await bgM.play(); } catch(e) {}
+        function setupMatchRoom(queueRef) {
+            matchRef = db.ref('matches/' + matchId);
+            matchRef.child('status').onDisconnect().set('abandoned');
+
+            matchRef.child('players/' + myRole).set({
+                name: globalPlayerPseudo,
+                team: playerTeamSelection
+            });
+
+            matchRef.child('players').on('value', (snap) => {
+                const players = snap.val();
+                if (players && players.p1 && players.p2 && $('screen-matchmaking').classList.contains('hidden') === false) {
+                    if(myRole === 'p1') queueRef.onDisconnect().cancel();
+                    
+                    $('matchmaking-text').innerText = "ADVERSAIRE TROUVÉ !";
+                    setTimeout(() => {
+                        startOnlineBattle(players);
+                    }, 1000);
                 }
-            } else if (type === 'battle') {
-                pauseAudio(bgM);
-                if (batM.paused) {
-                    try { await batM.play(); } catch(e) {}
+            });
+
+            matchRef.child('status').on('value', snap => {
+                if(snap.val() === 'abandoned' && !$('screen-battle').classList.contains('hidden')) {
+                    alert("L'adversaire s'est déconnecté. Vous gagnez par abandon !");
+                    endGame('win');
                 }
+            });
+
+            matchRef.child('actions').on('child_added', (snap) => {
+                processNetworkAction(snap.val());
+            });
+        }
+
+        function startOnlineBattle(playersData) {
+            const myData = playersData[myRole];
+            const enemyData = myRole === 'p1' ? playersData.p2 : playersData.p1;
+
+            playerTeam = myData.team.map(idx => JSON.parse(JSON.stringify(charData[idx])));
+            enemyTeam = enemyData.team.map(idx => JSON.parse(JSON.stringify(charData[idx])));
+
+            playerIdx = 0;
+            enemyIdx = 0;
+            player = playerTeam[0];
+            enemy = enemyTeam[0];
+
+            player.name = myData.name;
+            enemy.name = enemyData.name;
+
+            launchBattleSequence_internal();
+        }
+
+        function pushNetworkAction(actionData) {
+            actionData.role = myRole;
+            matchRef.child('actions').push(actionData);
+        }
+
+        function processNetworkAction(action) {
+            const targetRole = action.role === myRole ? 'player' : 'enemy';
+
+            if(action.type === 'emote') {
+                if(targetRole === 'enemy') sendEmote_internal(action.emoji, 'enemy');
+            } else if (action.type === 'attack') {
+                const attacker = targetRole === 'player' ? player : enemy;
+                const defender = targetRole === 'player' ? enemy : player;
+                executeTurn_internal(attacker, defender, attacker.moves[action.moveIndex], targetRole);
+            } else if (action.type === 'switch') {
+                switchCharacter_internal(action.index, targetRole);
+            } else if (action.type === 'cancelDomain') {
+                cancelDomain_internal(targetRole);
             }
+        }
+
+        function clearNetwork() {
+            if (currentMode === 'online' && matchRef) {
+                matchRef.child('status').onDisconnect().cancel();
+                matchRef.child('status').off();
+                matchRef.child('actions').off();
+                matchRef.child('players').off();
+            }
+        }
+
+        /* --- GESTION MUSIQUE ET SON --- */
+        function pauseAudio(audioElement) { try { if (!audioElement.paused) audioElement.pause(); } catch (e) {} }
+        function stopAudioAndReset(audioElement) { try { if (!audioElement.paused) audioElement.pause(); if (!isNaN(audioElement.duration)) audioElement.currentTime = 0; } catch (e) {} }
+        
+        async function playMusic(type) {
+            const bgM = $('bg-music'); const batM = $('battle-music');
+            if (isMuted || type === 'none') { pauseAudio(bgM); pauseAudio(batM); return; }
+            if (type === 'menu') { pauseAudio(batM); if (bgM.paused) try { await bgM.play(); } catch(e) {} }
+            else if (type === 'battle') { pauseAudio(bgM); if (batM.paused) try { await batM.play(); } catch(e) {} }
         }
 
         /* --- GESTION DES EMOTES --- */
         function toggleEmotePanel() {
             const panel = $('emote-panel');
-            if(panel.classList.contains('hidden')) {
-                panel.classList.remove('hidden');
-            } else {
-                panel.classList.add('hidden');
-            }
+            if(panel.classList.contains('hidden')) panel.classList.remove('hidden'); else panel.classList.add('hidden');
         }
 
         function sendEmote(emoji, role) {
-            if(!emotesEnabled || currentMode !== 'online') return;
+            if(!emotesEnabled) return;
+            if(role === 'player' && currentMode === 'online') {
+                pushNetworkAction({ type: 'emote', emoji: emoji });
+            }
+            sendEmote_internal(emoji, role);
+        }
+
+        function sendEmote_internal(emoji, role) {
+            if(!emotesEnabled) return;
             const targetId = role === 'player' ? 'sprite-player' : 'sprite-enemy';
             const target = $(targetId);
             if(!target) return;
@@ -1009,231 +938,80 @@
             el.style.top = `${rect.top - 30}px`;
             el.style.animation = 'vs-pop 0.3s forwards, float-up 2s ease-in forwards 0.5s';
             document.body.appendChild(el);
-            
             setTimeout(() => el.remove(), 2500);
 
-            if(role === 'player') {
-                $('emote-panel').classList.add('hidden');
-                setTimeout(() => {
-                    if(currentMode === 'online' && enemy && enemy.hp > 0 && player && player.hp > 0 && Math.random() > 0.4) {
-                        const emojis = ['😡','😂','💀','🔥','🥶','🤡'];
-                        sendEmote(emojis[Math.floor(Math.random() * emojis.length)], 'enemy');
-                    }
-                }, 1000 + Math.random() * 2000);
-            }
+            if(role === 'player') $('emote-panel').classList.add('hidden');
         }
 
-        /* --- PRELOADER (TELECHARGEMENT CACHE) --- */
+        /* --- PRELOADER --- */
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
-            
             if (localStorage.getItem('jjk_assets_preloaded_v1') === 'true') {
-                progressFill.style.width = '100%';
-                progressText.innerText = "Ressources prêtes !";
-                progressText.classList.add('text-green-400');
-                $('loader-text').classList.remove('animate-pulse');
-                $('loader-btn').classList.remove('hidden');
-                return;
+                progressFill.style.width = '100%'; progressText.innerText = "Ressources prêtes !";
+                progressText.classList.add('text-green-400'); $('loader-text').classList.remove('animate-pulse'); $('loader-btn').classList.remove('hidden'); return;
             }
-
-            const total = assetsToPreload.length;
-            let loaded = 0;
-            let errors = 0;
-
-            const loadFile = async (url) => {
-                try {
-                    await fetch(url, { mode: 'no-cors', cache: 'force-cache' });
-                } catch (e) {
-                    errors++;
-                }
-                loaded++;
-                let percent = Math.floor((loaded / total) * 100);
-                progressFill.style.width = percent + '%';
-                progressText.innerText = `Téléchargement des ressources... ${percent}%`;
-            };
-
+            const total = assetsToPreload.length; let loaded = 0; let errors = 0;
+            const loadFile = async (url) => { try { await fetch(url, { mode: 'no-cors', cache: 'force-cache' }); } catch (e) { errors++; } loaded++; progressFill.style.width = Math.floor((loaded / total) * 100) + '%'; progressText.innerText = `Téléchargement des ressources... ${Math.floor((loaded / total) * 100)}%`; };
             await Promise.all(assetsToPreload.map(url => loadFile(url)));
-
-            if (errors > 0 || !navigator.onLine) {
-                $('modal-connection').classList.remove('hidden');
-                $('modal-connection').classList.add('flex');
-                return; 
-            }
-
+            if (errors > 0 || !navigator.onLine) { $('modal-connection').classList.remove('hidden'); $('modal-connection').classList.add('flex'); return; }
             localStorage.setItem('jjk_assets_preloaded_v1', 'true');
-
-            progressText.innerText = "Ressources prêtes !";
-            progressText.classList.add('text-green-400');
-            $('loader-text').classList.remove('animate-pulse');
-            $('loader-btn').classList.remove('hidden');
+            progressText.innerText = "Ressources prêtes !"; progressText.classList.add('text-green-400'); $('loader-text').classList.remove('animate-pulse'); $('loader-btn').classList.remove('hidden');
         }
 
-        function retryConnection() {
-            $('modal-connection').classList.add('hidden');
-            $('modal-connection').classList.remove('flex');
-            $('loader-fill').style.width = '0%';
-            $('loader-text').innerText = 'Initialisation du cache... 0%';
-            preloadAssets();
-        }
-
-        function hideLoaderAndStart() {
-            $('screen-loader').classList.add('hidden');
-            $('screen-loader').classList.remove('flex');
-            
-            showScreen('screen-menu');
-        }
+        function retryConnection() { $('modal-connection').classList.add('hidden'); $('modal-connection').classList.remove('flex'); $('loader-fill').style.width = '0%'; $('loader-text').innerText = 'Initialisation du cache... 0%'; preloadAssets(); }
+        function hideLoaderAndStart() { $('screen-loader').classList.add('hidden'); $('screen-loader').classList.remove('flex'); showScreen('screen-menu'); }
 
         /* --- FONCTIONS DE SAUVEGARDE --- */
         function loadGameData() {
             const saved = localStorage.getItem('jjk_save_v2');
             if (saved) {
-                hasSave = true;
-                const data = JSON.parse(saved);
+                hasSave = true; const data = JSON.parse(saved);
                 if (data.pseudo) globalPlayerPseudo = data.pseudo;
                 if (data.coins !== undefined) playerCoins = data.coins;
                 if (data.onlineWins !== undefined) onlineWins = data.onlineWins;
                 if (data.onlineLosses !== undefined) onlineLosses = data.onlineLosses;
                 if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.emotesEnabled !== undefined) emotesEnabled = data.emotesEnabled;
-                if (data.unlocked) {
-                    data.unlocked.forEach(id => {
-                        const c = charData.find(char => char.id === id);
-                        if(c) c.locked = false;
-                    });
-                }
-            } else {
-                playerCoins = 25; 
-            }
+                if (data.unlocked) data.unlocked.forEach(id => { const c = charData.find(char => char.id === id); if(c) c.locked = false; });
+            } else playerCoins = 25; 
             updateMenuButtons();
-            
-            if(!emotesEnabled) {
-                $('knob-emote').classList.remove('translate-x-6');
-                $('knob-emote').classList.add('translate-x-0');
-                $('btn-emote-toggle').classList.remove('bg-green-500');
-                $('btn-emote-toggle').classList.add('bg-gray-600');
-            }
+            if(!emotesEnabled) { $('knob-emote').classList.remove('translate-x-6'); $('knob-emote').classList.add('translate-x-0'); $('btn-emote-toggle').classList.remove('bg-green-500'); $('btn-emote-toggle').classList.add('bg-gray-600'); }
         }
 
         function saveGameData() {
-            const unlocked = charData.filter(c => !c.locked).map(c => c.id);
-            localStorage.setItem('jjk_save_v2', JSON.stringify({
-                pseudo: globalPlayerPseudo,
-                coins: playerCoins,
-                unlocked: unlocked,
-                onlineWins: onlineWins,
-                onlineLosses: onlineLosses,
-                tournamentTrophies: tournamentTrophies,
-                emotesEnabled: emotesEnabled
-            }));
-            hasSave = true;
-            updateMenuButtons();
+            localStorage.setItem('jjk_save_v2', JSON.stringify({ pseudo: globalPlayerPseudo, coins: playerCoins, unlocked: charData.filter(c => !c.locked).map(c => c.id), onlineWins: onlineWins, onlineLosses: onlineLosses, tournamentTrophies: tournamentTrophies, emotesEnabled: emotesEnabled }));
+            hasSave = true; updateMenuButtons();
         }
 
         function updateMenuButtons() {
             const btnContinue = $('btn-continue');
-            if (hasSave) {
-                btnContinue.disabled = false;
-                btnContinue.className = "menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide";
-            } else {
-                btnContinue.disabled = true;
-                btnContinue.className = "menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed";
-            }
+            if (hasSave) { btnContinue.disabled = false; btnContinue.className = "menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide"; } 
+            else { btnContinue.disabled = true; btnContinue.className = "menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed"; }
         }
 
-        function handleNewGame() {
-            if (hasSave) {
-                $('modal-new-game').classList.remove('hidden');
-                $('modal-new-game').classList.add('flex');
-            } else {
-                startFreshGame();
-            }
-        }
-
-        function hideNewGameModal() {
-            $('modal-new-game').classList.add('hidden');
-            $('modal-new-game').classList.remove('flex');
-        }
-
-        function confirmNewGame() {
-            hideNewGameModal();
-            localStorage.removeItem('jjk_save_v2');
-            hasSave = false;
-            playerCoins = 25;
-            globalPlayerPseudo = "";
-            onlineWins = 0;
-            onlineLosses = 0;
-            tournamentTrophies = 0;
-            emotesEnabled = true;
-            charData.forEach(c => {
-                c.locked = !['yuji', 'megumi', 'nobara'].includes(c.id);
-            });
-            updateMenuButtons();
-            
-            $('knob-emote').classList.remove('translate-x-0');
-            $('knob-emote').classList.add('translate-x-6');
-            $('btn-emote-toggle').classList.remove('bg-gray-600');
-            $('btn-emote-toggle').classList.add('bg-green-500');
-
-            startFreshGame();
-        }
-
-        function handleContinue() {
-            showScreen('screen-mode-select');
-        }
-
-        function startFreshGame() {
-            showScreen('screen-mode-select');
-        }
+        function handleNewGame() { if (hasSave) { $('modal-new-game').classList.remove('hidden'); $('modal-new-game').classList.add('flex'); } else startFreshGame(); }
+        function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
+        function confirmNewGame() { hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = ""; onlineWins = 0; onlineLosses = 0; tournamentTrophies = 0; emotesEnabled = true; charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara'].includes(c.id)); updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); }
+        function handleContinue() { showScreen('screen-mode-select'); }
+        function startFreshGame() { showScreen('screen-mode-select'); }
 
         /* --- MENUS & OPTIONS --- */
         function toggleSound() {
-            isMuted = !isMuted;
-            const knob = $('knob-sound');
-            const btn = $('btn-sound-toggle');
-            
-            if(isMuted) {
-                knob.classList.remove('translate-x-6');
-                knob.classList.add('translate-x-0');
-                btn.classList.remove('bg-green-500');
-                btn.classList.add('bg-gray-600');
-                playMusic('none');
-            } else {
-                knob.classList.remove('translate-x-0');
-                knob.classList.add('translate-x-6');
-                btn.classList.remove('bg-gray-600');
-                btn.classList.add('bg-green-500');
-                
-                if (!$('screen-battle').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-matchmaking').classList.contains('hidden')) {
-                    playMusic('battle');
-                } else {
-                    playMusic('menu');
-                }
-            }
+            isMuted = !isMuted; const knob = $('knob-sound'); const btn = $('btn-sound-toggle');
+            if(isMuted) { knob.classList.remove('translate-x-6'); knob.classList.add('translate-x-0'); btn.classList.remove('bg-green-500'); btn.classList.add('bg-gray-600'); playMusic('none'); } 
+            else { knob.classList.remove('translate-x-0'); knob.classList.add('translate-x-6'); btn.classList.remove('bg-gray-600'); btn.classList.add('bg-green-500'); if (!$('screen-battle').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-matchmaking').classList.contains('hidden')) playMusic('battle'); else playMusic('menu'); }
             document.querySelectorAll('audio').forEach(a => a.muted = isMuted);
         }
 
         function toggleEmotes() {
-            emotesEnabled = !emotesEnabled;
-            const knob = $('knob-emote');
-            const btn = $('btn-emote-toggle');
-            
-            if(!emotesEnabled) {
-                knob.classList.remove('translate-x-6');
-                knob.classList.add('translate-x-0');
-                btn.classList.remove('bg-green-500');
-                btn.classList.add('bg-gray-600');
-            } else {
-                knob.classList.remove('translate-x-0');
-                knob.classList.add('translate-x-6');
-                btn.classList.remove('bg-gray-600');
-                btn.classList.add('bg-green-500');
-            }
+            emotesEnabled = !emotesEnabled; const knob = $('knob-emote'); const btn = $('btn-emote-toggle');
+            if(!emotesEnabled) { knob.classList.remove('translate-x-6'); knob.classList.add('translate-x-0'); btn.classList.remove('bg-green-500'); btn.classList.add('bg-gray-600'); } 
+            else { knob.classList.remove('translate-x-0'); knob.classList.add('translate-x-6'); btn.classList.remove('bg-gray-600'); btn.classList.add('bg-green-500'); }
             saveGameData();
         }
 
-        $('btn-sound-toggle').classList.add('bg-green-500');
-        $('btn-emote-toggle').classList.add('bg-green-500');
+        $('btn-sound-toggle').classList.add('bg-green-500'); $('btn-emote-toggle').classList.add('bg-green-500');
 
         function getDomainBgStyle(domainClass) {
             if(domainClass === 'domain-gojo') return `url("Sphere_de_lespace_infini_arriere_plan.jpeg")`;
@@ -1252,238 +1030,98 @@
             await wait(500); 
             
             const randomBg = menuBackgrounds[Math.floor(Math.random() * menuBackgrounds.length)];
-            document.querySelectorAll('.dynamic-menu-bg').forEach(bg => {
-                bg.style.backgroundImage = `url('${randomBg}')`;
-            });
+            document.querySelectorAll('.dynamic-menu-bg').forEach(bg => bg.style.backgroundImage = `url('${randomBg}')`);
 
             ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament'].forEach(id => $(id).classList.add('hidden'));
             $(screenId).classList.remove('hidden');
             
             if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament'].includes(screenId)) {
-                if (screenId === 'screen-select') {
-                    playerTeamSelection = []; 
-                    selectionStep = 'player'; pIndex = -1; eIndex = -1;
-                    updateSelectionUI();
-                }
+                if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
-            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle'].includes(screenId)) { 
-                playMusic('battle');
-            }
+            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle'].includes(screenId)) playMusic('battle');
             
             overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
         }
 
         /* --- CLASSEMENT MONDIAL --- */
         function renderLeaderboard() {
-            const list = $('leaderboard-list');
-            list.innerHTML = '';
-            
-            const fakeLeaderboardTop = [
-                { name: "Ryomen_99", coins: 85000 },
-                { name: "GojoFan", coins: 72000 },
-                { name: "ShadowSlayer", coins: 54000 },
-                { name: "SpecialGrade", coins: 38000 },
-                { name: "DemonGod", coins: 25000 }
-            ];
+            const list = $('leaderboard-list'); list.innerHTML = '';
+            const fakeLeaderboardTop = [ { name: "Ryomen_99", coins: 85000 }, { name: "GojoFan", coins: 72000 }, { name: "ShadowSlayer", coins: 54000 }, { name: "SpecialGrade", coins: 38000 }, { name: "DemonGod", coins: 25000 } ];
             
             fakeLeaderboardTop.forEach((p, index) => {
-                const item = document.createElement('div');
-                item.className = `flex items-center justify-between p-3 rounded-lg border bg-gray-800 border-gray-700`;
-                
+                const item = document.createElement('div'); item.className = `flex items-center justify-between p-3 rounded-lg border bg-gray-800 border-gray-700`;
                 let rankMedal = `<span class="font-black text-gray-500 w-6">${index + 1}.</span>`;
                 if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
                 if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
                 if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
-
-                item.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        ${rankMedal}
-                        <span class="font-bold text-gray-300">${p.name}</span>
-                    </div>
-                    <div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${p.coins}</div>
-                `;
+                item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span class="font-bold text-gray-300">${p.name}</span></div><div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${p.coins}</div>`;
                 list.appendChild(item);
             });
-
-            const sep = document.createElement('div');
-            sep.className = "text-center text-gray-500 my-2";
-            sep.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
-            list.appendChild(sep);
-
+            const sep = document.createElement('div'); sep.className = "text-center text-gray-500 my-2"; sep.innerHTML = '<i class="fas fa-ellipsis-v"></i>'; list.appendChild(sep);
+            
             let playerRank = 1678;
-            if (playerCoins > 25) {
-                playerRank = Math.max(6, 1678 - Math.floor((playerCoins - 25) / 15));
-            }
-
-            const pName = globalPlayerPseudo || "Vous (Anonyme)";
-            const pItem = document.createElement('div');
+            if (playerCoins > 25) playerRank = Math.max(6, 1678 - Math.floor((playerCoins - 25) / 15));
+            const pName = globalPlayerPseudo || "Vous (Anonyme)"; const pItem = document.createElement('div');
             pItem.className = `flex items-center justify-between p-3 rounded-lg border bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] mt-2`;
-            pItem.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <span class="font-black text-blue-300 w-10 text-sm">#${playerRank}</span>
-                    <span class="font-bold text-white">${pName}</span>
-                </div>
-                <div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${playerCoins}</div>
-            `;
+            pItem.innerHTML = `<div class="flex items-center gap-3"><span class="font-black text-blue-300 w-10 text-sm">#${playerRank}</span><span class="font-bold text-white">${pName}</span></div><div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${playerCoins}</div>`;
             list.appendChild(pItem);
         }
 
         /* --- NAVIGATION LIGNE & MATCHMAKING --- */
-        function goToOnlineMode() {
-            currentMode = 'online';
-            if (globalPlayerPseudo) {
-                showScreen('screen-select');
-            } else {
-                showScreen('screen-pseudo');
-            }
-        }
-
-        function validatePseudo() {
-            const val = $('input-pseudo').value.trim();
-            if(val.length < 3) {
-                alert("Le pseudo doit contenir au moins 3 caractères.");
-                return;
-            }
-            globalPlayerPseudo = val;
-            saveGameData();
-            showScreen('screen-select');
-        }
-
-        async function startMatchmaking() {
-            stopAudioAndReset($('battle-music')); 
-            playMusic('battle');
-
-            showScreen('screen-matchmaking');
-            
-            $('matchmaking-text').innerText = "ANALYSE DU CLASSEMENT...";
-            await wait(1500);
-            $('matchmaking-text').innerText = "RECHERCHE DE JOUEURS DISPONIBLES...";
-            await wait(1500);
-            $('matchmaking-text').innerText = "CONNEXION AU SERVEUR...";
-            await wait(1000);
-            $('matchmaking-text').innerText = "ADVERSAIRE TROUVÉ !";
-            await wait(800);
-            
-            startGame('difficile'); 
-        }
+        function goToOnlineMode() { currentMode = 'online'; if (globalPlayerPseudo) showScreen('screen-select'); else showScreen('screen-pseudo'); }
+        function validatePseudo() { const val = $('input-pseudo').value.trim(); if(val.length < 3) { alert("Le pseudo doit contenir au moins 3 caractères."); return; } globalPlayerPseudo = val; saveGameData(); showScreen('screen-select'); }
 
         /* --- SYSTEME DE TOURNOI VS IA --- */
         function initTournament() {
-            tState.round = 0;
-            tState.phase = 'matchups';
-            let participants = [charData[pIndex]];
-            
+            tState.round = 0; tState.phase = 'matchups'; let participants = [charData[pIndex]];
             let availableBots = charData.filter(c => c.id !== charData[pIndex].id);
-            
-            for(let i=0; i<7; i++) {
-                let rIdx = rand(0, availableBots.length - 1);
-                participants.push(availableBots[rIdx]);
-                availableBots.splice(rIdx, 1); 
-            }
-            
-            tState.bracket = [];
-            let r0 = [];
-            for(let i=0; i<8; i+=2) {
-                r0.push({ p1: participants[i], p2: participants[i+1], winner: null });
-            }
-            tState.bracket.push(r0);
-            
-            renderTournament();
-            showScreen('screen-tournament');
+            for(let i=0; i<7; i++) { let rIdx = rand(0, availableBots.length - 1); participants.push(availableBots[rIdx]); availableBots.splice(rIdx, 1); }
+            tState.bracket = []; let r0 = []; for(let i=0; i<8; i+=2) r0.push({ p1: participants[i], p2: participants[i+1], winner: null }); tState.bracket.push(r0);
+            renderTournament(); showScreen('screen-tournament');
         }
 
         function renderTournament() {
-            let roundNames = ["QUARTS DE FINALE", "DEMI-FINALES", "FINALE"];
-            $('tournament-round-title').innerText = roundNames[tState.round];
-            
-            let container = $('tournament-matchups');
-            container.innerHTML = '';
-            
+            let roundNames = ["QUARTS DE FINALE", "DEMI-FINALES", "FINALE"]; $('tournament-round-title').innerText = roundNames[tState.round];
+            let container = $('tournament-matchups'); container.innerHTML = '';
             let matches = tState.bracket[tState.round];
             matches.forEach((m, idx) => {
-                let isPlayerMatch = (idx === 0); 
-                let p1Class = (tState.phase === 'results' && m.winner !== m.p1) ? 'opacity-30 grayscale' : '';
-                let p2Class = (tState.phase === 'results' && m.winner !== m.p2) ? 'opacity-30 grayscale' : '';
-                
-                let html = `
+                let isPlayerMatch = (idx === 0); let p1Class = (tState.phase === 'results' && m.winner !== m.p1) ? 'opacity-30 grayscale' : ''; let p2Class = (tState.phase === 'results' && m.winner !== m.p2) ? 'opacity-30 grayscale' : '';
+                container.innerHTML += `
                     <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl border ${isPlayerMatch ? 'border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'border-gray-700'} relative z-10">
-                        <div class="flex flex-col items-center w-[30%] ${p1Class}">
-                            <img src="${m.p1.img}" class="w-12 h-12 rounded-full border-2 border-white object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${m.p1.name}&backgroundColor=1e293b&textColor=ffffff'">
-                            <span class="text-[10px] font-bold mt-1 text-center truncate w-full">${m.p1.name}</span>
-                        </div>
+                        <div class="flex flex-col items-center w-[30%] ${p1Class}"><img src="${m.p1.img}" class="w-12 h-12 rounded-full border-2 border-white object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${m.p1.name}&backgroundColor=1e293b&textColor=ffffff'"><span class="text-[10px] font-bold mt-1 text-center truncate w-full">${m.p1.name}</span></div>
                         <div class="text-xl font-black ${isPlayerMatch ? 'text-blue-400' : 'text-gray-500'} w-[30%] text-center">VS</div>
-                        <div class="flex flex-col items-center w-[30%] ${p2Class}">
-                            <img src="${m.p2.img}" class="w-12 h-12 rounded-full border-2 border-white object-cover scale-x-[-1]" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${m.p2.name}&backgroundColor=1e293b&textColor=ffffff'">
-                            <span class="text-[10px] font-bold mt-1 text-center truncate w-full">${m.p2.name}</span>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += html;
+                        <div class="flex flex-col items-center w-[30%] ${p2Class}"><img src="${m.p2.img}" class="w-12 h-12 rounded-full border-2 border-white object-cover scale-x-[-1]" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${m.p2.name}&backgroundColor=1e293b&textColor=ffffff'"><span class="text-[10px] font-bold mt-1 text-center truncate w-full">${m.p2.name}</span></div>
+                    </div>`;
             });
-            
             let btn = $('btn-tournament-start');
-            if (tState.phase === 'matchups') {
-                btn.innerText = "COMBATTRE";
-                btn.className = "w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10";
-            } else {
-                btn.innerText = "TOUR SUIVANT";
-                btn.className = "w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.5)] mt-4 mb-2 shrink-0 relative z-10";
-            }
+            if (tState.phase === 'matchups') { btn.innerText = "COMBATTRE"; btn.className = "w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10"; } 
+            else { btn.innerText = "TOUR SUIVANT"; btn.className = "w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.5)] mt-4 mb-2 shrink-0 relative z-10"; }
         }
 
         function startTournamentMatch() {
-            if(tState.phase === 'results') {
-                tState.round++;
-                tState.phase = 'matchups';
-                renderTournament();
-                return;
-            }
-            
-            let currentMatch = tState.bracket[tState.round][0];
-            pIndex = charData.findIndex(c => c.id === currentMatch.p1.id);
-            eIndex = charData.findIndex(c => c.id === currentMatch.p2.id);
-            
+            if(tState.phase === 'results') { tState.round++; tState.phase = 'matchups'; renderTournament(); return; }
+            let currentMatch = tState.bracket[tState.round][0]; pIndex = charData.findIndex(c => c.id === currentMatch.p1.id); eIndex = charData.findIndex(c => c.id === currentMatch.p2.id);
             launchBattleSequence(); 
         }
 
-        async function hideGameOverAndShowTournament() {
-            $('modal-gameover').classList.add('hidden');
-            $('modal-gameover').classList.remove('flex');
-            $('gameover-image').classList.add('hidden'); 
-            renderTournament();
-            await showScreen('screen-tournament');
-        }
-
-        /* --- DOUBLE VALIDATION EXIT --- */
-        function showExitModal() {
-            $('modal-exit').classList.remove('hidden');
-            $('modal-exit').classList.add('flex');
-        }
-        function hideExitModal() {
-            $('modal-exit').classList.add('hidden');
-            $('modal-exit').classList.remove('flex');
-        }
+        async function hideGameOverAndShowTournament() { $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden'); renderTournament(); await showScreen('screen-tournament'); }
+        function showExitModal() { $('modal-exit').classList.remove('hidden'); $('modal-exit').classList.add('flex'); }
+        function hideExitModal() { $('modal-exit').classList.add('hidden'); $('modal-exit').classList.remove('flex'); }
+        
         async function confirmExit() {
-            hideExitModal();
-            playMusic('none');
-            await resetGame();
+            hideExitModal(); clearNetwork(); playMusic('none'); await resetGame();
         }
 
-        /* --- GESTION BOUTONS GAME OVER --- */
         async function hideGameOverAndReplay() {
-            $('modal-gameover').classList.add('hidden');
-            $('modal-gameover').classList.remove('flex');
-            $('gameover-image').classList.add('hidden');
+            $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden');
+            clearNetwork();
             startMatchmaking(); 
         }
 
         async function hideGameOverAndChangeMode() {
-            const overlay = $('transition-overlay');
-            overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
-            await wait(500); 
-            $('modal-gameover').classList.add('hidden');
-            $('modal-gameover').classList.remove('flex');
-            $('gameover-image').classList.add('hidden'); 
+            const overlay = $('transition-overlay'); overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100'); await wait(500); 
+            $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden'); 
+            clearNetwork();
             await showScreen('screen-mode-select');
         }
 
@@ -1491,242 +1129,104 @@
             $('btn-back-select').classList.remove('hidden');
             if (selectionStep === 'player') {
                 $('select-title').innerText = "Choisissez votre Exorciste"; 
-                
-                if (currentMode === 'online') {
-                    $('select-desc-container').innerHTML = `<p class="text-center text-gray-400 text-xs mb-2">Sélectionnez 3 personnages (${playerTeamSelection.length}/3)</p><div class="flex justify-center items-center gap-3 text-[10px] sm:text-xs font-bold bg-gray-800/80 rounded-full px-4 py-1.5 inline-flex border border-gray-600 shadow-inner mt-1"><span class="text-green-400"><i class="fas fa-circle text-[8px] animate-pulse mb-0.5"></i> ${rand(224, 1854)} en ligne</span><span class="text-blue-400"><i class="fas fa-trophy"></i> ${onlineWins} V</span><span class="text-red-400"><i class="fas fa-skull"></i> ${onlineLosses} D</span></div>`;
-                } else if (currentMode === 'tournament') {
-                    $('select-desc-container').innerHTML = `<div class="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-bold bg-yellow-900/40 rounded-full px-4 py-1.5 inline-flex border border-yellow-600 shadow-[0_0_10px_rgba(202,138,4,0.2)] mt-1"><span class="text-yellow-400"><i class="fas fa-crown text-sm"></i> Trophées remportés : ${tournamentTrophies}</span></div>`;
-                } else {
-                    $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Le destin du monde est entre vos mains.</p>`;
-                }
-
-                $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex');
-                renderCharacterSelect();
+                if (currentMode === 'online') $('select-desc-container').innerHTML = `<p class="text-center text-gray-400 text-xs mb-2">Sélectionnez 3 personnages (${playerTeamSelection.length}/3)</p><div class="flex justify-center items-center gap-3 text-[10px] sm:text-xs font-bold bg-gray-800/80 rounded-full px-4 py-1.5 inline-flex border border-gray-600 shadow-inner mt-1"><span class="text-green-400"><i class="fas fa-circle text-[8px] animate-pulse mb-0.5"></i> Multijoueur</span><span class="text-blue-400"><i class="fas fa-trophy"></i> ${onlineWins} V</span><span class="text-red-400"><i class="fas fa-skull"></i> ${onlineLosses} D</span></div>`;
+                else if (currentMode === 'tournament') $('select-desc-container').innerHTML = `<div class="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-bold bg-yellow-900/40 rounded-full px-4 py-1.5 inline-flex border border-yellow-600 shadow-[0_0_10px_rgba(202,138,4,0.2)] mt-1"><span class="text-yellow-400"><i class="fas fa-crown text-sm"></i> Trophées remportés : ${tournamentTrophies}</span></div>`;
+                else $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Le destin du monde est entre vos mains.</p>`;
+                $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex'); renderCharacterSelect();
             } else if (selectionStep === 'enemy') {
-                $('select-title').innerText = "Choisissez l'Adversaire"; 
-                $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Qui allez-vous affronter ?</p>`;
-                $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex');
-                renderCharacterSelect();
+                $('select-title').innerText = "Choisissez l'Adversaire"; $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Qui allez-vous affronter ?</p>`; $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex'); renderCharacterSelect();
             } else if (selectionStep === 'difficulty') {
-                $('select-title').innerText = "Choisissez la Difficulté"; 
-                $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Préparez-vous au combat mortel.</p>`;
-                $('character-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('flex');
+                $('select-title').innerText = "Choisissez la Difficulté"; $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Préparez-vous au combat mortel.</p>`; $('character-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('flex');
             }
         }
 
         function goBackSelect() {
-            if(selectionStep === 'player') {
-                showScreen('screen-mode-select');
-            }
+            if(selectionStep === 'player') showScreen('screen-mode-select');
             else if(selectionStep === 'enemy') selectionStep = 'player';
-            else if(selectionStep === 'difficulty') {
-                if(currentMode === 'tournament') selectionStep = 'player'; 
-                else selectionStep = 'enemy';
-            }
-            
+            else if(selectionStep === 'difficulty') { if(currentMode === 'tournament') selectionStep = 'player'; else selectionStep = 'enemy'; }
             if (selectionStep !== 'player' || !$('screen-mode-select').classList.contains('hidden') === false) updateSelectionUI();
         }
 
         function renderCharacterSelect() {
-            const grid = $('character-grid');
-            grid.innerHTML = '';
+            const grid = $('character-grid'); grid.innerHTML = '';
             charData.forEach((char, index) => {
-                const card = document.createElement('div');
-                let isCardLocked = char.locked;
-                
-                let isSelectedOnline = currentMode === 'online' && playerTeamSelection.includes(index);
-                let borderClass = isSelectedOnline ? 'border-4 border-blue-500' : 'border border-white/10';
-
-                let baseClasses = `aura-card bg-gradient-to-br ${char.color} rounded-xl p-2 flex flex-col items-center justify-center transform transition-all relative overflow-hidden w-full h-full ${borderClass}`;
-                
+                const card = document.createElement('div'); let isCardLocked = char.locked; let isSelectedOnline = currentMode === 'online' && playerTeamSelection.includes(index); let borderClass = isSelectedOnline ? 'border-4 border-blue-500' : 'border border-white/10'; let baseClasses = `aura-card bg-gradient-to-br ${char.color} rounded-xl p-2 flex flex-col items-center justify-center transform transition-all relative overflow-hidden w-full h-full ${borderClass}`;
                 if (isCardLocked) {
-                    card.className = `${baseClasses} opacity-50 grayscale filter cursor-not-allowed z-10`;
-                    card.style.animation = 'none';
-                    card.innerHTML = `<img src="${char.img}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/30 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="absolute inset-0 flex items-center justify-center z-20"><i class="fas fa-lock text-3xl text-white drop-shadow-md"></i></div><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/50 z-0"></div>`;
+                    card.className = `${baseClasses} opacity-50 grayscale filter cursor-not-allowed z-10`; card.style.animation = 'none'; card.innerHTML = `<img src="${char.img}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/30 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="absolute inset-0 flex items-center justify-center z-20"><i class="fas fa-lock text-3xl text-white drop-shadow-md"></i></div><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/50 z-0"></div>`;
                 } else {
-                    card.className = `${baseClasses} cursor-pointer active:scale-95 shadow-lg z-10`;
-                    card.style.animationDelay = `${index * 0.15}s`;
-                    
-                    if(selectionStep === 'enemy' && index === pIndex) {
-                        card.classList.add('opacity-50', 'pointer-events-none');
-                        card.style.animation = 'none';
-                    }
-
-                    let indexBadge = '';
-                    if (isSelectedOnline) {
-                        let pos = playerTeamSelection.indexOf(index) + 1;
-                        indexBadge = `<div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border border-white z-30">${pos}</div>`;
-                    }
-
+                    card.className = `${baseClasses} cursor-pointer active:scale-95 shadow-lg z-10`; card.style.animationDelay = `${index * 0.15}s`; if(selectionStep === 'enemy' && index === pIndex) { card.classList.add('opacity-50', 'pointer-events-none'); card.style.animation = 'none'; }
+                    let indexBadge = ''; if (isSelectedOnline) { let pos = playerTeamSelection.indexOf(index) + 1; indexBadge = `<div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border border-white z-30">${pos}</div>`; }
                     card.innerHTML = `${indexBadge}<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
-                    
-                    if(!(selectionStep === 'enemy' && index === pIndex)) {
-                        card.onclick = () => selectCharacter(index);
-                    }
+                    if(!(selectionStep === 'enemy' && index === pIndex)) card.onclick = () => selectCharacter(index);
                 }
                 grid.appendChild(card);
             });
         }
 
         function renderMarket() {
-            $('market-coins').innerText = playerCoins;
-            const grid = $('market-grid');
-            grid.innerHTML = '';
-            
-            const lockedChars = charData.filter(c => c.locked);
-            
-            if(lockedChars.length === 0) {
-                grid.innerHTML = `<div class="col-span-2 text-center text-gray-500 py-10">Vous avez débloqué tous les personnages !</div>`;
-                return;
-            }
-
+            $('market-coins').innerText = playerCoins; const grid = $('market-grid'); grid.innerHTML = ''; const lockedChars = charData.filter(c => c.locked);
+            if(lockedChars.length === 0) { grid.innerHTML = `<div class="col-span-2 text-center text-gray-500 py-10">Vous avez débloqué tous les personnages !</div>`; return; }
             lockedChars.forEach((char) => {
-                const card = document.createElement('div');
-                card.className = `bg-gray-800 rounded-xl p-4 flex flex-col items-center justify-between border border-gray-700 shadow-lg relative overflow-hidden z-10 min-h-[170px]`;
-                
-                card.innerHTML = `
-                    <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-20">BLOQUÉ</div>
-                    <div class="flex flex-col items-center flex-1 w-full mt-2">
-                        <img src="${char.img}" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full mb-3 border-2 border-gray-600 grayscale" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'">
-                        <div class="font-bold text-white text-center text-xs sm:text-sm mb-3 w-full truncate px-1">${char.name} ${attrEmojis[char.attr]}</div>
-                    </div>
-                    <button onclick="buyCharacter('${char.id}')" class="w-full py-2.5 mt-auto rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-sm flex justify-center items-center transition-colors active:scale-95 shadow-md">
-                        ${char.price} <i class="fas fa-coins ml-1.5"></i>
-                    </button>
-                `;
+                const card = document.createElement('div'); card.className = `bg-gray-800 rounded-xl p-4 flex flex-col items-center justify-between border border-gray-700 shadow-lg relative overflow-hidden z-10 min-h-[170px]`;
+                card.innerHTML = `<div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-20">BLOQUÉ</div><div class="flex flex-col items-center flex-1 w-full mt-2"><img src="${char.img}" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full mb-3 border-2 border-gray-600 grayscale" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center text-xs sm:text-sm mb-3 w-full truncate px-1">${char.name} ${attrEmojis[char.attr]}</div></div><button onclick="buyCharacter('${char.id}')" class="w-full py-2.5 mt-auto rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-sm flex justify-center items-center transition-colors active:scale-95 shadow-md">${char.price} <i class="fas fa-coins ml-1.5"></i></button>`;
                 grid.appendChild(card);
             });
         }
 
-        function buyCharacter(charId) {
-            const charIndex = charData.findIndex(c => c.id === charId);
-            if(charIndex === -1) return;
-            const char = charData[charIndex];
-            
-            if(playerCoins >= char.price) {
-                playerCoins -= char.price;
-                charData[charIndex].locked = false;
-                saveGameData(); 
-                renderMarket(); 
-            } else {
-                alert("Pièces insuffisantes !");
-            }
-        }
-
-        function startTutorial() {
-            currentMode = 'tutorial';
-            pIndex = charData.findIndex(c => c.id === 'gojo');
-            eIndex = charData.findIndex(c => c.id === 'sukuna');
-            
-            if(pIndex !== -1 && eIndex !== -1) {
-                startGame('facile'); 
-            }
-        }
-
+        function buyCharacter(charId) { const charIndex = charData.findIndex(c => c.id === charId); if(charIndex === -1) return; const char = charData[charIndex]; if(playerCoins >= char.price) { playerCoins -= char.price; charData[charIndex].locked = false; saveGameData(); renderMarket(); } else alert("Pièces insuffisantes !"); }
+        function startTutorial() { currentMode = 'tutorial'; pIndex = charData.findIndex(c => c.id === 'gojo'); eIndex = charData.findIndex(c => c.id === 'sukuna'); if(pIndex !== -1 && eIndex !== -1) startGame('facile'); }
+        
         function selectCharacter(index) {
             if(selectionStep === 'player') { 
-                if (currentMode === 'online') {
-                    if (!playerTeamSelection.includes(index)) {
-                        playerTeamSelection.push(index);
-                        if (playerTeamSelection.length === 3) {
-                            startMatchmaking();
-                        } else {
-                            updateSelectionUI();
-                        }
-                    } else {
-                        playerTeamSelection = playerTeamSelection.filter(i => i !== index);
-                        updateSelectionUI();
-                    }
-                } else if (currentMode === 'tournament') {
-                    pIndex = index;
-                    selectionStep = 'difficulty'; 
-                    updateSelectionUI();
-                } else {
-                    pIndex = index;
-                    selectionStep = 'enemy'; 
-                    updateSelectionUI(); 
-                }
+                if (currentMode === 'online') { if (!playerTeamSelection.includes(index)) { playerTeamSelection.push(index); if (playerTeamSelection.length === 3) startMatchmaking(); else updateSelectionUI(); } else { playerTeamSelection = playerTeamSelection.filter(i => i !== index); updateSelectionUI(); } } 
+                else if (currentMode === 'tournament') { pIndex = index; selectionStep = 'difficulty'; updateSelectionUI(); } 
+                else { pIndex = index; selectionStep = 'enemy'; updateSelectionUI(); }
             } 
-            else if (selectionStep === 'enemy') { 
-                eIndex = index; 
-                selectionStep = 'difficulty'; 
-                updateSelectionUI(); 
-            }
+            else if (selectionStep === 'enemy') { eIndex = index; selectionStep = 'difficulty'; updateSelectionUI(); }
         }
 
-        async function startGame(diff) {
-            if (currentMode === 'tournament' && selectionStep === 'difficulty') {
-                difficultyLevel = diff;
-                initTournament();
-                return;
-            }
-
-            difficultyLevel = diff;
-            launchBattleSequence();
+        function startGame(diff) {
+            if (currentMode === 'tournament' && selectionStep === 'difficulty') { difficultyLevel = diff; initTournament(); return; }
+            difficultyLevel = diff; launchBattleSequence();
         }
 
         async function launchBattleSequence() {
-            if (currentMode === 'online') {
-                playerTeam = playerTeamSelection.map(idx => JSON.parse(JSON.stringify(charData[idx])));
-                enemyTeam = [];
-                for(let i=0; i<3; i++) {
-                    enemyTeam.push(JSON.parse(JSON.stringify(charData[rand(0, charData.length - 1)])));
-                }
-                playerIdx = 0;
-                enemyIdx = 0;
-                player = playerTeam[0];
-                enemy = enemyTeam[0];
-                
-                player.name = globalPlayerPseudo; 
-                enemy.name = fakePseudos[rand(0, fakePseudos.length - 1)]; 
-            } else {
+            if (currentMode !== 'online') {
                 playerTeam = [JSON.parse(JSON.stringify(charData[pIndex]))];
                 enemyTeam = [JSON.parse(JSON.stringify(charData[eIndex]))];
-                playerIdx = 0;
-                enemyIdx = 0;
-                player = playerTeam[0];
-                enemy = enemyTeam[0];
+                playerIdx = 0; enemyIdx = 0; player = playerTeam[0]; enemy = enemyTeam[0];
+                launchBattleSequence_internal();
             }
+        }
 
+        async function launchBattleSequence_internal() {
             playerTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
             enemyTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
 
-            $('sprite-player').classList.remove('anim-vanish');
-            $('sprite-enemy').classList.remove('anim-vanish');
+            $('sprite-player').classList.remove('anim-vanish'); $('sprite-enemy').classList.remove('anim-vanish');
 
             const pImg = new Image(); pImg.src = player.img; pImg.onerror = function() { $('vs-player-img').src = `https://api.dicebear.com/7.x/initials/svg?seed=${player.name}&backgroundColor=1e293b&textColor=ffffff`; };
             const eImg = new Image(); eImg.src = enemy.img; eImg.onerror = function() { $('vs-enemy-img').src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
 
-            $('vs-player-img').src = player.img; 
-            $('vs-player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`;
-            
-            $('vs-enemy-img').src = enemy.img; 
-            $('vs-enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`;
+            $('vs-player-img').src = player.img; $('vs-player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`;
+            $('vs-enemy-img').src = enemy.img; $('vs-enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`;
             
             const vsContent = $('vs-content'); vsContent.innerHTML = vsContent.innerHTML; 
 
-            stopAudioAndReset($('battle-music'));
-            await showScreen('screen-vs');
-            await wait(2800); 
-            
+            stopAudioAndReset($('battle-music')); await showScreen('screen-vs'); await wait(2800); 
             initBattle();
         }
 
         function showEnemyStats() {
-            if(!enemy) return;
-            $('inspect-avatar').src = enemy.img; $('inspect-avatar').alt = enemy.name; 
-            
+            if(!enemy) return; $('inspect-avatar').src = enemy.img; $('inspect-avatar').alt = enemy.name; 
             $('inspect-name').innerHTML = `${enemy.name} <span class="text-xs ml-1 bg-gray-800 px-2 py-0.5 rounded-full border border-gray-600">${attrEmojis[enemy.attr]} ${enemy.attr}</span>`;
             $('inspect-avatar').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
-            
             let weakTo = attrAdvantage[enemy.attr].weak.map(a => `${attrEmojis[a]} ${a}`).join(', ') || 'Aucune';
             $('inspect-attr-info').innerHTML = `<span class="text-gray-400">Faible face à:</span> ${weakTo}`;
-            
             const container = $('inspect-moves'); container.innerHTML = '';
             const charRef = charData.find(c => c.id === enemy.id); 
             charRef.moves.forEach(move => {
-                const moveEl = document.createElement('div');
-                moveEl.className = 'bg-gray-800 rounded p-2 border border-gray-700';
+                const moveEl = document.createElement('div'); moveEl.className = 'bg-gray-800 rounded p-2 border border-gray-700';
                 let typeColor = move.type === 'domain' ? 'text-purple-400 font-bold' : (move.type === 'heal' ? 'text-green-400' : (move.cost > 30 ? 'text-red-400' : 'text-gray-300'));
                 moveEl.innerHTML = `<div class="flex justify-between items-center mb-1"><span class="text-sm ${typeColor}">${attrEmojis[move.attr]} ${move.name}</span><div class="flex gap-1">${move.dmg > 0 ? `<span class="text-[10px] bg-red-900/50 text-red-200 px-1.5 py-0.5 rounded border border-red-500/30 whitespace-nowrap"><i class="fas fa-fire-alt"></i> DGT: ${move.dmg}</span>` : ''}<span class="text-[10px] bg-purple-900/50 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30 whitespace-nowrap"><i class="fas fa-bolt"></i> CE: ${move.cost}</span></div></div><p class="text-[10px] text-gray-400 leading-tight">${move.desc}</p>`;
                 container.appendChild(moveEl);
@@ -1734,183 +1234,114 @@
             $('modal-enemy-stats').classList.remove('hidden'); $('modal-enemy-stats').classList.add('flex');
         }
 
-        function closeEnemyStats() {
-            $('modal-enemy-stats').classList.add('hidden'); $('modal-enemy-stats').classList.remove('flex');
-        }
+        function closeEnemyStats() { $('modal-enemy-stats').classList.add('hidden'); $('modal-enemy-stats').classList.remove('flex'); }
 
         function initBattle() {
-            isPlayerTurn = true; isAnimating = false; hasSwitchedThisTurn = false;
-            $('combat-log').innerHTML = '';
-            $('emote-panel').classList.add('hidden');
+            sharedRNG = 1; // Resync RNG
             
-            $('player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`; 
-            $('enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`;
-
-            if (currentMode === 'tutorial') {
-                $('enemy-difficulty-label').innerText = 'TUTORIEL';
-                $('btn-emote').classList.add('hidden');
-                tutorialStep = 0;
-                $('tutorial-box').classList.remove('hidden');
-                $('tutorial-text').innerText = tutorialSequence[0].text;
-            } else if (currentMode === 'online') {
-                $('enemy-difficulty-label').innerText = 'JOUEUR EN LIGNE';
-                $('tutorial-box').classList.add('hidden');
-                if(emotesEnabled) {
-                    $('btn-emote').classList.remove('hidden');
-                } else {
-                    $('btn-emote').classList.add('hidden');
-                }
+            if(currentMode === 'online') {
+                isPlayerTurn = (myRole === 'p1'); // P1 commence toujours
             } else {
-                $('enemy-difficulty-label').innerText = difficultyLevel.toUpperCase();
-                $('tutorial-box').classList.add('hidden');
-                $('btn-emote').classList.add('hidden');
+                isPlayerTurn = true;
             }
             
-            $('sprite-player').src = player.img;
-            $('sprite-player').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${player.name}&backgroundColor=1e293b&textColor=ffffff`; };
-            $('enemy-avatar').src = enemy.img;
-            $('enemy-avatar').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
-            $('sprite-enemy').src = enemy.img;
-            $('sprite-enemy').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            isAnimating = false; hasSwitchedThisTurn = false;
+            $('combat-log').innerHTML = ''; $('emote-panel').classList.add('hidden');
             
-            updateArenaBackground(); 
-            updateTurnIndicator(); updateBars();
+            $('player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`; $('enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`;
+
+            if (currentMode === 'tutorial') {
+                $('enemy-difficulty-label').innerText = 'TUTORIEL'; $('btn-emote').classList.add('hidden'); tutorialStep = 0; $('tutorial-box').classList.remove('hidden'); $('tutorial-text').innerText = tutorialSequence[0].text;
+            } else if (currentMode === 'online') {
+                $('enemy-difficulty-label').innerText = 'JOUEUR EN LIGNE'; $('tutorial-box').classList.add('hidden'); if(emotesEnabled) $('btn-emote').classList.remove('hidden'); else $('btn-emote').classList.add('hidden');
+            } else {
+                $('enemy-difficulty-label').innerText = difficultyLevel.toUpperCase(); $('tutorial-box').classList.add('hidden'); $('btn-emote').classList.add('hidden');
+            }
             
-            if (currentMode === 'online') addLog(`L'équipe de ${player.name} affronte l'équipe de ${enemy.name} !`, 'text-yellow-400 font-bold');
+            $('sprite-player').src = player.img; $('sprite-player').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${player.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            $('enemy-avatar').src = enemy.img; $('enemy-avatar').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            $('sprite-enemy').src = enemy.img; $('sprite-enemy').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            
+            updateArenaBackground(); updateTurnIndicator(); updateBars();
+            
+            if (currentMode === 'online') addLog(`L'équipe de ${playerTeam[0].name} affronte l'équipe de ${enemyTeam[0].name} !`, 'text-yellow-400 font-bold');
             else addLog(`Le combat commence : ${player.name} vs ${enemy.name} !`, 'text-yellow-400 font-bold');
             
-            if (currentMode === 'tutorial') {
-                addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
-            }
-
-            playMusic('battle');
-
-            showScreen('screen-battle'); 
+            if (currentMode === 'tutorial') addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
+            playMusic('battle'); showScreen('screen-battle'); 
         }
 
         /* --- RENDU UI D'EQUIPE (Bataille) --- */
         function renderTeamUI() {
-            const pRoster = $('player-team-roster');
-            const eRoster = $('enemy-team-roster');
-
-            if (currentMode !== 'online') {
-                pRoster.innerHTML = '';
-                eRoster.innerHTML = '';
-                return;
-            }
-
+            const pRoster = $('player-team-roster'); const eRoster = $('enemy-team-roster');
+            if (currentMode !== 'online') { pRoster.innerHTML = ''; eRoster.innerHTML = ''; return; }
             pRoster.innerHTML = '';
             playerTeam.forEach((c, i) => {
                 let op = c.hp <= 0 ? 'opacity-30 grayscale border-gray-600' : (i === playerIdx ? 'border-2 border-blue-400 scale-110' : 'border border-gray-600 opacity-70 hover:opacity-100 cursor-pointer');
-                
                 let canSwitch = (c.hp > 0 && i !== playerIdx && !player.activeDomain);
                 let click = canSwitch ? `onclick="switchCharacter(${i}, 'player')"` : (player.activeDomain && i !== playerIdx && c.hp > 0 ? `onclick="addLog('Impossible de changer pendant un Territoire !', 'text-red-400')"` : '');
-                
                 let cePercent = Math.max(0, (c.ce / c.maxCe) * 100);
-                pRoster.innerHTML += `
-                    <div class="flex flex-col items-center gap-[2px] w-6" ${click}>
-                        <img src="${c.img}" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover transition-all ${op}">
-                        <div class="w-full bg-gray-900 rounded-full h-1 border border-gray-700">
-                            <div class="bg-purple-500 h-full rounded-full transition-all" style="width: ${cePercent}%"></div>
-                        </div>
-                    </div>
-                `;
+                pRoster.innerHTML += `<div class="flex flex-col items-center gap-[2px] w-6" ${click}><img src="${c.img}" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover transition-all ${op}"><div class="w-full bg-gray-900 rounded-full h-1 border border-gray-700"><div class="bg-purple-500 h-full rounded-full transition-all" style="width: ${cePercent}%"></div></div></div>`;
             });
-
             eRoster.innerHTML = '';
             enemyTeam.forEach((c, i) => {
                 let op = c.hp <= 0 ? 'opacity-30 grayscale border-gray-600' : (i === enemyIdx ? 'border-2 border-red-400 scale-110' : 'border border-gray-600 opacity-70');
                 let cePercent = Math.max(0, (c.ce / c.maxCe) * 100);
-                eRoster.innerHTML += `
-                    <div class="flex flex-col items-center gap-[2px] w-6">
-                        <img src="${c.img}" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover transition-all ${op}">
-                        <div class="w-full bg-gray-900 rounded-full h-1 border border-gray-700">
-                            <div class="bg-purple-500 h-full rounded-full transition-all" style="width: ${cePercent}%"></div>
-                        </div>
-                    </div>
-                `;
+                eRoster.innerHTML += `<div class="flex flex-col items-center gap-[2px] w-6"><img src="${c.img}" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover transition-all ${op}"><div class="w-full bg-gray-900 rounded-full h-1 border border-gray-700"><div class="bg-purple-500 h-full rounded-full transition-all" style="width: ${cePercent}%"></div></div></div>`;
             });
         }
 
         async function switchCharacter(index, role) {
+            if (currentMode === 'online' && role === 'player') {
+                pushNetworkAction({ type: 'switch', index: index });
+            } else if (currentMode !== 'online') {
+                await switchCharacter_internal(index, role);
+            }
+        }
+
+        async function switchCharacter_internal(index, role) {
             let currentEntity = role === 'player' ? player : enemy;
             if (hasSwitchedThisTurn || isAnimating || currentEntity.activeDomain) return;
             
-            isAnimating = true;
-            if (role === 'player') renderActionButtons(); 
-            
+            isAnimating = true; if (role === 'player') renderActionButtons(); 
             const spriteId = role === 'player' ? 'sprite-player' : 'sprite-enemy';
-
-            $(spriteId).classList.add('anim-vanish');
-            await wait(500);
+            $(spriteId).classList.add('anim-vanish'); await wait(500);
             
             if (role === 'player') {
-                playerIdx = index;
-                player = playerTeam[playerIdx];
-                $(spriteId).src = player.img;
-                $('player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`;
+                playerIdx = index; player = playerTeam[playerIdx];
+                $(spriteId).src = player.img; $('player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`;
             } else {
-                enemyIdx = index;
-                enemy = enemyTeam[enemyIdx];
-                $(spriteId).src = enemy.img;
-                $('enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`;
-                $('enemy-avatar').src = enemy.img;
+                enemyIdx = index; enemy = enemyTeam[enemyIdx];
+                $(spriteId).src = enemy.img; $('enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`; $('enemy-avatar').src = enemy.img;
             }
 
-            $(spriteId).classList.remove('anim-vanish');
-            $(spriteId).classList.add('anim-vs-pop');
+            $(spriteId).classList.remove('anim-vanish'); $(spriteId).classList.add('anim-vs-pop');
+            hasSwitchedThisTurn = true; updateBars(); renderTeamUI();
             
-            hasSwitchedThisTurn = true;
+            if (role === 'player') addLog(`Vous passez sur ${player.name} !`, 'text-blue-300 font-bold');
+            else addLog(`L'adversaire passe sur ${enemy.name} !`, 'text-red-400 font-bold');
             
-            updateBars();
-            renderTeamUI();
-            
-            if (role === 'player') {
-                addLog(`Vous passez sur ${player.name} !`, 'text-blue-300 font-bold');
-            } else {
-                addLog(`L'adversaire passe sur ${enemy.name} !`, 'text-red-400 font-bold');
-            }
-            
-            await wait(500);
-            $(spriteId).classList.remove('anim-vs-pop');
-            
-            isAnimating = false;
-            updateBars(); 
+            await wait(500); $(spriteId).classList.remove('anim-vs-pop');
+            isAnimating = false; updateBars(); 
         }
 
         function updateArenaBackground() {
-            const arena = $('arena');
-            const clashContainer = $('clash-bg-container');
-            
-            clashContainer.classList.add('hidden');
-            
+            const arena = $('arena'); const clashContainer = $('clash-bg-container'); clashContainer.classList.add('hidden');
             if (player.activeDomain && enemy.activeDomain) {
-                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-black`;
-                clashContainer.classList.remove('hidden');
-                $('clash-bg-player').style.background = getDomainBgStyle(player.activeDomain.domainClass);
-                $('clash-bg-player').style.backgroundSize = 'cover';
-                $('clash-bg-player').style.backgroundPosition = 'center';
-                $('clash-bg-enemy').style.background = getDomainBgStyle(enemy.activeDomain.domainClass);
-                $('clash-bg-enemy').style.backgroundSize = 'cover';
-                $('clash-bg-enemy').style.backgroundPosition = 'center';
+                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-black`; clashContainer.classList.remove('hidden');
+                $('clash-bg-player').style.background = getDomainBgStyle(player.activeDomain.domainClass); $('clash-bg-player').style.backgroundSize = 'cover'; $('clash-bg-player').style.backgroundPosition = 'center';
+                $('clash-bg-enemy').style.background = getDomainBgStyle(enemy.activeDomain.domainClass); $('clash-bg-enemy').style.backgroundSize = 'cover'; $('clash-bg-enemy').style.backgroundPosition = 'center';
             } else if (player.activeDomain) {
                 arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden ${player.activeDomain.domainClass}`;
             } else if (enemy.activeDomain) {
                 arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden ${enemy.activeDomain.domainClass}`;
-            } else {
-                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-default`;
-            }
+            } else arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-default`;
         }
 
         function updateTurnIndicator() {
             const indicator = $('turn-indicator');
-            if (isPlayerTurn) {
-                indicator.innerText = "C'EST VOTRE TOUR";
-                indicator.className = "text-center text-xs font-bold py-1 bg-blue-900/80 text-blue-300 transition-colors border-b border-blue-500/50";
-            } else {
-                indicator.innerText = "TOUR DE L'ENNEMI...";
-                indicator.className = "text-center text-xs font-bold py-1 bg-red-900/80 text-red-300 transition-colors border-b border-red-500/50";
-            }
+            if (isPlayerTurn) { indicator.innerText = "C'EST VOTRE TOUR"; indicator.className = "text-center text-xs font-bold py-1 bg-blue-900/80 text-blue-300 transition-colors border-b border-blue-500/50"; } 
+            else { indicator.innerText = "TOUR DE L'ENNEMI..."; indicator.className = "text-center text-xs font-bold py-1 bg-red-900/80 text-red-300 transition-colors border-b border-red-500/50"; }
         }
 
         function updateBars() {
@@ -1926,255 +1357,125 @@
             if(enemy.activeDomain) enemyStatus.push('TERRITOIRE ACTIF');
             $('enemy-status').innerText = enemyStatus.join(' | ');
             
-            renderTeamUI();
-            renderActionButtons();
+            renderTeamUI(); renderActionButtons();
         }
 
         function renderActionButtons() {
             const container = $('action-buttons'); container.innerHTML = '';
             player.moves.forEach((move, index) => {
-                let isDomainActive = player.activeDomain && move.type === 'domain';
-                let canAfford = isDomainActive ? true : player.ce >= move.cost;
-                let isEnabled = canAfford && isPlayerTurn && !isAnimating;
-                let isTutorialTarget = false;
-
-                if (currentMode === 'tutorial' && !isDomainActive) {
-                    if (tutorialStep < tutorialSequence.length) {
-                        if (index !== tutorialSequence[tutorialStep].targetMove) {
-                            isEnabled = false; 
-                        } else {
-                            isTutorialTarget = true;
-                            isEnabled = true; 
-                        }
-                    }
-                }
+                let isDomainActive = player.activeDomain && move.type === 'domain'; let canAfford = isDomainActive ? true : player.ce >= move.cost; let isEnabled = canAfford && isPlayerTurn && !isAnimating; let isTutorialTarget = false;
+                if (currentMode === 'tutorial' && !isDomainActive) { if (tutorialStep < tutorialSequence.length) { if (index !== tutorialSequence[tutorialStep].targetMove) isEnabled = false; else { isTutorialTarget = true; isEnabled = true; } } }
                 
-                const btn = document.createElement('button');
-                btn.className = `p-2 rounded-lg text-left flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${isEnabled ? 'bg-gray-800 border border-gray-600 hover:bg-gray-700 active:scale-95 shadow-md' : 'bg-gray-900 border border-gray-800 opacity-40 cursor-not-allowed'}`;
-                
-                if (isTutorialTarget) {
-                    btn.classList.add('border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.6)]');
-                }
+                const btn = document.createElement('button'); btn.className = `p-2 rounded-lg text-left flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${isEnabled ? 'bg-gray-800 border border-gray-600 hover:bg-gray-700 active:scale-95 shadow-md' : 'bg-gray-900 border border-gray-800 opacity-40 cursor-not-allowed'}`;
+                if (isTutorialTarget) btn.classList.add('border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.6)]');
 
                 if (isDomainActive) {
                     btn.innerHTML = `<div class="flex justify-between items-center w-full mb-1"><span class="text-xs text-yellow-400 font-bold truncate pr-1">Annuler Territoire</span></div><span class="text-[9px] text-gray-400 leading-tight">Désactiver le territoire pour stopper la perte de PV.</span>`;
                     if(isEnabled) btn.onclick = () => cancelDomain('player');
                 } else {
                     let typeColor = move.type === 'domain' ? 'text-purple-400 font-bold' : (move.type === 'heal' ? 'text-green-400' : (move.cost > 30 ? 'text-red-400' : 'text-gray-300'));
-                    
                     let arrowHtml = isTutorialTarget ? `<div class="absolute right-1 top-1/2 transform -translate-y-1/2 anim-point-left text-yellow-400 text-xl z-50 drop-shadow-md"><i class="fas fa-arrow-left"></i></div>` : '';
-
                     btn.innerHTML = `<div class="flex justify-between items-center w-full mb-1 pr-6"><span class="text-xs ${typeColor} truncate pr-1">${attrEmojis[move.attr]} ${move.name}</span><span class="text-[10px] bg-purple-900/80 text-purple-200 px-1.5 py-0.5 rounded shrink-0 border border-purple-500/30"><i class="fas fa-bolt text-[8px]"></i> ${move.cost}</span></div><span class="text-[9px] text-gray-400 leading-tight pr-6">${move.desc}</span>${arrowHtml}`;
-                    
                     if(isEnabled) btn.onclick = () => executeTurn(player, enemy, move, 'player');
                 }
                 container.appendChild(btn);
             });
         }
 
-        function addLog(msg, colorClass = 'text-gray-300') {
-            const log = $('combat-log');
-            const entry = document.createElement('div');
-            entry.className = `${colorClass} py-0.5 border-b border-gray-800/30`;
-            entry.innerHTML = `> ${msg}`;
-            log.appendChild(entry); log.scrollTop = log.scrollHeight;
-        }
-
-        function createFloatingText(targetId, text, colorClass) {
-            const target = $(targetId); const rect = target.getBoundingClientRect(); const el = document.createElement('div');
-            el.className = `floating-text ${colorClass}`; el.innerText = text;
-            el.style.left = `${rect.left + (rect.width/2) - 30 + (Math.random()-0.5)*50}px`; el.style.top = `${rect.top + (rect.height/2) - 30 + (Math.random()-0.5)*50}px`;
-            document.body.appendChild(el); setTimeout(() => el.remove(), 1200);
-        }
-
-        function shakeScreen() {
-            const container = $('arena-container'); container.classList.add('anim-screen-shake');
-            setTimeout(() => container.classList.remove('anim-screen-shake'), 500);
-        }
+        function addLog(msg, colorClass = 'text-gray-300') { const log = $('combat-log'); const entry = document.createElement('div'); entry.className = `${colorClass} py-0.5 border-b border-gray-800/30`; entry.innerHTML = `> ${msg}`; log.appendChild(entry); log.scrollTop = log.scrollHeight; }
+        function createFloatingText(targetId, text, colorClass) { const target = $(targetId); const rect = target.getBoundingClientRect(); const el = document.createElement('div'); el.className = `floating-text ${colorClass}`; el.innerText = text; el.style.left = `${rect.left + (rect.width/2) - 30 + (Math.random()-0.5)*50}px`; el.style.top = `${rect.top + (rect.height/2) - 30 + (Math.random()-0.5)*50}px`; document.body.appendChild(el); setTimeout(() => el.remove(), 1200); }
+        function shakeScreen() { const container = $('arena-container'); container.classList.add('anim-screen-shake'); setTimeout(() => container.classList.remove('anim-screen-shake'), 500); }
 
         function playAttackSound(damage) {
-            if (isMuted) return; 
-            let soundId = '';
-            if (damage > 0 && damage <= 35) {
-                soundId = 'sfx-simple';
-            } else if (damage > 35 && damage <= 75) {
-                soundId = 'sfx-moyen';
-            } else if (damage > 75) {
-                soundId = 'sfx-puissant';
-            }
-            
-            if (soundId) {
-                const sfx = $(soundId);
-                try {
-                    sfx.currentTime = 0;
-                    sfx.play().catch(e => console.log("Lecture du son bloquée :", e));
-                } catch(e) {}
-            }
+            if (isMuted) return; let soundId = ''; if (damage > 0 && damage <= 35) soundId = 'sfx-simple'; else if (damage > 35 && damage <= 75) soundId = 'sfx-moyen'; else if (damage > 75) soundId = 'sfx-puissant';
+            if (soundId) { const sfx = $(soundId); try { sfx.currentTime = 0; sfx.play().catch(e => console.log("Lecture du son bloquée")); } catch(e) {} }
         }
 
         async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
-            
-            nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`;
-            nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
-            
-            await wait(1500);
-            nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
+            nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`; nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
+            await wait(1500); nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
             if (videoSrc) {
-                const batM = $('battle-music');
-                let wasMusicPlaying = !isMuted && !batM.paused;
-                if (wasMusicPlaying) pauseAudio(batM);
-
+                const batM = $('battle-music'); let wasMusicPlaying = !isMuted && !batM.paused; if (wasMusicPlaying) pauseAudio(batM);
                 video.src = videoSrc; video.classList.remove('hidden');
-                
                 await new Promise((resolve) => {
                     let safetyTimer = setTimeout(resolve, 20000); 
-
-                    video.onended = () => { clearTimeout(safetyTimer); resolve(); };
-                    video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
-
+                    video.onended = () => { clearTimeout(safetyTimer); resolve(); }; video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
                     video.muted = isMuted; 
                     let playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(e => {
-                            video.muted = true; 
-                            let playPromiseMuted = video.play();
-                            if (playPromiseMuted !== undefined) {
-                                playPromiseMuted.catch(err => {
-                                    clearTimeout(safetyTimer);
-                                    resolve(); 
-                                });
-                            } else {
-                                resolve();
-                            }
-                        });
-                    } else {
-                        resolve();
-                    }
+                    if (playPromise !== undefined) { playPromise.catch(e => { video.muted = true; let p2 = video.play(); if (p2 !== undefined) p2.catch(err => { clearTimeout(safetyTimer); resolve(); }); else resolve(); }); } else resolve();
                 });
-                
                 video.classList.add('hidden');
-
-                if (wasMusicPlaying && !isMuted) {
-                    try { await batM.play(); } catch(e) {}
-                }
+                if (wasMusicPlaying && !isMuted) try { await batM.play(); } catch(e) {}
             }
-
-            // FORCER LE REFLOW POUR ETRE SUR QUE L'ANIMATION SE JOUE TOUJOURS
-            flash.classList.remove('anim-domain-flash');
-            void flash.offsetWidth; 
-            flash.classList.add('anim-domain-flash');
-            
-            await wait(1000); 
-            
-            updateArenaBackground();
-            shakeScreen();
-            
-            await wait(1000); 
-            flash.classList.remove('anim-domain-flash');
-            
-            await wait(1000);
+            flash.classList.remove('anim-domain-flash'); void flash.offsetWidth; flash.classList.add('anim-domain-flash');
+            await wait(1000); updateArenaBackground(); shakeScreen(); await wait(1000); flash.classList.remove('anim-domain-flash'); await wait(1000);
         }
 
         async function cancelDomain(role) {
+            if (currentMode === 'online' && role === 'player') {
+                pushNetworkAction({ type: 'cancelDomain' });
+            } else if (currentMode !== 'online') {
+                await cancelDomain_internal(role);
+            }
+        }
+
+        async function cancelDomain_internal(role) {
             if (isAnimating && role === 'player') return; 
             isAnimating = true; renderActionButtons();
             
             const entity = role === 'player' ? player : enemy;
-            entity.activeDomain = null;
-            addLog(`${entity.name} annule son Territoire pour préserver ses PV.`, 'text-yellow-400');
-            updateArenaBackground();
-            
+            entity.activeDomain = null; addLog(`${entity.name} annule son Territoire pour préserver ses PV.`, 'text-yellow-400'); updateArenaBackground();
             await wait(1000); 
-            
-            isAnimating = false;
-            updateBars(); 
-            
-            if (role === 'enemy') {
-                enemyAI();
-            }
+            isAnimating = false; updateBars(); 
+            if (role === 'enemy' && currentMode !== 'online') enemyAI();
         }
 
         async function applyDomainEffects() {
             if (!player.activeDomain && !enemy.activeDomain) return;
-
             addLog("Phase de Territoire : Les domaines s'activent !", 'text-purple-400 font-bold bg-purple-900/30');
-
             let isClash = player.activeDomain && enemy.activeDomain;
 
             if (player.activeDomain) {
-                player.hp -= 15; 
-                createFloatingText('sprite-player', '-15 (Domaine)', 'text-red-500');
-                
-                let dmgMult = isClash ? 0.5 : 1;
-                
-                let attrMultP = 1;
-                if (attrAdvantage[player.activeDomain.attr].strong.includes(enemy.attr)) attrMultP = 1.5;
-                if (attrAdvantage[player.activeDomain.attr].weak.includes(enemy.attr)) attrMultP = 0.5;
+                player.hp -= 15; createFloatingText('sprite-player', '-15 (Domaine)', 'text-red-500');
+                let dmgMult = isClash ? 0.5 : 1; let attrMultP = 1;
+                if (attrAdvantage[player.activeDomain.attr].strong.includes(enemy.attr)) attrMultP = 1.5; if (attrAdvantage[player.activeDomain.attr].weak.includes(enemy.attr)) attrMultP = 0.5;
 
                 if (player.activeDomain.effect === 'domain-stun') { 
-                    let dmg = Math.floor(25 * dmgMult * attrMultP);
-                    enemy.hp -= dmg; 
-                    createFloatingText('sprite-enemy', `-${dmg} (Infini)`, 'text-purple-500');
+                    let dmg = Math.floor(25 * dmgMult * attrMultP); enemy.hp -= dmg; createFloatingText('sprite-enemy', `-${dmg} (Infini)`, 'text-purple-500');
                     if (isClash) addLog(`L'Espace Infini frappe ${enemy.name} avec une force réduite !`, 'text-purple-400');
                 } else if (player.activeDomain.effect === 'domain-lifesteal') { 
-                    let dmg = Math.floor(40 * dmgMult * attrMultP);
-                    let heal = Math.floor(20 * dmgMult);
-                    enemy.hp -= dmg; player.hp = Math.min(player.maxHp, player.hp + heal);
-                    createFloatingText('sprite-enemy', `-${dmg} (Autel)`, 'text-red-500');
-                    createFloatingText('sprite-player', `+${heal} (Soin)`, 'text-green-500');
+                    let dmg = Math.floor(40 * dmgMult * attrMultP); let heal = Math.floor(20 * dmgMult); enemy.hp -= dmg; player.hp = Math.min(player.maxHp, player.hp + heal);
+                    createFloatingText('sprite-enemy', `-${dmg} (Autel)`, 'text-red-500'); createFloatingText('sprite-player', `+${heal} (Soin)`, 'text-green-500');
                     if (isClash) addLog(`L'Autel Démoniaque tranche ${enemy.name} avec une force réduite !`, 'text-red-400');
                 } else if (player.activeDomain.effect === 'domain-evade') { 
-                    let dmg = Math.floor(25 * dmgMult * attrMultP);
-                    enemy.hp -= dmg;
-                    
-                    let evadeChance = isClash ? 0.40 : 0.65;
-                    if (Math.random() < evadeChance) {
-                        player.buffs.evade = true;
-                    }
-
+                    let dmg = Math.floor(25 * dmgMult * attrMultP); enemy.hp -= dmg; let evadeChance = isClash ? 0.40 : 0.65;
+                    if (gameRandom() < evadeChance) player.buffs.evade = true;
                     createFloatingText('sprite-enemy', `-${dmg} (Ombres)`, 'text-gray-500');
                     if (isClash) addLog(`Le Jardin des Ombres affaiblit ${enemy.name} !`, 'text-gray-400');
                 }
             }
 
             if (enemy.activeDomain) {
-                enemy.hp -= 15; 
-                createFloatingText('sprite-enemy', '-15 (Domaine)', 'text-red-500');
-                
-                let dmgMult = isClash ? 0.5 : 1;
-                
-                let attrMultE = 1;
-                if (attrAdvantage[enemy.activeDomain.attr].strong.includes(player.attr)) attrMultE = 1.5;
-                if (attrAdvantage[enemy.activeDomain.attr].weak.includes(player.attr)) attrMultE = 0.5;
+                enemy.hp -= 15; createFloatingText('sprite-enemy', '-15 (Domaine)', 'text-red-500');
+                let dmgMult = isClash ? 0.5 : 1; let attrMultE = 1;
+                if (attrAdvantage[enemy.activeDomain.attr].strong.includes(player.attr)) attrMultE = 1.5; if (attrAdvantage[enemy.activeDomain.attr].weak.includes(player.attr)) attrMultE = 0.5;
 
                 if (enemy.activeDomain.effect === 'domain-stun') { 
-                    let dmg = Math.floor(25 * dmgMult * attrMultE);
-                    player.hp -= dmg; 
-                    createFloatingText('sprite-player', `-${dmg} (Infini)`, 'text-purple-500');
+                    let dmg = Math.floor(25 * dmgMult * attrMultE); player.hp -= dmg; createFloatingText('sprite-player', `-${dmg} (Infini)`, 'text-purple-500');
                     if (isClash) addLog(`L'Espace Infini frappe ${player.name} avec une force réduite !`, 'text-purple-400');
                 } else if (enemy.activeDomain.effect === 'domain-lifesteal') { 
-                    let dmg = Math.floor(40 * dmgMult * attrMultE);
-                    let heal = Math.floor(20 * dmgMult);
-                    player.hp -= dmg; enemy.hp = Math.min(enemy.maxHp, enemy.hp + heal);
-                    createFloatingText('sprite-player', `-${dmg} (Autel)`, 'text-red-500');
-                    createFloatingText('sprite-enemy', `+${heal} (Soin)`, 'text-green-500');
+                    let dmg = Math.floor(40 * dmgMult * attrMultE); let heal = Math.floor(20 * dmgMult); player.hp -= dmg; enemy.hp = Math.min(enemy.maxHp, enemy.hp + heal);
+                    createFloatingText('sprite-player', `-${dmg} (Autel)`, 'text-red-500'); createFloatingText('sprite-enemy', `+${heal} (Soin)`, 'text-green-500');
                     if (isClash) addLog(`L'Autel Démoniaque tranche ${player.name} avec une force réduite !`, 'text-red-400');
                 } else if (enemy.activeDomain.effect === 'domain-evade') { 
-                    let dmg = Math.floor(25 * dmgMult * attrMultE);
-                    player.hp -= dmg;
-                    
-                    let evadeChance = isClash ? 0.40 : 0.65;
-                    if (Math.random() < evadeChance) {
-                        enemy.buffs.evade = true;
-                    }
-
+                    let dmg = Math.floor(25 * dmgMult * attrMultE); player.hp -= dmg; let evadeChance = isClash ? 0.40 : 0.65;
+                    if (gameRandom() < evadeChance) enemy.buffs.evade = true;
                     createFloatingText('sprite-player', `-${dmg} (Ombres)`, 'text-gray-500');
                     if (isClash) addLog(`Le Jardin des Ombres affaiblit ${player.name} !`, 'text-gray-400');
                 }
             }
-
             shakeScreen(); updateBars(); await wait(1500);
         }
 
@@ -2185,47 +1486,35 @@
 
             addLog(`${currentEntity.name} est K.O. !`, 'text-red-500 font-bold');
             $(deadSpriteId).classList.add('anim-vanish');
-            
-            if (currentEntity.activeDomain) {
-                 currentEntity.activeDomain = null;
-                 updateArenaBackground();
-            }
-
+            if (currentEntity.activeDomain) { currentEntity.activeDomain = null; updateArenaBackground(); }
             await wait(1500);
 
             const nextAliveIdx = team.findIndex(c => c.hp > 0);
-            
-            if (nextAliveIdx === -1) {
-                 await endGame(deadRole === 'player' ? 'lose' : 'win');
-                 return false; 
-            } else {
-                 if (deadRole === 'player') {
-                     playerIdx = nextAliveIdx;
-                     player = playerTeam[playerIdx];
-                     $('player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`;
-                 } else {
-                     enemyIdx = nextAliveIdx;
-                     enemy = enemyTeam[enemyIdx];
-                     $('enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`;
-                     $('enemy-avatar').src = enemy.img;
-                 }
+            if (nextAliveIdx === -1) { await endGame(deadRole === 'player' ? 'lose' : 'win'); return false; } 
+            else {
+                 if (deadRole === 'player') { playerIdx = nextAliveIdx; player = playerTeam[playerIdx]; $('player-name').innerText = `${player.name} ${attrEmojis[player.attr]}`; } 
+                 else { enemyIdx = nextAliveIdx; enemy = enemyTeam[enemyIdx]; $('enemy-name').innerText = `${enemy.name} ${attrEmojis[enemy.attr]}`; $('enemy-avatar').src = enemy.img; }
                  
                  $(deadSpriteId).src = (deadRole === 'player' ? player.img : enemy.img);
-                 $(deadSpriteId).classList.remove('anim-vanish');
-                 $(deadSpriteId).classList.add('anim-vs-pop');
+                 $(deadSpriteId).classList.remove('anim-vanish'); $(deadSpriteId).classList.add('anim-vs-pop');
                  
-                 updateBars();
-                 renderTeamUI();
-                 
+                 updateBars(); renderTeamUI();
                  addLog(`${deadRole === 'player' ? player.name : enemy.name} entre en scène !`, 'text-blue-300 font-bold');
-                 await wait(800);
-                 $(deadSpriteId).classList.remove('anim-vs-pop');
-                 
+                 await wait(800); $(deadSpriteId).classList.remove('anim-vs-pop');
                  return true; 
             }
         }
 
-        async function executeTurn(attacker, defender, move, role) {
+        function executeTurn(attacker, defender, move, role) {
+            if (currentMode === 'online' && role === 'player') {
+                const moveIndex = player.moves.findIndex(m => m.name === move.name);
+                pushNetworkAction({ type: 'attack', moveIndex: moveIndex });
+            } else if (currentMode !== 'online') {
+                executeTurn_internal(attacker, defender, move, role);
+            }
+        }
+
+        async function executeTurn_internal(attacker, defender, move, role) {
             if (isAnimating && role === 'player') return;
             isAnimating = true; renderActionButtons();
             
@@ -2235,75 +1524,36 @@
             const logColor = role === 'player' ? 'text-blue-300' : 'text-red-400';
             
             let stunReason = null;
-            if (attacker.buffs.stun) {
-                stunReason = 'normal';
-            } else if (defender.activeDomain && defender.activeDomain.effect === 'domain-stun') {
+            if (attacker.buffs.stun) stunReason = 'normal';
+            else if (defender.activeDomain && defender.activeDomain.effect === 'domain-stun') {
                 let stunChance = attacker.activeDomain ? 0.325 : 0.65; 
-                if (Math.random() < stunChance) {
-                    stunReason = 'gojo';
-                }
+                if (gameRandom() < stunChance) stunReason = 'gojo';
             }
 
             if (stunReason) {
-                if (stunReason === 'gojo') {
-                    addLog(`${attacker.name} a le cerveau saturé par l'Espace Infini ! Impossible d'agir !`, 'text-purple-400 font-bold');
-                    createFloatingText(attackerSpriteId, 'SATURÉ', 'text-purple-400');
-                } else {
-                    addLog(`${attacker.name} est paralysé et passe son tour !`, 'text-yellow-400 font-bold');
-                    createFloatingText(attackerSpriteId, 'ÉTOURDI', 'text-yellow-400');
-                }
-                attacker.buffs.stun = false; 
-                updateBars(); 
-                await wait(1500); 
-                finalizeTurn(role); 
-                return; 
+                if (stunReason === 'gojo') { addLog(`${attacker.name} a le cerveau saturé par l'Espace Infini ! Impossible d'agir !`, 'text-purple-400 font-bold'); createFloatingText(attackerSpriteId, 'SATURÉ', 'text-purple-400'); } 
+                else { addLog(`${attacker.name} est paralysé et passe son tour !`, 'text-yellow-400 font-bold'); createFloatingText(attackerSpriteId, 'ÉTOURDI', 'text-yellow-400'); }
+                attacker.buffs.stun = false; updateBars(); await wait(1500); finalizeTurn(role); return; 
             }
             
-            attacker.ce -= move.cost; 
-            updateBars();
-
+            attacker.ce -= move.cost; updateBars();
             addLog(`${attackerName} utilise [${move.name}]`, logColor);
             
             if (move.type === 'domain') {
                 attacker.activeDomain = { name: move.name, domainClass: move.domainClass, effect: move.effect, video: move.video, attr: move.attr };
                 await triggerDomainExpansion(move.name, move.domainClass, role, move.video); 
             }
-            else if (move.type === 'heal') { 
-                $(attackerSpriteId).classList.add('anim-heal'); 
-                await wait(600); 
-                $(attackerSpriteId).classList.remove('anim-heal'); 
-            }
+            else if (move.type === 'heal') { $(attackerSpriteId).classList.add('anim-heal'); await wait(600); $(attackerSpriteId).classList.remove('anim-heal'); }
             else { 
-                let animClass = '';
-                let hitWait = 350;
-                let totalAnimTime = 700;
+                let animClass = ''; let hitWait = 350; let totalAnimTime = 700;
+                if (move.dmg <= 35) { animClass = role === 'player' ? 'anim-strike-p-light' : 'anim-strike-e-light'; hitWait = 200; totalAnimTime = 400; } 
+                else if (move.dmg <= 75) { animClass = role === 'player' ? 'anim-strike-p' : 'anim-strike-e'; hitWait = 350; totalAnimTime = 700; } 
+                else { animClass = role === 'player' ? 'anim-strike-p-heavy' : 'anim-strike-e-heavy'; hitWait = 600; totalAnimTime = 1200; }
 
-                if (move.dmg <= 35) {
-                    animClass = role === 'player' ? 'anim-strike-p-light' : 'anim-strike-e-light';
-                    hitWait = 200; 
-                    totalAnimTime = 400;
-                } else if (move.dmg <= 75) {
-                    animClass = role === 'player' ? 'anim-strike-p' : 'anim-strike-e';
-                    hitWait = 350; 
-                    totalAnimTime = 700;
-                } else {
-                    animClass = role === 'player' ? 'anim-strike-p-heavy' : 'anim-strike-e-heavy';
-                    hitWait = 600; 
-                    totalAnimTime = 1200;
-                }
-
-                // FORCE REFLOW TO RESTART ANIMATION
                 $(attackerSpriteId).classList.remove('anim-strike-p-light', 'anim-strike-e-light', 'anim-strike-p', 'anim-strike-e', 'anim-strike-p-heavy', 'anim-strike-e-heavy');
                 void $(attackerSpriteId).offsetWidth; 
-                
-                $(attackerSpriteId).classList.add(animClass); 
-                await wait(hitWait); 
-                
-                playAttackSound(move.dmg); 
-
-                setTimeout(() => {
-                    $(attackerSpriteId).classList.remove(animClass);
-                }, totalAnimTime - hitWait);
+                $(attackerSpriteId).classList.add(animClass); await wait(hitWait); playAttackSound(move.dmg); 
+                setTimeout(() => $(attackerSpriteId).classList.remove(animClass), totalAnimTime - hitWait);
             }
             
             let damage = move.dmg;
@@ -2312,33 +1562,25 @@
                 let multiplier = 1;
                 if (attrAdvantage[move.attr].strong.includes(defender.attr)) multiplier = 1.5;
                 if (attrAdvantage[move.attr].weak.includes(defender.attr)) multiplier = 0.5;
-
                 damage = Math.floor(damage * multiplier);
-
-                if (multiplier > 1) {
-                    addLog(`Super Efficace ! (${attrEmojis[move.attr]} vs ${attrEmojis[defender.attr]})`, 'text-green-400 font-bold');
-                    createFloatingText(defenderSpriteId, 'EFFICACE', 'text-green-400');
-                } else if (multiplier < 1) {
-                    addLog(`Peu Efficace... (${attrEmojis[move.attr]} vs ${attrEmojis[defender.attr]})`, 'text-gray-500 font-bold');
-                    createFloatingText(defenderSpriteId, 'RÉSISTE', 'text-gray-400');
-                }
+                if (multiplier > 1) { addLog(`Super Efficace ! (${attrEmojis[move.attr]} vs ${attrEmojis[defender.attr]})`, 'text-green-400 font-bold'); createFloatingText(defenderSpriteId, 'EFFICACE', 'text-green-400'); } 
+                else if (multiplier < 1) { addLog(`Peu Efficace... (${attrEmojis[move.attr]} vs ${attrEmojis[defender.attr]})`, 'text-gray-500 font-bold'); createFloatingText(defenderSpriteId, 'RÉSISTE', 'text-gray-400'); }
             }
 
             if (move.effect === 'resonance' && defender.hp > defender.maxHp * 0.5) { damage = Math.floor(damage * 1.5); addLog(`Résonance ! Dégâts augmentés !`, 'text-purple-400 font-bold'); }
-            if (move.effect === 'blackflash' && Math.random() < 0.5) { attacker.ce = Math.min(attacker.maxCe, attacker.ce + 30); addLog(`RAYON NOIR ! (+30 CE)`, 'text-red-500 font-black'); createFloatingText(attackerSpriteId, 'RAYON NOIR', 'text-red-600'); shakeScreen(); }
+            if (move.effect === 'blackflash' && gameRandom() < 0.5) { attacker.ce = Math.min(attacker.maxCe, attacker.ce + 30); addLog(`RAYON NOIR ! (+30 CE)`, 'text-red-500 font-black'); createFloatingText(attackerSpriteId, 'RAYON NOIR', 'text-red-600'); shakeScreen(); }
             
             if (defender.buffs.evade && move.type !== 'heal' && move.type !== 'domain') { damage = 0; addLog(`${defender.name} a esquivé !`, 'text-gray-400'); createFloatingText(defenderSpriteId, 'Esquivé !', 'text-gray-300'); defender.buffs.evade = false; } 
             else if (move.type === 'heal') { attacker.hp = Math.min(attacker.maxHp, attacker.hp + 80); addLog(`${attacker.name} se soigne.`, 'text-green-400'); createFloatingText(attackerSpriteId, `+80`, 'text-green-500'); }
             else {
                 if (damage > 0) {
-                    damage = Math.floor(damage * (0.9 + Math.random() * 0.2));
+                    damage = Math.floor(damage * (0.9 + gameRandom() * 0.2));
                     defender.hp = Math.max(0, defender.hp - damage);
-                    $(defenderSpriteId).classList.add('anim-hurt');
-                    createFloatingText(defenderSpriteId, `-${damage}`, 'text-red-500');
+                    $(defenderSpriteId).classList.add('anim-hurt'); createFloatingText(defenderSpriteId, `-${damage}`, 'text-red-500');
                     addLog(`${defender.name} subit ${damage} dégâts.`, 'text-orange-400');
                     if(damage >= 60) shakeScreen(); 
                     setTimeout(() => $(defenderSpriteId).classList.remove('anim-hurt'), 800);
-                    if (move.effect === 'chance-stun' && Math.random() < 0.3) { defender.buffs.stun = true; addLog(`${defender.name} est paralysé !`, 'text-yellow-400'); }
+                    if (move.effect === 'chance-stun' && gameRandom() < 0.3) { defender.buffs.stun = true; addLog(`${defender.name} est paralysé !`, 'text-yellow-400'); }
                 }
             }
             
@@ -2354,298 +1596,152 @@
         }
 
         async function finalizeTurn(currentRole) {
-            if (currentRole === 'player') {
-                isPlayerTurn = false; 
-                hasSwitchedThisTurn = false;
-                updateTurnIndicator();
+            // Permet d'identifier globalement si c'est P1 ou P2 qui vient de jouer (important pour le multijoueur)
+            let actorWasP1 = (currentMode === 'online') 
+                ? (myRole === 'p1' && currentRole === 'player') || (myRole === 'p2' && currentRole === 'enemy')
+                : (currentRole === 'player'); // Solo : player agit comme P1
+            
+            if (actorWasP1) {
+                if(currentMode === 'online') isPlayerTurn = (myRole !== 'p1');
+                else isPlayerTurn = false;
                 
-                enemyTeam.forEach((c, i) => {
-                    if(c.hp > 0) {
-                        let recharge = (i === enemyIdx) ? (c.activeDomain ? 5 : 10) : 5;
-                        c.ce = Math.min(c.maxCe, c.ce + recharge);
-                    }
-                });
-                updateBars();
-                isAnimating = false; 
-                setTimeout(enemyAI, 1500);
+                hasSwitchedThisTurn = false; updateTurnIndicator();
+                
+                // Recharge pour la team du dessus (P2)
+                let p2Team = (currentMode === 'online' && myRole === 'p2') ? playerTeam : enemyTeam;
+                let p2Idx = (currentMode === 'online' && myRole === 'p2') ? playerIdx : enemyIdx;
+                p2Team.forEach((c, i) => { if(c.hp > 0) { let recharge = (i === p2Idx) ? (c.activeDomain ? 5 : 10) : 5; c.ce = Math.min(c.maxCe, c.ce + recharge); } });
+                
+                updateBars(); isAnimating = false; 
+                if(currentMode !== 'online' && currentRole === 'player') setTimeout(enemyAI, 1500);
             } else {
                 await applyDomainEffects();
                 
-                if (player.hp <= 0) {
-                    let continues = await handleDeath('player');
-                    if (!continues) return;
-                }
-                if (enemy.hp <= 0) {
-                    let continues = await handleDeath('enemy');
-                    if (!continues) return;
-                }
+                if (player.hp <= 0) { let continues = await handleDeath('player'); if (!continues) return; }
+                if (enemy.hp <= 0) { let continues = await handleDeath('enemy'); if (!continues) return; }
 
                 if (currentMode === 'tutorial') {
                     tutorialStep++;
-                    if (tutorialStep < tutorialSequence.length) {
-                        let seq = tutorialSequence[tutorialStep];
-                        $('tutorial-text').innerText = seq.text;
-                        if (seq.boost) player.ce = seq.boost;
-                        if (seq.setEnemyHp) enemy.hp = seq.setEnemyHp; 
-                    } else {
-                        $('tutorial-box').classList.add('hidden');
-                    }
+                    if (tutorialStep < tutorialSequence.length) { let seq = tutorialSequence[tutorialStep]; $('tutorial-text').innerText = seq.text; if (seq.boost) player.ce = seq.boost; if (seq.setEnemyHp) enemy.hp = seq.setEnemyHp; } 
+                    else $('tutorial-box').classList.add('hidden');
                 }
 
-                isPlayerTurn = true; 
-                hasSwitchedThisTurn = false;
-                updateTurnIndicator();
+                if(currentMode === 'online') isPlayerTurn = (myRole === 'p1');
+                else isPlayerTurn = true;
                 
-                playerTeam.forEach((c, i) => {
-                    if(c.hp > 0) {
-                        let recharge = (i === playerIdx) ? (c.activeDomain ? 5 : 10) : 5;
-                        c.ce = Math.min(c.maxCe, c.ce + recharge);
-                    }
-                });
+                hasSwitchedThisTurn = false; updateTurnIndicator();
                 
-                isAnimating = false; 
-                updateBars();
+                // Recharge pour la team du bas (P1)
+                let p1Team = (currentMode === 'online' && myRole === 'p2') ? enemyTeam : playerTeam;
+                let p1Idx = (currentMode === 'online' && myRole === 'p2') ? enemyIdx : playerIdx;
+                p1Team.forEach((c, i) => { if(c.hp > 0) { let recharge = (i === p1Idx) ? (c.activeDomain ? 5 : 10) : 5; c.ce = Math.min(c.maxCe, c.ce + recharge); } });
+                
+                isAnimating = false; updateBars();
             }
         }
 
         async function enemyAI() {
-            if (enemy.hp <= 0) return;
+            if (enemy.hp <= 0 || currentMode === 'online') return;
 
             let isStunnedByPlayerGojo = player.activeDomain && player.activeDomain.effect === 'domain-stun';
-            if (enemy.activeDomain && enemy.hp <= 80 && !isStunnedByPlayerGojo) {
-                cancelDomain('enemy');
-                return;
-            }
-
-            // Intelligence Artificielle : Switch 3v3
-            if (currentMode === 'online' && !enemy.activeDomain && !hasSwitchedThisTurn && !isStunnedByPlayerGojo) {
-                let isWeak = attrAdvantage[player.attr].strong.includes(enemy.attr);
-                let isLowHp = enemy.hp < enemy.maxHp * 0.3;
-                
-                if (isWeak || isLowHp) {
-                    let bestCandidateIdx = -1;
-                    
-                    // 1. Cherche un allié FORT contre le joueur
-                    for (let i = 0; i < enemyTeam.length; i++) {
-                        if (i === enemyIdx || enemyTeam[i].hp <= 0) continue;
-                        if (attrAdvantage[enemyTeam[i].attr].strong.includes(player.attr)) {
-                            bestCandidateIdx = i;
-                            break;
-                        }
-                    }
-                    
-                    // 2. Sinon, si on est en danger, on prend n'importe qui de mieux
-                    if (bestCandidateIdx === -1 && (isWeak || isLowHp)) {
-                        for (let i = 0; i < enemyTeam.length; i++) {
-                            if (i === enemyIdx || enemyTeam[i].hp <= 0) continue;
-                            if (enemyTeam[i].hp > enemy.hp + 50 || !attrAdvantage[player.attr].strong.includes(enemyTeam[i].attr)) {
-                                bestCandidateIdx = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (bestCandidateIdx !== -1) {
-                        await switchCharacter(bestCandidateIdx, 'enemy');
-                        await wait(500); 
-                    }
-                }
-            }
+            if (enemy.activeDomain && enemy.hp <= 80 && !isStunnedByPlayerGojo) { cancelDomain_internal('enemy'); return; }
 
             const affordableMoves = enemy.moves.filter(m => m.cost <= enemy.ce);
             let selectedMove = affordableMoves[0];
             
-            if (currentMode === 'tutorial') {
-                selectedMove = enemy.moves[0]; 
-            }
+            if (currentMode === 'tutorial') selectedMove = enemy.moves[0]; 
             else if(isStunnedByPlayerGojo && !enemy.activeDomain) {
                 const domainMoveFallback = affordableMoves.find(m => m.type === 'domain');
-                if(domainMoveFallback) {
-                    executeTurn(enemy, player, domainMoveFallback, 'enemy');
-                    return;
-                }
+                if(domainMoveFallback) { executeTurn_internal(enemy, player, domainMoveFallback, 'enemy'); return; }
             } else {
                 const maxMoveCost = Math.max(...enemy.moves.map(m => m.cost));
                 const healMove = affordableMoves.find(m => m.type === 'heal');
                 const domainMove = !enemy.activeDomain ? affordableMoves.find(m => m.type === 'domain') : null; 
                 const sortedAffordable = [...affordableMoves].sort((a, b) => b.cost - a.cost);
 
-                if (difficultyLevel === 'facile') {
-                    selectedMove = affordableMoves[rand(0, affordableMoves.length - 1)];
-                    if (selectedMove.type === 'domain' && Math.random() < 0.7) {
-                        selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
-                    }
-                } 
+                if (difficultyLevel === 'facile') { selectedMove = affordableMoves[rand(0, affordableMoves.length - 1)]; if (selectedMove.type === 'domain' && Math.random() < 0.7) selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0]; } 
                 else if (difficultyLevel === 'normal') {
-                    if (enemy.activeDomain) {
-                        const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain');
-                        if(movesWithoutDomain.length > 0) selectedMove = (Math.random() < 0.6) ? movesWithoutDomain[0] : movesWithoutDomain[rand(0, movesWithoutDomain.length - 1)];
-                    } else if (affordableMoves.length > 1) {
-                        if (healMove && enemy.hp < enemy.maxHp * 0.4) selectedMove = healMove;
-                        else if (domainMove && Math.random() < 0.8) selectedMove = domainMove;
-                        else selectedMove = (Math.random() < 0.6) ? sortedAffordable[0] : sortedAffordable[rand(0, sortedAffordable.length - 1)];
-                    }
+                    if (enemy.activeDomain) { const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain'); if(movesWithoutDomain.length > 0) selectedMove = (Math.random() < 0.6) ? movesWithoutDomain[0] : movesWithoutDomain[rand(0, movesWithoutDomain.length - 1)]; } 
+                    else if (affordableMoves.length > 1) { if (healMove && enemy.hp < enemy.maxHp * 0.4) selectedMove = healMove; else if (domainMove && Math.random() < 0.8) selectedMove = domainMove; else selectedMove = (Math.random() < 0.6) ? sortedAffordable[0] : sortedAffordable[rand(0, sortedAffordable.length - 1)]; }
                 }
                 else if (difficultyLevel === 'difficile') {
-                    if (healMove && enemy.hp < enemy.maxHp * 0.4) {
-                        selectedMove = healMove;
-                    } else if (domainMove) {
-                        selectedMove = domainMove;
-                    } else if (enemy.ce < maxMoveCost && Math.random() < 0.6 && !enemy.activeDomain) {
-                        selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
-                    } else {
-                        const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain' || !enemy.activeDomain);
-                        selectedMove = movesWithoutDomain[0] || affordableMoves[0];
-                    }
+                    if (healMove && enemy.hp < enemy.maxHp * 0.4) selectedMove = healMove; else if (domainMove) selectedMove = domainMove; else if (enemy.ce < maxMoveCost && Math.random() < 0.6 && !enemy.activeDomain) selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0]; 
+                    else { const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain' || !enemy.activeDomain); selectedMove = movesWithoutDomain[0] || affordableMoves[0]; }
                 }
                 else if (difficultyLevel === 'extreme') {
-                    if (healMove && enemy.hp < enemy.maxHp * 0.3) {
-                        selectedMove = healMove;
-                    } else if (domainMove) {
-                        selectedMove = domainMove;
-                    } else if (enemy.ce < maxMoveCost && !enemy.activeDomain) {
-                        selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
-                    } else {
-                        const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain' || !enemy.activeDomain);
-                        selectedMove = movesWithoutDomain[0] || affordableMoves[0];
-                    }
+                    if (healMove && enemy.hp < enemy.maxHp * 0.3) selectedMove = healMove; else if (domainMove) selectedMove = domainMove; else if (enemy.ce < maxMoveCost && !enemy.activeDomain) selectedMove = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0]; 
+                    else { const movesWithoutDomain = sortedAffordable.filter(m => m.type !== 'domain' || !enemy.activeDomain); selectedMove = movesWithoutDomain[0] || affordableMoves[0]; }
                 }
             }
-
-            executeTurn(enemy, player, selectedMove, 'enemy');
+            executeTurn_internal(enemy, player, selectedMove, 'enemy');
         }
 
         async function endGame(result) {
             playMusic('none');
-
             const deadSprite = result === 'win' ? $('sprite-enemy') : $('sprite-player');
             const winner = result === 'win' ? player : enemy;
             
-            deadSprite.classList.add('anim-vanish');
-            await wait(1800); 
+            deadSprite.classList.add('anim-vanish'); await wait(1800); 
             
-            const modal = $('modal-gameover');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-            
+            const modal = $('modal-gameover'); modal.classList.remove('hidden'); modal.classList.add('flex');
             const winImg = $('gameover-image');
-            
             winImg.onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${winner.name}&backgroundColor=1e293b&textColor=ffffff`; };
             winImg.src = winner.img;
-            
-            winImg.classList.remove('hidden');
-            winImg.className = `w-40 h-40 rounded-full border-4 object-cover mb-4 z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)] ${result === 'win' ? 'border-green-500 shadow-green-500/50' : 'border-red-500 shadow-red-500/50'}`;
+            winImg.classList.remove('hidden'); winImg.className = `w-40 h-40 rounded-full border-4 object-cover mb-4 z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)] ${result === 'win' ? 'border-green-500 shadow-green-500/50' : 'border-red-500 shadow-red-500/50'}`;
 
-            const btnContainer = $('gameover-buttons');
-            btnContainer.innerHTML = '';
+            const btnContainer = $('gameover-buttons'); btnContainer.innerHTML = '';
 
             if (result === 'win') {
                 if(currentMode === 'tutorial') {
-                    $('gameover-title').innerText = 'TUTO TERMINÉ !';
-                    $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-lg z-10 relative';
-                    $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
+                    $('gameover-title').innerText = 'TUTO TERMINÉ !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Continuer</button>`;
                 } else if (currentMode === 'online') {
-                    onlineWins++;
-                    let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); 
-                    playerCoins += earnedCoins;
-                    saveGameData(); 
-                    $('gameover-title').innerText = 'VICTOIRE !';
-                    $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
+                    onlineWins++; let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); playerCoins += earnedCoins; saveGameData(); 
+                    $('gameover-title').innerText = 'VICTOIRE !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
                     $('gameover-desc').innerHTML = `Vous avez vaincu l'équipe de ${enemy.name}.<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
-                    
-                    btnContainer.innerHTML = `
-                        <button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button>
-                        <button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>
-                    `;
+                    btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
                 } else if (currentMode === 'tournament') {
-                    // Calcul tournoi
-                    let currentMatches = tState.bracket[tState.round];
-                    currentMatches[0].winner = currentMatches[0].p1; 
-                    
-                    let nextRoundPlayers = [currentMatches[0].winner];
-                    for(let i=1; i<currentMatches.length; i++) {
-                        let m = currentMatches[i];
-                        m.winner = Math.random() > 0.5 ? m.p1 : m.p2;
-                        nextRoundPlayers.push(m.winner);
-                    }
-                    
-                    if (tState.round < 2) {
-                        let nextMatches = [];
-                        for(let i=0; i<nextRoundPlayers.length; i+=2) {
-                            nextMatches.push({ p1: nextRoundPlayers[i], p2: nextRoundPlayers[i+1], winner: null });
-                        }
-                        tState.bracket.push(nextMatches);
-                    }
-                    
+                    let currentMatches = tState.bracket[tState.round]; currentMatches[0].winner = currentMatches[0].p1; 
+                    let nextRoundPlayers = [currentMatches[0].winner]; for(let i=1; i<currentMatches.length; i++) { let m = currentMatches[i]; m.winner = Math.random() > 0.5 ? m.p1 : m.p2; nextRoundPlayers.push(m.winner); }
+                    if (tState.round < 2) { let nextMatches = []; for(let i=0; i<nextRoundPlayers.length; i+=2) nextMatches.push({ p1: nextRoundPlayers[i], p2: nextRoundPlayers[i+1], winner: null }); tState.bracket.push(nextMatches); }
                     tState.phase = 'results';
-                    
                     if (tState.round === 2) {
-                        tournamentTrophies++;
-                        let earnedCoins = 0;
-                        if (difficultyLevel === 'facile') earnedCoins = 10;
-                        else if (difficultyLevel === 'normal') earnedCoins = 15;
-                        else if (difficultyLevel === 'difficile') earnedCoins = 35;
-                        else if (difficultyLevel === 'extreme') earnedCoins = 250;
-
-                        playerCoins += earnedCoins;
-                        saveGameData();
-                        $('gameover-title').innerText = 'CHAMPION !';
-                        $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg z-10 relative';
-                        $('gameover-desc').innerHTML = `Vous avez remporté le tournoi !<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                        tournamentTrophies++; let earnedCoins = 0; if (difficultyLevel === 'facile') earnedCoins = 10; else if (difficultyLevel === 'normal') earnedCoins = 15; else if (difficultyLevel === 'difficile') earnedCoins = 35; else if (difficultyLevel === 'extreme') earnedCoins = 250;
+                        playerCoins += earnedCoins; saveGameData();
+                        $('gameover-title').innerText = 'CHAMPION !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg z-10 relative'; $('gameover-desc').innerHTML = `Vous avez remporté le tournoi !<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
                         btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                     } else {
-                        $('gameover-title').innerText = 'VICTOIRE !';
-                        $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
-                        $('gameover-desc').innerText = `Vous passez au tour suivant.`;
+                        $('gameover-title').innerText = 'VICTOIRE !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous passez au tour suivant.`;
                         btnContainer.innerHTML = `<button onclick="hideGameOverAndShowTournament()" class="w-full px-10 py-4 bg-blue-600 text-white rounded-full font-bold text-xl shadow-[0_0_20px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Voir les résultats</button>`;
                     }
                 } else {
-                    $('gameover-title').innerText = 'EXORCISÉ !';
-                    $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
-                    $('gameover-desc').innerText = `Vous avez vaincu ${enemy.name}.`;
+                    $('gameover-title').innerText = 'EXORCISÉ !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous avez vaincu ${enemy.name}.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                 }
             } else {
-                $('gameover-title').innerText = 'MORT';
-                $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-900 drop-shadow-lg z-10 relative';
-                
+                $('gameover-title').innerText = 'MORT'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-900 drop-shadow-lg z-10 relative';
                 if (currentMode === 'tournament') {
-                    $('gameover-title').innerText = 'ÉLIMINÉ';
-                    $('gameover-desc').innerText = `Vous avez été éliminé du tournoi.`;
+                    $('gameover-title').innerText = 'ÉLIMINÉ'; $('gameover-desc').innerText = `Vous avez été éliminé du tournoi.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                 } else {
                     $('gameover-desc').innerText = `Votre équipe a été décimée...`;
                     if (currentMode === 'online') {
-                        onlineLosses++;
-                        saveGameData();
-                        btnContainer.innerHTML = `
-                            <button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button>
-                            <button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>
-                        `;
-                    } else {
-                        btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
-                    }
+                        onlineLosses++; saveGameData();
+                        btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
+                    } else btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                 }
             }
         }
 
         async function resetGame() {
-            const overlay = $('transition-overlay');
-            overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
-            await wait(500); 
-
-            $('modal-gameover').classList.add('hidden');
-            $('modal-gameover').classList.remove('flex');
-            $('gameover-image').classList.add('hidden'); 
-            
+            const overlay = $('transition-overlay'); overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100'); await wait(500); 
+            $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden'); 
+            clearNetwork();
             await showScreen('screen-menu');
         }
 
         // --- DÉMARRAGE INITIAL ---
-        window.onload = () => {
-            loadGameData();
-            preloadAssets();
-        };
+        window.onload = () => { loadGameData(); preloadAssets(); };
     </script>
 </body>
 </html>
