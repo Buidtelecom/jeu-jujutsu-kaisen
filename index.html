@@ -174,7 +174,6 @@
         .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); }
         
         /* Arrière-plans d'Extensions de Territoire */
-        .bg-default { background-image: url('terrain_de_combat_Shibuya.jpeg'); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-gojo { background-image: url("Sphere_de_lespace_infini_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-sukuna { background-image: url("lhotel_demoniaque_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-megumi { background-image: url("image_du_territoire_de_megumi.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
@@ -297,6 +296,17 @@
         </div>
     </div>
 
+    <!-- MODAL CLAN MEMBERS LIST -->
+    <div id="modal-clan-members" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-orange-500 rounded-xl p-4 w-full max-w-sm shadow-[0_0_30px_rgba(249,115,22,0.3)] flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                <h3 class="text-lg font-bold text-orange-400"><i class="fas fa-users"></i> Membres du Clan</h3>
+                <button onclick="hideClanMembers()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="clan-members-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2 text-left"></div>
+        </div>
+    </div>
+
     <!-- AUDIO D'AMBIANCE -->
     <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
     <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
@@ -320,15 +330,28 @@
             <button onclick="showScreen('screen-leaderboard'); switchLeaderboardTab('global');" class="menu-btn py-3 px-6 rounded-lg font-bold text-blue-400 tracking-wide flex justify-between items-center">
                 <span>CLASSEMENT</span> <i class="fas fa-trophy"></i>
             </button>
-            <!-- NOUVEAU BOUTON CLAN -->
             <button onclick="showScreen('screen-clan'); renderClanScreen();" class="menu-btn py-3 px-6 rounded-lg font-bold text-orange-400 tracking-wide flex justify-between items-center shadow-[0_0_10px_rgba(249,115,22,0.3)]">
                 <span>CLAN</span> <i class="fas fa-users"></i>
+            </button>
+            <button onclick="showScreen('screen-tv'); fetchLiveMatches();" class="menu-btn py-3 px-6 rounded-lg font-bold text-pink-400 tracking-wide flex justify-between items-center shadow-[0_0_10px_rgba(236,72,153,0.3)]">
+                <span>TV (DIRECT)</span> <i class="fas fa-tv"></i>
             </button>
             <button onclick="showScreen('screen-market'); renderMarket();" class="menu-btn py-3 px-6 rounded-lg font-bold text-yellow-400 tracking-wide flex justify-between items-center">
                 <span>MARCHÉ</span> <i class="fas fa-store"></i>
             </button>
             <button onclick="showScreen('screen-credits')" class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-300 tracking-wide">CRÉDITS</button>
         </div>
+    </div>
+
+    <!-- ECRAN TV SPECTATEUR -->
+    <div id="screen-tv" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-3xl font-black text-pink-400 mt-2 mb-4 text-center drop-shadow-lg relative z-10"><i class="fas fa-tv"></i> TV DIRECT</h2>
+        <p class="text-center text-gray-400 text-xs font-bold uppercase tracking-widest mb-6 relative z-10">Duels en Ligne en Cours</p>
+        <div id="tv-match-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-10 w-full max-w-lg mx-auto relative z-10"></div>
     </div>
 
     <!-- ECRAN CLAN -->
@@ -353,7 +376,7 @@
             <div class="flex justify-between items-center bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md mb-4 shrink-0">
                 <div>
                     <div id="clan-joined-name" class="font-black text-white text-xl">Nom du Clan</div>
-                    <div id="clan-joined-count" class="text-sm font-bold text-orange-400 mt-1"><i class="fas fa-user-friends mr-1"></i> 0/20</div>
+                    <div class="text-sm font-bold text-orange-400 mt-1 cursor-pointer hover:text-orange-300 transition-colors" onclick="showClanMembers()"><i class="fas fa-list mr-1"></i> Membres (<span id="clan-count-num">0/20</span>)</div>
                 </div>
                 <button id="btn-leave-clan" onclick="leaveOrDeleteClan()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_10px_rgba(239,68,68,0.5)] active:scale-95 text-sm">Quitter</button>
             </div>
@@ -660,6 +683,11 @@
             <button onclick="sendEmote('🤡', 'player')" class="text-2xl hover:scale-125 transition-transform">🤡</button>
         </div>
 
+        <!-- COMPTEUR SPECTATEURS -->
+        <div id="spectator-counter" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 border border-pink-500/50 px-3 py-1.5 rounded-full text-white font-bold text-xs shadow-[0_0_10px_rgba(236,72,153,0.3)] hidden items-center gap-2">
+            <i class="fas fa-eye text-pink-400 animate-pulse"></i> <span id="spectator-count-text">0</span> spectateurs
+        </div>
+
         <div id="domain-flash" class="absolute inset-0 pointer-events-none z-40"></div>
 
         <!-- ENEMY HUD -->
@@ -828,6 +856,7 @@
         let globalPlayerPseudo = "";
         let playerCountryEmoji = "🌍";
         let lastPseudoChangeDate = 0;
+        let lastCoinRequest = 0; // Ajout du cooldown 10 min
         
         let isMuted = false;
         let emotesEnabled = true; 
@@ -854,11 +883,16 @@
         let currentClanRef = null;
         let clanChatRef = null;
         let isClanLeader = false;
+        let currentClanData = null;
+
+        /* Système Arènes aléatoires */
+        const randomArenas = ['arene_1.jpg', 'arene_2.jpg', 'arene_3.jpg', 'arene_4.jpg', 'arene_5.jpg'];
+        let currentArenaBg = '';
 
         /* RNG Synchronisé */
         let sharedRNG = 1;
         function gameRandom() { 
-            if (currentMode !== 'online') return Math.random(); 
+            if (currentMode !== 'online' && currentMode !== 'spectator') return Math.random(); 
             let x = Math.sin(sharedRNG++) * 10000; 
             return x - Math.floor(x); 
         }
@@ -880,6 +914,7 @@
             "satoru Gojo.jpg", "megumi.jpg", "nobara.jpg", "Sukuna.jpeg", "yuta.jpeg",
             "maki.jpeg", "nanami.jpg", "hakari.jpg", "mahito.jpeg", "Toji.jpeg", "jogo.png",
             "higuruma.jpg", "todo.jpg", "kashimo.jpg", "choso.jpg", "geto.jpg", "uraume.jpg",
+            "arene_1.jpg", "arene_2.jpg", "arene_3.jpg", "arene_4.jpg", "arene_5.jpg", // Ajout des arènes au preload
             "theme_de_personnages_jjk.mp3", "JJK_musique_darene_de_combat.mp3",
             "attaque simple .mp3", "coup moyen .mp3", "coup puissant .mp3",
             "Sphere_de_lespace_infini.mp4", "territoire_de_Megumi.mp4", "Lhotel_demoniaque.mp4",
@@ -1023,7 +1058,10 @@
             matchRef.child('players').on('value', (snap) => {
                 const players = snap.val();
                 if (players && players.p1 && players.p2 && $('screen-matchmaking').classList.contains('hidden') === false) {
-                    if(myRole === 'p1') queueRef.onDisconnect().cancel();
+                    if(myRole === 'p1') {
+                        queueRef.onDisconnect().cancel();
+                        matchRef.child('status').set('playing');
+                    }
                     $('matchmaking-text').innerText = "ADVERSAIRE TROUVÉ !";
                     setTimeout(() => startOnlineBattle(players), 1000);
                 }
@@ -1032,7 +1070,12 @@
             matchRef.child('status').on('value', snap => {
                 if(snap.val() === 'abandoned') {
                     if (!$('screen-battle').classList.contains('hidden') || !$('screen-rps').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden')) {
-                        endGame('win_abandon');
+                        if (currentMode === 'spectator') {
+                            showNotification("Le duel a été annulé par un joueur.");
+                            leaveSpectator();
+                        } else {
+                            endGame('win_abandon');
+                        }
                     } else if (!$('screen-matchmaking').classList.contains('hidden')) {
                         showNotification("La recherche a été annulée ou l'hôte s'est déconnecté.", "INFO");
                         clearNetwork();
@@ -1133,6 +1176,7 @@
         }
 
         function pushNetworkAction(actionData) {
+            if(currentMode === 'spectator') return;
             actionData.role = myRole;
             matchRef.child('actions').push(actionData);
         }
@@ -1149,7 +1193,12 @@
             
             while (actionQueue.length > 0) {
                 const action = actionQueue.shift();
-                const targetRole = action.role === myRole ? 'player' : 'enemy';
+                let targetRole;
+                if (currentMode === 'spectator') {
+                    targetRole = action.role === 'p1' ? 'player' : 'enemy';
+                } else {
+                    targetRole = action.role === myRole ? 'player' : 'enemy';
+                }
 
                 if(action.type === 'emote') {
                     if(targetRole === 'enemy') sendEmote_internal(action.emoji, 'enemy');
@@ -1168,13 +1217,18 @@
 
         function clearNetwork() {
             stopTurnTimer();
-            if (currentMode === 'online' && matchRef) {
-                matchRef.child('status').onDisconnect().cancel();
+            if ((currentMode === 'online' || currentMode === 'spectator') && matchRef) {
+                if (currentMode === 'online') {
+                    matchRef.child('status').onDisconnect().cancel();
+                } else if (currentMode === 'spectator') {
+                    matchRef.child('spectators').onDisconnect().cancel();
+                }
                 matchRef.child('status').off();
                 matchRef.child('actions').off();
                 matchRef.child('players').off();
                 matchRef.child('rps').off();
                 matchRef.child('turnChoice').off();
+                matchRef.child('spectators').off();
             }
             actionQueue = [];
             isProcessingQueue = false;
@@ -1225,6 +1279,89 @@
                 timerEl.classList.add('hidden');
                 timerEl.classList.remove('animate-pulse');
             }
+        }
+
+        /* --- TV / SPECTATEUR --- */
+        function fetchLiveMatches() {
+            const list = $('tv-match-list');
+            list.innerHTML = '<p class="text-center text-gray-400 mt-10 animate-pulse">Recherche de duels en cours...</p>';
+            db.ref('matches').limitToLast(30).once('value', snap => {
+                list.innerHTML = '';
+                let hasMatches = false;
+                snap.forEach(child => {
+                    const m = child.val();
+                    if (m.status === 'playing' && m.players && m.players.p1 && m.players.p2) {
+                        hasMatches = true;
+                        list.innerHTML += `
+                            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center mb-3">
+                                <div class="flex-1 text-center font-bold text-blue-400 truncate px-1">${m.players.p1.name}</div>
+                                <div class="px-3 text-pink-400 font-black italic">VS</div>
+                                <div class="flex-1 text-center font-bold text-red-400 truncate px-1">${m.players.p2.name}</div>
+                                <button onclick="joinAsSpectator('${child.key}')" class="ml-4 bg-pink-600 hover:bg-pink-500 text-white px-3 py-2 rounded-lg font-bold shadow-[0_0_10px_rgba(236,72,153,0.5)] active:scale-95 text-xs"><i class="fas fa-eye"></i> Voir</button>
+                            </div>
+                        `;
+                    }
+                });
+                if (!hasMatches) list.innerHTML = '<p class="text-center text-gray-500 mt-10">Aucun duel en cours pour le moment.</p>';
+            });
+        }
+
+        async function joinAsSpectator(mId) {
+            currentMode = 'spectator';
+            matchId = mId;
+            matchRef = db.ref('matches/' + matchId);
+            myRole = 'spectator';
+
+            matchRef.child('spectators').transaction(c => (c || 0) + 1);
+            matchRef.child('spectators').onDisconnect().transaction(c => Math.max(0, (c || 1) - 1));
+
+            const snap = await matchRef.once('value');
+            const data = snap.val();
+            if(!data || !data.players || !data.players.p1 || !data.players.p2) {
+                showNotification("Match terminé ou introuvable.");
+                clearNetwork();
+                showScreen('screen-menu');
+                return;
+            }
+
+            const p1Data = data.players.p1;
+            const p2Data = data.players.p2;
+            playerTeam = p1Data.team.map(idx => JSON.parse(JSON.stringify(charData[idx])));
+            enemyTeam = p2Data.team.map(idx => JSON.parse(JSON.stringify(charData[idx])));
+
+            playerIdx = 0; enemyIdx = 0; player = playerTeam[0]; enemy = enemyTeam[0];
+            player.name = p1Data.name; enemy.name = p2Data.name;
+
+            firstPlayerRole = data.turnChoice || 'p1';
+
+            // Skip VS/RPS
+            playerTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
+            enemyTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
+
+            $('sprite-player').classList.remove('anim-vanish'); $('sprite-enemy').classList.remove('anim-vanish');
+            stopAudioAndReset($('battle-music'));
+            
+            initBattle();
+
+            matchRef.child('actions').on('child_added', (actionSnap) => {
+                processNetworkAction(actionSnap.val());
+            });
+            
+            matchRef.child('status').on('value', st => {
+                if (st.val() === 'abandoned' || st.val() === 'finished') {
+                    showNotification("Le duel s'est terminé.");
+                    leaveSpectator();
+                }
+            });
+        }
+
+        function leaveSpectator() {
+            if (matchRef) {
+                matchRef.child('spectators').transaction(c => Math.max(0, (c || 1) - 1));
+                matchRef.child('spectators').onDisconnect().cancel();
+            }
+            clearNetwork();
+            resetGame();
         }
 
         /* --- GESTION MUSIQUE ET SON --- */
@@ -1621,19 +1758,31 @@
             currentClanRef = db.ref('clans/' + playerClanId);
             currentClanRef.on('value', snap => {
                 if(!snap.exists() && playerClanId) {
-                    // Le clan a été supprimé
                     playerClanId = null;
                     saveGameData();
                     if (!$('screen-clan').classList.contains('hidden')) renderClanScreen();
-                    showNotification("Votre clan a été dissous par le chef.", "INFO CLAN");
+                    showNotification("Votre clan a été dissous.", "INFO CLAN");
                     return;
                 }
                 const clan = snap.val();
                 if(clan) {
+                    if (!clan.members || !clan.members[auth.currentUser.uid]) {
+                        playerClanId = null;
+                        saveGameData();
+                        if (!$('screen-clan').classList.contains('hidden')) renderClanScreen();
+                        showNotification("Vous avez été banni du clan.", "INFO CLAN");
+                        return;
+                    }
+
+                    currentClanData = clan;
                     $('clan-joined-name').innerText = clan.info.name;
-                    $('clan-joined-count').innerHTML = `<i class="fas fa-user-friends mr-1"></i> ${clan.info.memberCount}/20`;
+                    $('clan-count-num').innerText = `${clan.info.memberCount}/20`;
                     isClanLeader = clan.info.creatorUid === auth.currentUser.uid;
                     $('btn-leave-clan').innerText = isClanLeader ? 'Supprimer' : 'Quitter';
+
+                    if (!$('modal-clan-members').classList.contains('hidden')) {
+                        renderClanMembersList();
+                    }
                 }
             });
 
@@ -1680,16 +1829,61 @@
             });
             
             clanChatRef.on('child_changed', snap => {
-                // Re-render chat simply by clearing and re-fetching last 50
                 chatBox.innerHTML = '';
                 clanChatRef.limitToLast(50).once('value', allMsgs => {
                     allMsgs.forEach(m => {
-                        clanChatRef.parent.child('dummy').set(null); // Just trigger child_added conceptually, or manually build logic.
+                        clanChatRef.parent.child('dummy').set(null); 
                     });
                 });
-                // For simplicity, we'll just close and reopen listener
                 clanChatRef.off(); listenToClan();
             });
+        }
+
+        function showClanMembers() {
+            $('modal-clan-members').classList.remove('hidden');
+            $('modal-clan-members').classList.add('flex');
+            renderClanMembersList();
+        }
+
+        function hideClanMembers() {
+            $('modal-clan-members').classList.add('hidden');
+            $('modal-clan-members').classList.remove('flex');
+        }
+
+        function renderClanMembersList() {
+            const list = $('clan-members-list');
+            list.innerHTML = '';
+            if(!currentClanData || !currentClanData.members) return;
+            
+            const members = Object.entries(currentClanData.members);
+            members.forEach(([uid, data]) => {
+                const isMe = uid === auth.currentUser.uid;
+                const isLeader = data.role === 'leader';
+                const canKick = isClanLeader && !isMe;
+                
+                let kickBtn = canKick ? `<button onclick="kickClanMember('${uid}', '${data.name}')" class="bg-red-600/80 hover:bg-red-500 text-white text-[10px] px-2 py-1 rounded ml-2 transition-colors border border-red-500"><i class="fas fa-ban"></i> Bannir</button>` : '';
+                let roleBadge = isLeader ? `<span class="bg-yellow-600 text-black text-[9px] font-bold px-1.5 py-0.5 rounded ml-2">CHEF</span>` : `<span class="bg-gray-700 text-gray-300 text-[9px] font-bold px-1.5 py-0.5 rounded ml-2">MEMBRE</span>`;
+                
+                list.innerHTML += `
+                    <div class="bg-gray-800 p-2 rounded-lg border ${isMe ? 'border-blue-500' : 'border-gray-700'} flex justify-between items-center">
+                        <div class="flex items-center text-sm font-bold text-white">
+                            ${data.name} ${isMe ? '<span class="text-blue-400 ml-1 text-xs">(Vous)</span>' : ''} ${roleBadge}
+                        </div>
+                        ${kickBtn}
+                    </div>
+                `;
+            });
+        }
+
+        function kickClanMember(uid, name) {
+            if(!isClanLeader || !playerClanId) return;
+            if(confirm(`Voulez-vous vraiment bannir ${name} du clan ?`)) {
+                db.ref('clans/' + playerClanId + '/members/' + uid).remove();
+                db.ref('clans/' + playerClanId + '/info/memberCount').transaction(c => Math.max(0, (c || 1) - 1));
+                db.ref('clans/' + playerClanId + '/chat').push({
+                    uid: 'system', name: 'Système', text: `${name} a été banni par le chef.`, type: 'system', timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
         }
 
         function sendClanChat() {
@@ -1708,7 +1902,18 @@
         }
 
         function requestClanCoins() {
-            if(!playerClanId) return;
+            if(!playerClanId || !currentClanData) return;
+            
+            const now = Date.now();
+            if (now - lastCoinRequest < 10 * 60 * 1000) {
+                const remaining = Math.ceil((10 * 60 * 1000 - (now - lastCoinRequest)) / 60000);
+                showNotification(`Veuillez attendre encore ${remaining} minute(s) avant de demander à nouveau.`, "PATIENCE");
+                return;
+            }
+
+            lastCoinRequest = now;
+            saveGameData();
+
             clanChatRef.push({
                 uid: auth.currentUser.uid,
                 name: globalPlayerPseudo,
@@ -1728,10 +1933,8 @@
             playerCoins -= 5;
             saveGameData();
             
-            // Créditer le receveur
             db.ref('users/' + targetUid + '/coins').transaction(c => (c || 0) + 5);
             
-            // Mettre à jour le message
             db.ref('clans/' + playerClanId + '/chat/' + msgId).update({
                 fulfilled: true,
                 helperName: globalPlayerPseudo
@@ -1801,7 +2004,8 @@
                 if (data.maxWinStreak !== undefined) maxWinStreak = data.maxWinStreak;
                 if (data.playerCountryEmoji !== undefined) playerCountryEmoji = data.playerCountryEmoji;
                 if (data.lastPseudoChangeDate !== undefined) lastPseudoChangeDate = data.lastPseudoChangeDate;
-                if (data.clanId !== undefined) playerClanId = data.clanId; // Récupération du clanId
+                if (data.clanId !== undefined) playerClanId = data.clanId;
+                if (data.lastCoinRequest !== undefined) lastCoinRequest = data.lastCoinRequest;
                 
                 if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.emotesEnabled !== undefined) emotesEnabled = data.emotesEnabled;
@@ -1826,7 +2030,8 @@
                 onlineWins: onlineWins, onlineLosses: onlineLosses, tournamentTrophies: tournamentTrophies, emotesEnabled: emotesEnabled,
                 dailyWins: dailyWins, dailyWinsDate: dailyWinsDate, lastDailyRewardDate: lastDailyRewardDate,
                 currentWinStreak: currentWinStreak, maxWinStreak: maxWinStreak, playerCountryEmoji: playerCountryEmoji, lastPseudoChangeDate: lastPseudoChangeDate,
-                clanId: playerClanId // Sauvegarde du clanId
+                clanId: playerClanId,
+                lastCoinRequest: lastCoinRequest
             }));
             hasSave = true; updateMenuButtons();
             syncUserDataToFirebase();
@@ -1842,7 +2047,7 @@
         function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
         
         function confirmNewGame() { 
-            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null;
+            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null; lastCoinRequest = 0;
             charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara', 'maki', 'nanami', 'hakari', 'todo'].includes(c.id)); 
             updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); 
         }
@@ -1888,7 +2093,7 @@
                 bg.style.backgroundImage = `url('${randomBg}')`;
             });
 
-            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps', 'screen-profile', 'screen-clan'].forEach(id => {
+            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps', 'screen-profile', 'screen-clan', 'screen-tv'].forEach(id => {
                 const el = $(id);
                 if(el) el.classList.add('hidden');
             });
@@ -1896,7 +2101,7 @@
             const targetScreen = $(screenId);
             if(targetScreen) targetScreen.classList.remove('hidden');
             
-            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-profile', 'screen-clan'].includes(screenId)) {
+            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-profile', 'screen-clan', 'screen-tv'].includes(screenId)) {
                 if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
             } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) {
@@ -1950,6 +2155,11 @@
         async function confirmExit() {
             hideExitModal(); 
             
+            if (currentMode === 'spectator') {
+                leaveSpectator();
+                return;
+            }
+
             if (currentMode === 'online' && matchRef) {
                 if (!$('screen-rps').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-battle').classList.contains('hidden')) {
                     onlineLosses++;
@@ -2053,7 +2263,7 @@
         }
 
         async function launchBattleSequence() {
-            if (currentMode !== 'online') {
+            if (currentMode !== 'online' && currentMode !== 'spectator') {
                 playerTeam = [JSON.parse(JSON.stringify(charData[pIndex]))];
                 enemyTeam = [JSON.parse(JSON.stringify(charData[eIndex]))];
                 playerIdx = 0; enemyIdx = 0; player = playerTeam[0]; enemy = enemyTeam[0];
@@ -2100,10 +2310,14 @@
 
         function initBattle() {
             sharedRNG = 1; 
+            currentArenaBg = randomArenas[Math.floor(gameRandom() * randomArenas.length)];
             
             if(currentMode === 'online') {
                 isPlayerTurn = (myRole === firstPlayerRole); 
                 $('btn-inspect-team').classList.remove('hidden');
+            } else if (currentMode === 'spectator') {
+                isPlayerTurn = false;
+                $('btn-inspect-team').classList.add('hidden');
             } else {
                 isPlayerTurn = true;
                 $('btn-inspect-team').classList.add('hidden');
@@ -2118,6 +2332,8 @@
                 $('enemy-difficulty-label').innerText = 'TUTORIEL'; $('btn-emote').classList.add('hidden'); tutorialStep = 0; $('tutorial-box').classList.remove('hidden'); $('tutorial-text').innerText = tutorialSequence[0].text;
             } else if (currentMode === 'online') {
                 $('enemy-difficulty-label').innerText = 'JOUEUR EN LIGNE'; $('tutorial-box').classList.add('hidden'); if(emotesEnabled) $('btn-emote').classList.remove('hidden'); else $('btn-emote').classList.add('hidden');
+            } else if (currentMode === 'spectator') {
+                $('enemy-difficulty-label').innerText = 'SPECTATEUR'; $('tutorial-box').classList.add('hidden'); $('btn-emote').classList.add('hidden');
             } else {
                 $('enemy-difficulty-label').innerText = difficultyLevel.toUpperCase(); $('tutorial-box').classList.add('hidden'); $('btn-emote').classList.add('hidden');
             }
@@ -2127,8 +2343,29 @@
             $('sprite-enemy').src = enemy.img; $('sprite-enemy').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
             
             updateArenaBackground(); updateTurnIndicator(); updateBars();
+
+            // Setup du compteur de spectateurs
+            if (currentMode === 'online' || currentMode === 'spectator') {
+                if (matchRef) {
+                    matchRef.child('spectators').on('value', snap => {
+                        const count = snap.val() || 0;
+                        if (count > 0) {
+                            $('spectator-counter').classList.remove('hidden');
+                            $('spectator-counter').classList.add('flex');
+                            $('spectator-count-text').innerText = count;
+                        } else {
+                            $('spectator-counter').classList.add('hidden');
+                            $('spectator-counter').classList.remove('flex');
+                        }
+                    });
+                }
+            } else {
+                $('spectator-counter').classList.add('hidden');
+                $('spectator-counter').classList.remove('flex');
+            }
             
             if (currentMode === 'online') addLog(`L'équipe de ${playerTeam[0].name} affronte l'équipe de ${enemyTeam[0].name} !`, 'text-yellow-400 font-bold');
+            else if (currentMode === 'spectator') addLog(`Vous observez ${player.name} affronter ${enemy.name} !`, 'text-pink-400 font-bold');
             else addLog(`Le combat commence : ${player.name} vs ${enemy.name} !`, 'text-yellow-400 font-bold');
             
             if (currentMode === 'tutorial') addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
@@ -2142,12 +2379,12 @@
         /* --- RENDU UI D'EQUIPE (Bataille) --- */
         function renderTeamUI() {
             const pRoster = $('player-team-roster'); const eRoster = $('enemy-team-roster');
-            if (currentMode !== 'online') { pRoster.innerHTML = ''; eRoster.innerHTML = ''; return; }
+            if (currentMode !== 'online' && currentMode !== 'spectator') { pRoster.innerHTML = ''; eRoster.innerHTML = ''; return; }
             pRoster.innerHTML = '';
             playerTeam.forEach((c, i) => {
                 let op = c.hp <= 0 ? 'opacity-30 grayscale border-gray-600' : (i === playerIdx ? 'border-2 border-blue-400 scale-110' : 'border border-gray-600 opacity-70 hover:opacity-100 cursor-pointer');
-                let canSwitch = (c.hp > 0 && i !== playerIdx && !player.activeDomain);
-                let click = canSwitch ? `onclick="switchCharacter(${i}, 'player')"` : (player.activeDomain && i !== playerIdx && c.hp > 0 ? `onclick="addLog('Impossible de changer pendant un Territoire !', 'text-red-400')"` : '');
+                let canSwitch = (c.hp > 0 && i !== playerIdx && !player.activeDomain && currentMode !== 'spectator');
+                let click = canSwitch ? `onclick="switchCharacter(${i}, 'player')"` : (player.activeDomain && i !== playerIdx && c.hp > 0 && currentMode !== 'spectator' ? `onclick="addLog('Impossible de changer pendant un Territoire !', 'text-red-400')"` : '');
                 let cePercent = Math.max(0, (c.ce / c.maxCe) * 100);
                 pRoster.innerHTML += `<div class="flex flex-col items-center gap-[2px] w-6" ${click}><img src="${c.img}" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover transition-all ${op}"><div class="w-full bg-gray-900 rounded-full h-1 border border-gray-700"><div class="bg-purple-500 h-full rounded-full transition-all" style="width: ${cePercent}%"></div></div></div>`;
             });
@@ -2160,7 +2397,7 @@
         }
 
         async function switchCharacter(index, role) {
-            if (isAnimating) return; 
+            if (isAnimating || currentMode === 'spectator') return; 
             
             if (currentMode === 'online' && role === 'player') {
                 if (!isPlayerTurn) return;
@@ -2205,15 +2442,26 @@
                 $('clash-bg-enemy').style.background = getDomainBgStyle(enemy.activeDomain.domainClass); $('clash-bg-enemy').style.backgroundSize = 'cover'; $('clash-bg-enemy').style.backgroundPosition = 'center';
             } else if (player.activeDomain) {
                 arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden ${player.activeDomain.domainClass}`;
+                arena.style.backgroundImage = '';
             } else if (enemy.activeDomain) {
                 arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden ${enemy.activeDomain.domainClass}`;
-            } else arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden bg-default`;
+                arena.style.backgroundImage = '';
+            } else {
+                arena.className = `absolute inset-0 flex items-center justify-center overflow-hidden`;
+                arena.style.backgroundImage = `url('${currentArenaBg}')`;
+                arena.style.backgroundSize = 'cover';
+                arena.style.backgroundPosition = 'center';
+            }
         }
 
         function updateTurnIndicator() {
             const wrapper = $('turn-indicator-container');
             const indicator = $('turn-indicator');
-            if (isPlayerTurn) { 
+            if (currentMode === 'spectator') {
+                indicator.innerText = "DIRECT"; 
+                indicator.className = "text-center text-xs font-black text-pink-400 animate-pulse tracking-widest"; 
+                wrapper.className = "flex justify-center items-center py-1 bg-pink-900/50 transition-colors border-b border-pink-500/50 gap-2";
+            } else if (isPlayerTurn) { 
                 indicator.innerText = "C'EST VOTRE TOUR"; 
                 indicator.className = "text-center text-xs font-bold text-blue-300"; 
                 wrapper.className = "flex justify-center items-center py-1 bg-blue-900/80 transition-colors border-b border-blue-500/50 gap-2";
@@ -2241,7 +2489,15 @@
         }
 
         function renderActionButtons() {
-            const container = $('action-buttons'); container.innerHTML = '';
+            const container = $('action-buttons'); 
+            if (currentMode === 'spectator') {
+                container.classList.add('hidden');
+                return;
+            } else {
+                container.classList.remove('hidden');
+            }
+
+            container.innerHTML = '';
             player.moves.forEach((move, index) => {
                 let isDomainActive = player.activeDomain && move.type === 'domain'; let canAfford = isDomainActive ? true : player.ce >= move.cost; let isEnabled = canAfford && isPlayerTurn && !isAnimating; let isTutorialTarget = false;
                 if (currentMode === 'tutorial' && !isDomainActive) { if (tutorialStep < tutorialSequence.length) { if (index !== tutorialSequence[tutorialStep].targetMove) isEnabled = false; else { isTutorialTarget = true; isEnabled = true; } } }
@@ -2319,7 +2575,7 @@
             entity.activeDomain = null; addLog(`${entity.name} annule son Territoire pour préserver ses PV.`, 'text-yellow-400'); updateArenaBackground();
             await wait(1000); 
             isAnimating = false; updateBars(); 
-            if (role === 'enemy' && currentMode !== 'online') enemyAI();
+            if (role === 'enemy' && currentMode !== 'online' && currentMode !== 'spectator') enemyAI();
         }
 
         async function applyDomainEffects() {
@@ -2506,7 +2762,7 @@
                 p2Team.forEach((c, i) => { if(c.hp > 0) { let recharge = (i === p2Idx) ? (c.activeDomain ? 5 : 10) : 5; c.ce = Math.min(c.maxCe, c.ce + recharge); } });
                 
                 isAnimating = false; updateBars(); 
-                if(currentMode !== 'online' && currentRole === 'player') setTimeout(enemyAI, 1500);
+                if(currentMode !== 'online' && currentMode !== 'spectator' && currentRole === 'player') setTimeout(enemyAI, 1500);
             } else {
                 await applyDomainEffects();
                 
@@ -2535,7 +2791,7 @@
         }
 
         async function enemyAI() {
-            if (enemy.hp <= 0 || currentMode === 'online') return;
+            if (enemy.hp <= 0 || currentMode === 'online' || currentMode === 'spectator') return;
 
             let isStunnedByPlayerGojo = player.activeDomain && player.activeDomain.effect === 'domain-stun';
             if (enemy.activeDomain && enemy.hp <= 80 && !isStunnedByPlayerGojo) { cancelDomain_internal('enemy'); return; }
@@ -2573,6 +2829,10 @@
         async function endGame(result) {
             playMusic('none');
             stopTurnTimer();
+
+            if (currentMode === 'online' && matchRef && result !== 'abandon' && result !== 'win_abandon') {
+                matchRef.child('status').set('finished');
+            }
             
             const isWin = result === 'win' || result === 'win_abandon';
             const isAbandon = result === 'abandon';
@@ -2603,6 +2863,13 @@
             const btnContainer = $('gameover-buttons'); btnContainer.innerHTML = '';
 
             overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
+
+            if (currentMode === 'spectator') {
+                $('gameover-title').innerText = 'FIN DU MATCH'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-pink-600 drop-shadow-lg z-10 relative';
+                $('gameover-desc').innerText = `${winner.name} remporte la victoire !`;
+                btnContainer.innerHTML = `<button onclick="leaveSpectator()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Quitter</button>`;
+                return;
+            }
 
             if (isWin) {
                 if(currentMode === 'tutorial') {
