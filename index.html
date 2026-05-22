@@ -307,6 +307,17 @@
         </div>
     </div>
 
+    <div id="modal-clan-war" class="absolute inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-gray-900 border border-red-600 rounded-xl p-4 w-full max-w-lg shadow-[0_0_30px_rgba(220,38,38,0.3)] flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-red-800 pb-2 shrink-0">
+                <h3 class="text-xl font-black text-red-500 drop-shadow-md"><i class="fas fa-fire"></i> Guerre de Clan</h3>
+                <button onclick="closeClanWar()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="clan-war-content" class="flex-1 overflow-y-auto no-scrollbar space-y-4 text-center">
+                </div>
+        </div>
+    </div>
+
     <!-- AUDIO D'AMBIANCE -->
     <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
     <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
@@ -378,8 +389,15 @@
                     <div id="clan-joined-name" class="font-black text-white text-xl">Nom du Clan</div>
                     <div class="text-sm font-bold text-orange-400 mt-1 cursor-pointer hover:text-orange-300 transition-colors" onclick="showClanMembers()"><i class="fas fa-list mr-1"></i> Membres (<span id="clan-count-num">0/20</span>)</div>
                 </div>
-                <button id="btn-leave-clan" onclick="leaveOrDeleteClan()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_10px_rgba(239,68,68,0.5)] active:scale-95 text-sm">Quitter</button>
+                                <button id="btn-leave-clan" onclick="leaveOrDeleteClan()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_10px_rgba(239,68,68,0.5)] active:scale-95 text-sm">Quitter</button>
             </div>
+            
+            <div class="flex justify-between items-center gap-2 mb-4 shrink-0">
+                <button onclick="openClanWar()" class="flex-1 py-3 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-black rounded-xl transition-colors shadow-[0_0_15px_rgba(220,38,38,0.5)] active:scale-95 border border-red-500 flex items-center justify-center gap-2">
+                    <i class="fas fa-fire"></i> GUERRE DE CLAN
+                </button>
+            </div>
+
             
             <div id="clan-chat-box" class="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 overflow-y-auto no-scrollbar space-y-3 mb-4 flex flex-col shadow-inner">
                 <!-- Messages du chat -->
@@ -884,6 +902,9 @@
         let clanChatRef = null;
         let isClanLeader = false;
         let currentClanData = null;
+        let currentWarId = null;
+        let currentWarData = null;
+
 
         /* Système Arènes aléatoires */
         const randomArenas = ['arene_1.jpg', 'arene_2.jpg', 'arene_3.jpg', 'arene_4.jpg', 'arene_5.jpg'];
@@ -1775,16 +1796,21 @@
                     }
 
                     currentClanData = clan;
-                    $('clan-joined-name').innerText = clan.info.name;
+                                        $('clan-joined-name').innerText = clan.info.name;
                     $('clan-count-num').innerText = `${clan.info.memberCount}/20`;
                     isClanLeader = clan.info.creatorUid === auth.currentUser.uid;
                     $('btn-leave-clan').innerText = isClanLeader ? 'Supprimer' : 'Quitter';
+                    currentWarId = clan.war ? clan.war.warId : null;
 
                     if (!$('modal-clan-members').classList.contains('hidden')) {
                         renderClanMembersList();
                     }
+                    if (!$('modal-clan-war').classList.contains('hidden')) {
+                        renderClanWarUI();
+                    }
                 }
             });
+
 
             const chatBox = $('clan-chat-box');
             chatBox.innerHTML = '';
@@ -1961,14 +1987,276 @@
                         uid: 'system', name: 'Système', text: `${globalPlayerPseudo} a quitté le clan.`, type: 'system', timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
                     
-                    playerClanId = null;
+                                        playerClanId = null;
                     saveGameData();
                     renderClanScreen();
                 }
             }
         }
 
+        /* --- SYSTEME DE GUERRE DE CLAN --- */
+        function openClanWar() {
+            $('modal-clan-war').classList.remove('hidden');
+            $('modal-clan-war').classList.add('flex');
+            renderClanWarUI();
+        }
+
+        function closeClanWar() {
+            $('modal-clan-war').classList.add('hidden');
+            $('modal-clan-war').classList.remove('flex');
+        }
+
+        function renderClanWarUI() {
+            const content = $('clan-war-content');
+            if (!currentClanData) return;
+
+            if (!currentWarId) {
+                content.innerHTML = `
+                    <p class="text-sm text-gray-400 mb-6 mt-4">Votre clan n'est actuellement dans aucune guerre. Préparez vos membres pour le combat !</p>
+                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 mb-6">
+                        <p class="text-xs text-orange-400 font-bold mb-2">Règles :</p>
+                        <ul class="text-[10px] text-gray-300 text-left list-disc pl-4 space-y-1">
+                            <li>5 membres minimum requis pour lancer une recherche.</li>
+                            <li>24h de préparation : Choisissez votre défense (3 personnages).</li>
+                            <li>24h de guerre : Attaquez la défense (IA) du clan adverse.</li>
+                            <li>1 seule attaque par membre pendant la guerre.</li>
+                        </ul>
+                    </div>
+                    ${isClanLeader ? 
+                        `<button onclick="searchClanWar()" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.6)] active:scale-95 transition-all">CHERCHER UN ADVERSAIRE</button>` 
+                        : `<p class="text-red-400 text-xs font-bold mt-4">Seul le chef du clan peut lancer une guerre.</p>`}
+                `;
+                return;
+            }
+
+                        db.ref('wars/' + currentWarId).once('value', snap => {
+                const war = snap.val();
+                if (!war) {
+                    content.innerHTML = `<p class="text-red-400 animate-pulse font-bold mt-10">Recherche d'adversaire en cours...</p>`;
+                    return;
+                }
+
+                if (war.status === 'waiting_for_opponent' || !war.clan2) {
+                    content.innerHTML = `
+                        <h4 class="text-yellow-400 font-black text-lg mb-2 animate-pulse">RECHERCHE EN COURS</h4>
+                        <p class="text-sm text-gray-400 mb-6 mt-4">Nous cherchons un clan digne de vous affronter...</p>
+                        <div class="relative w-24 h-24 mx-auto flex items-center justify-center mb-6">
+                            <div class="absolute inset-0 rounded-full border-4 border-red-500/30 animate-ping"></div>
+                            <div class="absolute inset-2 rounded-full border-4 border-red-500/60 animate-ping" style="animation-delay: 0.2s"></div>
+                            <i class="fas fa-search text-4xl text-red-500 z-10 relative"></i>
+                        </div>
+                        ${isClanLeader ? `<button onclick="cancelWarSearch()" class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold shadow-md active:scale-95">Annuler la recherche</button>` : ''}
+                    `;
+                    return;
+                }
+
+                const now = Date.now();
+                const timeElapsed = now - war.startTime;
+                // 24h prep (86400000ms), 24h war (172800000ms)
+                const phase = timeElapsed < 86400000 ? 'prep' : (timeElapsed < 172800000 ? 'war' : 'finished');
+
+                
+                const myClanData = war.clan1.id === playerClanId ? war.clan1 : war.clan2;
+                const enemyClanData = war.clan1.id === playerClanId ? war.clan2 : war.clan1;
+                const myWarProfile = myClanData.members[auth.currentUser.uid] || {};
+
+                if (phase === 'prep') {
+                    const timeLeft = Math.ceil((86400000 - timeElapsed) / 3600000);
+                    content.innerHTML = `
+                        <h4 class="text-yellow-400 font-black text-lg mb-2">JOUR DE PRÉPARATION</h4>
+                        <p class="text-xs text-gray-400 mb-4">La guerre commence dans ${timeLeft} heure(s). ${enemyClanData.name ? 'Adversaire : <span class="text-red-400 font-bold">' + enemyClanData.name + '</span>' : 'En attente...'}</p>
+                        
+                        <div class="bg-gray-800 p-4 rounded-xl border border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)] mb-4">
+                            <p class="text-sm text-white font-bold mb-3">Votre Défense (3 Personnages)</p>
+                            ${myWarProfile.defense ? 
+                                `<p class="text-green-400 text-xs font-bold"><i class="fas fa-check"></i> Défense enregistrée !</p>` : 
+                                `<button onclick="setWarDefense()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs shadow-md active:scale-95">Générer ma Défense Actuelle</button>`}
+                        </div>
+                    `;
+                } else if (phase === 'war') {
+                    const timeLeft = Math.ceil((172800000 - timeElapsed) / 3600000);
+                    let enemyTargetsHtml = '';
+                    if (enemyClanData.members) {
+                        Object.keys(enemyClanData.members).forEach(uid => {
+                            const enemyMem = enemyClanData.members[uid];
+                            if (enemyMem.defense) {
+                                enemyTargetsHtml += `
+                                    <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 mb-2">
+                                        <span class="text-xs text-white font-bold">${enemyMem.name}</span>
+                                        ${myWarProfile.attacked ? 
+                                            `<span class="text-gray-500 text-[10px] font-bold italic">Attaque déjà utilisée</span>` :
+                                            `<button onclick="startWarAttack('${uid}', '${currentWarId}')" class="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-500 active:scale-95 transition-all">Attaquer</button>`
+                                        }
+                                    </div>`;
+                            }
+                        });
+                    }
+
+                    content.innerHTML = `
+                        <h4 class="text-red-500 font-black text-lg mb-2 animate-pulse">JOUR DE GUERRE !</h4>
+                        <div class="flex justify-between items-center bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4">
+                            <div class="text-blue-400 font-bold text-sm truncate w-[40%]">${myClanData.name}<br><span class="text-xl">${myClanData.score || 0} <i class="fas fa-star text-yellow-400 text-sm"></i></span></div>
+                            <div class="text-white font-black italic w-[20%]">VS</div>
+                            <div class="text-red-400 font-bold text-sm truncate w-[40%]">${enemyClanData.name}<br><span class="text-xl">${enemyClanData.score || 0} <i class="fas fa-star text-yellow-400 text-sm"></i></span></div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mb-4">Fin dans ${timeLeft} heure(s). Vous avez droit à UNE seule attaque (IA niveau Difficile).</p>
+                        <div class="text-left">${enemyTargetsHtml || '<p class="text-xs text-gray-500 text-center">Aucune cible n\'a défini de défense.</p>'}</div>
+                    `;
+                } else {
+                    const isVictory = (myClanData.score || 0) >= (enemyClanData.score || 0);
+                    content.innerHTML = `
+                        <h4 class="${isVictory ? 'text-green-400' : 'text-gray-500'} font-black text-xl mb-2">GUERRE TERMINÉE</h4>
+                        <div class="flex justify-between items-center bg-gray-900 p-3 rounded-lg border border-gray-700 mb-6 mt-4">
+                            <div class="text-blue-400 font-bold text-sm">${myClanData.name}<br><span class="text-xl">${myClanData.score || 0} <i class="fas fa-star text-yellow-400 text-sm"></i></span></div>
+                            <div class="text-white font-black italic">VS</div>
+                            <div class="text-red-400 font-bold text-sm">${enemyClanData.name || 'Adversaire'}<br><span class="text-xl">${enemyClanData.score || 0} <i class="fas fa-star text-yellow-400 text-sm"></i></span></div>
+                        </div>
+                        ${isClanLeader ? `<button onclick="endClanWar()" class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold shadow-md active:scale-95">Archiver la guerre</button>` : ''}
+                    `;
+                }
+            });
+        }
+
+                function searchClanWar() {
+            if (currentClanData.info.memberCount < 5) {
+                showNotification("Votre clan doit avoir au moins 5 membres pour participer aux Guerres.", "MEMBRES INSUFFISANTS");
+                return;
+            }
+            
+            const queueRef = db.ref('matchmaking/clan_wars_waiting');
+            let membersObj = {};
+            Object.keys(currentClanData.members).forEach(uid => {
+                membersObj[uid] = { name: currentClanData.members[uid].name, attacked: false, stars: 0 };
+            });
+            const myClanInfo = { id: playerClanId, name: currentClanData.info.name, score: 0, members: membersObj };
+
+            queueRef.transaction((currentData) => {
+                if (currentData === null) {
+                    const newWarRef = db.ref('wars').push();
+                    currentWarId = newWarRef.key;
+                    return { warId: currentWarId, hostClan: myClanInfo };
+                } else {
+                    currentWarId = currentData.warId;
+                    return null; // Retire le clan en attente de la file pour lancer la guerre
+                }
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    showNotification("Erreur de matchmaking !");
+                    return;
+                }
+                if (committed) {
+                    if (snapshot && snapshot.val()) {
+                        // Je suis le Créateur (Clan 1) - j'attends un adversaire
+                        const hostWarRef = db.ref('wars/' + currentWarId);
+                        const hostClanWarRef = db.ref('clans/' + playerClanId + '/war');
+                        
+                        hostWarRef.set({
+                            startTime: firebase.database.ServerValue.TIMESTAMP,
+                            clan1: myClanInfo,
+                            status: 'waiting_for_opponent'
+                        });
+                        hostClanWarRef.set({ status: 'searching', warId: currentWarId });
+                        
+                        // Nettoyage si on perd la connexion pendant la recherche
+                        queueRef.onDisconnect().remove();
+                        hostWarRef.onDisconnect().remove();
+                        hostClanWarRef.onDisconnect().remove();
+
+                        // Écoute de l'arrivée du Clan 2
+                        hostWarRef.child('clan2').on('value', snap => {
+                            if (snap.exists()) {
+                                hostWarRef.child('clan2').off(); // Arrête d'écouter
+                                queueRef.onDisconnect().cancel();
+                                hostWarRef.onDisconnect().cancel();
+                                hostClanWarRef.onDisconnect().cancel();
+                                
+                                hostWarRef.update({
+                                    status: 'prep',
+                                    startTime: firebase.database.ServerValue.TIMESTAMP // Le compte à rebours de 24h commence maintenant
+                                });
+                                hostClanWarRef.update({ status: 'prep' });
+                                
+                                showNotification("Adversaire trouvé ! Préparez vos défenses.", "GUERRE DE CLAN");
+                                renderClanWarUI();
+                            }
+                        });
+                        renderClanWarUI();
+                    } else {
+                        // J'ai rejoint une salle existante (Clan 2)
+                        db.ref('wars/' + currentWarId).update({
+                            clan2: myClanInfo,
+                            status: 'prep',
+                            startTime: firebase.database.ServerValue.TIMESTAMP
+                        }).then(() => {
+                            db.ref('clans/' + playerClanId + '/war').set({ status: 'prep', warId: currentWarId });
+                            showNotification("Adversaire trouvé ! La préparation commence.", "GUERRE DE CLAN");
+                            renderClanWarUI();
+                        });
+                    }
+                }
+            });
+        }
+
+        function cancelWarSearch() {
+            if (currentWarId && isClanLeader) {
+                db.ref('matchmaking/clan_wars_waiting').remove();
+                db.ref('wars/' + currentWarId).remove();
+                db.ref('clans/' + playerClanId + '/war').remove();
+                currentWarId = null;
+                showNotification("Recherche de guerre annulée.", "INFO");
+                renderClanWarUI();
+            }
+        }
+
+
+        function setWarDefense() {
+            const availableChars = charData.filter(c => !c.locked);
+            if (availableChars.length < 3) {
+                showNotification("Vous devez débloquer au moins 3 personnages pour définir une défense de guerre.");
+                return;
+            }
+            // Définit les 3 premiers personnages disponibles comme défense par défaut
+            let defTeam = availableChars.slice(0, 3).map(c => charData.findIndex(ch => ch.id === c.id));
+            
+            let myClanKey = 'clan1';
+            db.ref('wars/' + currentWarId).once('value', snap => {
+                const war = snap.val();
+                if (war.clan2.id === playerClanId) myClanKey = 'clan2';
+                
+                db.ref(`wars/${currentWarId}/${myClanKey}/members/${auth.currentUser.uid}/defense`).set(defTeam);
+                showNotification("Défense enregistrée avec succès !", "PRÉPARATION");
+                renderClanWarUI();
+            });
+        }
+
+        function startWarAttack(enemyUid, warId) {
+            closeClanWar();
+            
+            // Marquer l'attaque comme utilisée
+            let myClanKey = 'clan1';
+            db.ref('wars/' + warId).once('value', snap => {
+                const war = snap.val();
+                if (war.clan2.id === playerClanId) myClanKey = 'clan2';
+                db.ref(`wars/${warId}/${myClanKey}/members/${auth.currentUser.uid}/attacked`).set(true);
+            });
+
+            // On redirige vers l'écran de sélection de l'équipe (vs IA de guerre)
+            currentMode = 'tournament'; // On réutilise le mode hors-ligne contre l'IA
+            difficultyLevel = 'difficile'; // L'IA de défense est toujours au niveau Difficile
+            selectionStep = 'player';
+            playerTeamSelection = [];
+            
+            showNotification("Choisissez votre équipe (3 personnages) pour écraser cette défense !", "ATTAQUE DE GUERRE");
+            showScreen('screen-select');
+        }
+
+        function endClanWar() {
+            db.ref('clans/' + playerClanId + '/war').remove();
+            renderClanWarUI();
+        }
+
         /* --- PRELOADER ET DEMARRAGE --- */
+
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
