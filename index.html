@@ -284,6 +284,19 @@
         </div>
     </div>
 
+    <!-- MODAL CREATE CLAN -->
+    <div id="modal-create-clan" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(249,115,22,0.3)]">
+            <h3 class="text-xl font-bold text-white mb-4">Créer un Clan</h3>
+            <p class="text-xs text-gray-400 mb-4">Dirigez jusqu'à 20 membres pour dominer les rangs.</p>
+            <input type="text" id="input-clan-name" placeholder="Nom du clan..." maxlength="15" class="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 mb-5 focus:outline-none focus:border-orange-400 font-bold placeholder-gray-500 text-center">
+            <div class="flex justify-between gap-4">
+                <button onclick="closeCreateClanModal()" class="flex-1 py-3 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 transition-colors active:scale-95">ANNULER</button>
+                <button onclick="confirmCreateClan()" class="flex-1 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-500 transition-colors shadow-[0_0_15px_rgba(249,115,22,0.5)] active:scale-95">CRÉER</button>
+            </div>
+        </div>
+    </div>
+
     <!-- AUDIO D'AMBIANCE -->
     <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
     <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
@@ -307,10 +320,55 @@
             <button onclick="showScreen('screen-leaderboard'); switchLeaderboardTab('global');" class="menu-btn py-3 px-6 rounded-lg font-bold text-blue-400 tracking-wide flex justify-between items-center">
                 <span>CLASSEMENT</span> <i class="fas fa-trophy"></i>
             </button>
+            <!-- NOUVEAU BOUTON CLAN -->
+            <button onclick="showScreen('screen-clan'); renderClanScreen();" class="menu-btn py-3 px-6 rounded-lg font-bold text-orange-400 tracking-wide flex justify-between items-center shadow-[0_0_10px_rgba(249,115,22,0.3)]">
+                <span>CLAN</span> <i class="fas fa-users"></i>
+            </button>
             <button onclick="showScreen('screen-market'); renderMarket();" class="menu-btn py-3 px-6 rounded-lg font-bold text-yellow-400 tracking-wide flex justify-between items-center">
                 <span>MARCHÉ</span> <i class="fas fa-store"></i>
             </button>
             <button onclick="showScreen('screen-credits')" class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-300 tracking-wide">CRÉDITS</button>
+        </div>
+    </div>
+
+    <!-- ECRAN CLAN -->
+    <div id="screen-clan" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-3xl font-black text-orange-400 mt-2 mb-4 text-center drop-shadow-lg relative z-10">COMMUNAUTÉ</h2>
+        
+        <!-- VUE NON REJOINT -->
+        <div id="clan-unjoined-view" class="flex-1 flex flex-col min-h-0 w-full max-w-lg mx-auto relative z-10 hidden">
+            <button onclick="openCreateClanModal()" class="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-colors shadow-[0_0_15px_rgba(249,115,22,0.5)] active:scale-95 mb-6 border border-orange-400 flex items-center justify-center gap-2">
+                <i class="fas fa-plus"></i> FONDER UN CLAN
+            </button>
+            <div class="text-xs text-gray-400 font-bold mb-2 uppercase tracking-wider text-center">Clans disponibles</div>
+            <div id="clan-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-10"></div>
+        </div>
+
+        <!-- VUE REJOINT -->
+        <div id="clan-joined-view" class="flex-1 flex flex-col min-h-0 w-full max-w-lg mx-auto relative z-10 hidden">
+            <div class="flex justify-between items-center bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md mb-4 shrink-0">
+                <div>
+                    <div id="clan-joined-name" class="font-black text-white text-xl">Nom du Clan</div>
+                    <div id="clan-joined-count" class="text-sm font-bold text-orange-400 mt-1"><i class="fas fa-user-friends mr-1"></i> 0/20</div>
+                </div>
+                <button id="btn-leave-clan" onclick="leaveOrDeleteClan()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_10px_rgba(239,68,68,0.5)] active:scale-95 text-sm">Quitter</button>
+            </div>
+            
+            <div id="clan-chat-box" class="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 overflow-y-auto no-scrollbar space-y-3 mb-4 flex flex-col shadow-inner">
+                <!-- Messages du chat -->
+            </div>
+            
+            <div class="flex gap-2 shrink-0 pb-6">
+                <input type="text" id="clan-chat-input" placeholder="Message..." class="flex-1 bg-gray-800 border border-gray-600 text-white rounded-xl p-4 focus:outline-none focus:border-orange-400 font-bold placeholder-gray-500 shadow-inner">
+                <button onclick="sendClanChat()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl px-5 transition-colors shadow-md active:scale-95 border border-blue-400"><i class="fas fa-paper-plane"></i></button>
+                <button onclick="requestClanCoins()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-xl px-5 transition-colors shadow-[0_0_10px_rgba(234,179,8,0.5)] active:scale-95 flex items-center justify-center border border-yellow-400" title="Demander des pièces">
+                    <i class="fas fa-coins text-lg"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -396,7 +454,7 @@
         </div>
     </div>
 
-    <!-- ECRAN PSEUDO EN LIGNE (Conservé au cas où, mais remplacé par la génération auto) -->
+    <!-- ECRAN PSEUDO EN LIGNE -->
     <div id="screen-pseudo" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-40 hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="showScreen('screen-mode-select')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
@@ -790,6 +848,12 @@
 
         let player = null;
         let enemy = null;
+
+        /* Variables Système Clan */
+        let playerClanId = null;
+        let currentClanRef = null;
+        let clanChatRef = null;
+        let isClanLeader = false;
 
         /* RNG Synchronisé */
         let sharedRNG = 1;
@@ -1330,7 +1394,8 @@
             db.ref('users/' + uid).update({
                 name: globalPlayerPseudo || "Exorciste Anonyme",
                 coins: playerCoins,
-                country: playerCountryEmoji
+                country: playerCountryEmoji,
+                clanId: playerClanId || null
             });
             
             const today = new Date().toISOString().split('T')[0];
@@ -1441,6 +1506,265 @@
             }
         }
 
+        /* --- SYSTÈME DE COMMUNAUTÉ (CLANS) --- */
+        function renderClanScreen() {
+            if(!auth.currentUser) {
+                showNotification("Vous devez être connecté à Internet pour accéder aux Clans.", "INFO");
+                showScreen('screen-menu');
+                return;
+            }
+            if(playerClanId) {
+                $('clan-unjoined-view').classList.add('hidden');
+                $('clan-joined-view').classList.remove('hidden');
+                listenToClan();
+            } else {
+                $('clan-unjoined-view').classList.remove('hidden');
+                $('clan-joined-view').classList.add('hidden');
+                fetchClans();
+            }
+        }
+
+        function openCreateClanModal() {
+            $('modal-create-clan').classList.remove('hidden');
+            $('modal-create-clan').classList.add('flex');
+            $('input-clan-name').value = '';
+        }
+
+        function closeCreateClanModal() {
+            $('modal-create-clan').classList.add('hidden');
+            $('modal-create-clan').classList.remove('flex');
+        }
+
+        function confirmCreateClan() {
+            const clanName = $('input-clan-name').value.trim();
+            if(clanName.length < 3) {
+                showNotification("Le nom du clan doit faire au moins 3 caractères.");
+                return;
+            }
+            const newClanRef = db.ref('clans').push();
+            playerClanId = newClanRef.key;
+            
+            const clanData = {
+                info: { name: clanName, creatorUid: auth.currentUser.uid, memberCount: 1, createdAt: firebase.database.ServerValue.TIMESTAMP },
+                members: {}
+            };
+            clanData.members[auth.currentUser.uid] = { role: 'leader', name: globalPlayerPseudo, joinedAt: firebase.database.ServerValue.TIMESTAMP };
+            
+            newClanRef.set(clanData).then(() => {
+                saveGameData();
+                closeCreateClanModal();
+                renderClanScreen();
+                showNotification("Votre clan a été créé avec succès !", "SUCCÈS");
+            });
+        }
+
+        function fetchClans() {
+            const list = $('clan-list');
+            list.innerHTML = '<p class="text-center text-gray-400 mt-10 animate-pulse">Recherche de clans...</p>';
+            
+            db.ref('clans').once('value', snap => {
+                list.innerHTML = '';
+                if(!snap.exists()) {
+                    list.innerHTML = '<p class="text-center text-gray-500 text-sm mt-10">Aucun clan n\'existe pour le moment. Soyez le premier !</p>';
+                    return;
+                }
+                snap.forEach(child => {
+                    const clan = child.val();
+                    const clanId = child.key;
+                    const info = clan.info;
+                    const isFull = info.memberCount >= 20;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'bg-gray-800 p-3 rounded-xl border border-gray-700 flex justify-between items-center';
+                    item.innerHTML = `
+                        <div>
+                            <div class="font-bold text-white">${info.name}</div>
+                            <div class="text-xs ${isFull ? 'text-red-400' : 'text-orange-400'}"><i class="fas fa-user-friends"></i> ${info.memberCount}/20</div>
+                        </div>
+                        <button ${isFull ? 'disabled' : `onclick="joinClan('${clanId}')"`} class="${isFull ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md active:scale-95'} px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                            ${isFull ? 'COMPLET' : 'Rejoindre'}
+                        </button>
+                    `;
+                    list.appendChild(item);
+                });
+            });
+        }
+
+        function joinClan(clanId) {
+            db.ref('clans/' + clanId).once('value', snap => {
+                const clan = snap.val();
+                if(!clan || clan.info.memberCount >= 20) {
+                    showNotification("Ce clan n'existe plus ou est déjà complet.");
+                    fetchClans();
+                    return;
+                }
+                
+                playerClanId = clanId;
+                db.ref('clans/' + clanId + '/members/' + auth.currentUser.uid).set({
+                    role: 'member', name: globalPlayerPseudo, joinedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                db.ref('clans/' + clanId + '/info/memberCount').transaction(c => (c || 0) + 1);
+                
+                saveGameData();
+                renderClanScreen();
+                
+                db.ref('clans/' + clanId + '/chat').push({
+                    uid: 'system', name: 'Système', text: `${globalPlayerPseudo} a rejoint le clan !`, type: 'system', timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            });
+        }
+
+        function listenToClan() {
+            if(currentClanRef) currentClanRef.off();
+            if(clanChatRef) clanChatRef.off();
+            
+            currentClanRef = db.ref('clans/' + playerClanId);
+            currentClanRef.on('value', snap => {
+                if(!snap.exists() && playerClanId) {
+                    // Le clan a été supprimé
+                    playerClanId = null;
+                    saveGameData();
+                    if (!$('screen-clan').classList.contains('hidden')) renderClanScreen();
+                    showNotification("Votre clan a été dissous par le chef.", "INFO CLAN");
+                    return;
+                }
+                const clan = snap.val();
+                if(clan) {
+                    $('clan-joined-name').innerText = clan.info.name;
+                    $('clan-joined-count').innerHTML = `<i class="fas fa-user-friends mr-1"></i> ${clan.info.memberCount}/20`;
+                    isClanLeader = clan.info.creatorUid === auth.currentUser.uid;
+                    $('btn-leave-clan').innerText = isClanLeader ? 'Supprimer' : 'Quitter';
+                }
+            });
+
+            const chatBox = $('clan-chat-box');
+            chatBox.innerHTML = '';
+            clanChatRef = db.ref('clans/' + playerClanId + '/chat');
+            clanChatRef.limitToLast(50).on('child_added', snap => {
+                const msg = snap.val();
+                const msgId = snap.key;
+                const div = document.createElement('div');
+                
+                if(msg.type === 'system') {
+                    div.className = "text-center text-[10px] text-gray-500 italic my-1";
+                    div.innerText = msg.text;
+                } else if(msg.type === 'coin_request') {
+                    const isMe = msg.uid === auth.currentUser.uid;
+                    div.className = `p-2 rounded-lg text-sm border shadow-sm ${msg.fulfilled ? 'bg-gray-800 border-gray-600' : 'bg-yellow-900/40 border-yellow-600'}`;
+                    
+                    let actionHtml = '';
+                    if(!msg.fulfilled) {
+                        if(isMe) actionHtml = `<span class="text-xs text-yellow-400 italic mt-1 block">En attente d'aide...</span>`;
+                        else actionHtml = `<button onclick="giveClanCoins('${msgId}', '${msg.uid}')" class="mt-2 bg-yellow-600 text-black px-3 py-1 rounded text-xs font-bold hover:bg-yellow-500 transition-colors shadow-md active:scale-95">Aider (5 Pièces)</button>`;
+                    } else {
+                        actionHtml = `<span class="text-xs text-green-400 italic mt-1 block">Aidée par ${msg.helperName || 'un membre'} <i class="fas fa-check"></i></span>`;
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="font-bold ${isMe ? 'text-blue-400' : 'text-gray-300'} text-xs mb-1">${isMe ? 'Moi' : msg.name}</div>
+                        <div class="${msg.fulfilled ? 'text-gray-400' : 'text-yellow-100'}"><i class="fas fa-coins text-yellow-400 mr-1"></i> ${msg.text}</div>
+                        ${actionHtml}
+                    `;
+                } else {
+                    const isMe = msg.uid === auth.currentUser.uid;
+                    div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                    div.innerHTML = `
+                        <span class="text-[10px] text-gray-500 font-bold mb-0.5 px-1">${isMe ? 'Moi' : msg.name}</span>
+                        <div class="p-2 rounded-xl text-sm max-w-[80%] ${isMe ? 'bg-blue-600 text-white rounded-tr-none shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-gray-700 text-gray-100 rounded-tl-none border border-gray-600'} break-words">
+                            ${msg.text}
+                        </div>
+                    `;
+                }
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+            
+            clanChatRef.on('child_changed', snap => {
+                // Re-render chat simply by clearing and re-fetching last 50
+                chatBox.innerHTML = '';
+                clanChatRef.limitToLast(50).once('value', allMsgs => {
+                    allMsgs.forEach(m => {
+                        clanChatRef.parent.child('dummy').set(null); // Just trigger child_added conceptually, or manually build logic.
+                    });
+                });
+                // For simplicity, we'll just close and reopen listener
+                clanChatRef.off(); listenToClan();
+            });
+        }
+
+        function sendClanChat() {
+            const input = $('clan-chat-input');
+            const text = input.value.trim();
+            if(text === '' || !playerClanId) return;
+            
+            clanChatRef.push({
+                uid: auth.currentUser.uid,
+                name: globalPlayerPseudo,
+                text: text,
+                type: 'text',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            input.value = '';
+        }
+
+        function requestClanCoins() {
+            if(!playerClanId) return;
+            clanChatRef.push({
+                uid: auth.currentUser.uid,
+                name: globalPlayerPseudo,
+                text: "J'ai besoin de 5 pièces SVP !",
+                type: 'coin_request',
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                fulfilled: false
+            });
+            showNotification("Votre demande d'aide a été envoyée au clan.");
+        }
+
+        function giveClanCoins(msgId, targetUid) {
+            if(playerCoins < 5) {
+                showNotification("Vous n'avez pas assez de pièces (5 requises).");
+                return;
+            }
+            playerCoins -= 5;
+            saveGameData();
+            
+            // Créditer le receveur
+            db.ref('users/' + targetUid + '/coins').transaction(c => (c || 0) + 5);
+            
+            // Mettre à jour le message
+            db.ref('clans/' + playerClanId + '/chat/' + msgId).update({
+                fulfilled: true,
+                helperName: globalPlayerPseudo
+            });
+            
+            showNotification("Vous avez donné 5 pièces à un membre du clan !", "MERCI");
+        }
+
+        function leaveOrDeleteClan() {
+            if(!playerClanId) return;
+            if(isClanLeader) {
+                if(confirm("Voulez-vous vraiment SUPPRIMER ce clan définitivement ?")) {
+                    db.ref('clans/' + playerClanId).remove();
+                    playerClanId = null;
+                    saveGameData();
+                    renderClanScreen();
+                }
+            } else {
+                if(confirm("Voulez-vous vraiment QUITTER ce clan ?")) {
+                    db.ref('clans/' + playerClanId + '/members/' + auth.currentUser.uid).remove();
+                    db.ref('clans/' + playerClanId + '/info/memberCount').transaction(c => Math.max(0, (c || 1) - 1));
+                    
+                    db.ref('clans/' + playerClanId + '/chat').push({
+                        uid: 'system', name: 'Système', text: `${globalPlayerPseudo} a quitté le clan.`, type: 'system', timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    playerClanId = null;
+                    saveGameData();
+                    renderClanScreen();
+                }
+            }
+        }
+
         /* --- PRELOADER ET DEMARRAGE --- */
         async function preloadAssets() {
             const progressFill = $('loader-fill');
@@ -1477,6 +1801,7 @@
                 if (data.maxWinStreak !== undefined) maxWinStreak = data.maxWinStreak;
                 if (data.playerCountryEmoji !== undefined) playerCountryEmoji = data.playerCountryEmoji;
                 if (data.lastPseudoChangeDate !== undefined) lastPseudoChangeDate = data.lastPseudoChangeDate;
+                if (data.clanId !== undefined) playerClanId = data.clanId; // Récupération du clanId
                 
                 if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.emotesEnabled !== undefined) emotesEnabled = data.emotesEnabled;
@@ -1500,7 +1825,8 @@
                 pseudo: globalPlayerPseudo, coins: playerCoins, unlocked: charData.filter(c => !c.locked).map(c => c.id), 
                 onlineWins: onlineWins, onlineLosses: onlineLosses, tournamentTrophies: tournamentTrophies, emotesEnabled: emotesEnabled,
                 dailyWins: dailyWins, dailyWinsDate: dailyWinsDate, lastDailyRewardDate: lastDailyRewardDate,
-                currentWinStreak: currentWinStreak, maxWinStreak: maxWinStreak, playerCountryEmoji: playerCountryEmoji, lastPseudoChangeDate: lastPseudoChangeDate
+                currentWinStreak: currentWinStreak, maxWinStreak: maxWinStreak, playerCountryEmoji: playerCountryEmoji, lastPseudoChangeDate: lastPseudoChangeDate,
+                clanId: playerClanId // Sauvegarde du clanId
             }));
             hasSave = true; updateMenuButtons();
             syncUserDataToFirebase();
@@ -1516,7 +1842,7 @@
         function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
         
         function confirmNewGame() { 
-            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0;
+            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null;
             charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara', 'maki', 'nanami', 'hakari', 'todo'].includes(c.id)); 
             updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); 
         }
@@ -1562,7 +1888,7 @@
                 bg.style.backgroundImage = `url('${randomBg}')`;
             });
 
-            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps', 'screen-profile'].forEach(id => {
+            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps', 'screen-profile', 'screen-clan'].forEach(id => {
                 const el = $(id);
                 if(el) el.classList.add('hidden');
             });
@@ -1570,7 +1896,7 @@
             const targetScreen = $(screenId);
             if(targetScreen) targetScreen.classList.remove('hidden');
             
-            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-profile'].includes(screenId)) {
+            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-profile', 'screen-clan'].includes(screenId)) {
                 if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
             } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) {
