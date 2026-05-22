@@ -173,13 +173,11 @@
         .bar-transition { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
         .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); }
         
-        /* Arrière-plans d'Extensions de Territoire avec les NOUVEAUX noms de fichiers */
+        /* Arrière-plans d'Extensions de Territoire */
         .bg-default { background-image: url('terrain_de_combat_Shibuya.jpeg'); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-gojo { background-image: url("Sphere_de_lespace_infini_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-sukuna { background-image: url("lhotel_demoniaque_arriere_plan.jpeg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-megumi { background-image: url("image_du_territoire_de_megumi.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
-        
-        /* Nouveaux Domaines */
         .domain-hakari { background-image: url("image_du_territoire_dhakari.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-mahito { background-image: url("arriere_plan_territoire_de_mahito.png"); background-size: cover; background-position: center; transition: background 1.5s; }
         .domain-jogo { background-image: url("arriere_plan_territoire_de_Jogo.jpg"); background-size: cover; background-position: center; transition: background 1.5s; }
@@ -218,18 +216,16 @@
 </head>
 <body class="text-white h-screen w-full overflow-hidden flex flex-col font-sans select-none bg-black">
 
-    <!-- OVERLAY POUR TRANSITION (Fondu au noir) -->
+    <!-- OVERLAY POUR TRANSITION -->
     <div id="transition-overlay" class="fixed inset-0 bg-black z-[100] transition-opacity duration-500 pointer-events-none opacity-0"></div>
 
     <!-- ECRAN DE CHARGEMENT INITIAL -->
     <div id="screen-loader" class="absolute inset-0 bg-gray-950 z-[200] flex flex-col items-center justify-center">
         <h1 class="text-5xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-500 mb-8 text-center drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]">JUJUTSU<br>KAISEN</h1>
-        
         <div class="w-64 sm:w-80 h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-600 relative mb-2 shadow-[0_0_10px_rgba(0,0,0,0.5)]">
             <div id="loader-fill" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-0 transition-all duration-300"></div>
         </div>
         <p id="loader-text" class="text-gray-400 text-sm font-bold tracking-widest mt-2 animate-pulse">Initialisation du cache... 0%</p>
-        
         <button id="loader-btn" onclick="hideLoaderAndStart()" class="hidden mt-8 px-10 py-4 bg-gradient-to-r from-red-600 to-purple-700 rounded-full font-bold text-xl shadow-[0_0_30px_rgba(220,38,38,0.6)] active:scale-95 transition-transform animate-bounce">
             ENTRER DANS LE JEU
         </button>
@@ -245,11 +241,20 @@
         </div>
     </div>
 
+    <!-- NOTIFICATION MODAL SYSTEM -->
+    <div id="modal-notification" class="absolute inset-0 bg-black/90 z-[350] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-blue-500 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            <h3 id="notif-title" class="text-xl font-bold text-white mb-4">INFO</h3>
+            <p id="notif-msg" class="text-sm text-gray-300 mb-6 font-bold"></p>
+            <button onclick="hideNotification()" class="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-500 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95">COMPRIS</button>
+        </div>
+    </div>
+
     <!-- DOUBLE VALIDATION EXIT MODAL -->
     <div id="modal-exit" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
         <div class="bg-gray-900 border border-gray-600 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(0,0,0,0.8)]">
             <h3 class="text-xl font-bold text-white mb-4">Quitter l'arène ?</h3>
-            <p class="text-sm text-gray-400 mb-6">Toute progression en cours sera perdue.</p>
+            <p class="text-sm text-gray-400 mb-6">Si vous êtes en ligne, vous perdrez 15 pièces et gagnerez une défaite.</p>
             <div class="flex justify-between gap-4">
                 <button onclick="hideExitModal()" class="flex-1 py-3 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 transition-colors active:scale-95">ANNULER</button>
                 <button onclick="confirmExit()" class="flex-1 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)] active:scale-95">QUITTER</button>
@@ -269,7 +274,7 @@
         </div>
     </div>
 
-    <!-- AUDIO D'AMBIANCE AVEC LES NOUVEAUX NOMS -->
+    <!-- AUDIO D'AMBIANCE -->
     <audio id="bg-music" loop><source src="theme_de_personnages_jjk.mp3" type="audio/mpeg"></audio>
     <audio id="battle-music" loop><source src="JJK_musique_darene_de_combat.mp3" type="audio/mpeg"></audio>
     <audio id="sfx-simple"><source src="attaque simple .mp3" type="audio/mpeg"></audio>
@@ -280,10 +285,8 @@
     <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-50 hidden overflow-hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-40 anim-sway-bg dynamic-menu-bg" style="background-image: url('jjk_homme.jpeg');"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/90"></div>
-        
         <h1 class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-500 mb-1 text-center drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] relative z-10">JUJUTSU<br>KAISEN</h1>
         <p class="text-gray-300 tracking-widest mb-8 text-xs sm:text-sm font-bold relative z-10 drop-shadow-md">CLASH OF SORCERERS</p>
-        
         <div class="flex flex-col gap-3 w-64 relative z-10">
             <button id="btn-new-game" onclick="handleNewGame()" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">NOUVELLE PARTIE</button>
             <button id="btn-continue" onclick="handleContinue()" disabled class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed">CONTINUER</button>
@@ -304,11 +307,9 @@
         <button onclick="showScreen('screen-menu')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
-        
         <h2 class="text-3xl font-black text-white mb-8 z-10 drop-shadow-lg text-center relative z-10">CHOIX DU MODE</h2>
-        
         <div class="flex flex-col gap-4 w-72 sm:w-80 relative z-10">
-            <button onclick="alert('Bientôt disponible !')" class="menu-btn py-4 px-6 rounded-xl font-bold text-gray-400 tracking-wide text-left opacity-70">
+            <button onclick="showNotification('Le mode Histoire sera disponible dans une prochaine mise à jour !', 'INFO')" class="menu-btn py-4 px-6 rounded-xl font-bold text-gray-400 tracking-wide text-left opacity-70">
                 <i class="fas fa-book-open mr-2"></i> Mode Histoire
             </button>
             <button onclick="goToOnlineMode()" class="menu-btn py-4 px-6 rounded-xl font-bold text-blue-400 tracking-wide text-left shadow-[0_0_10px_rgba(59,130,246,0.3)]">
@@ -317,7 +318,7 @@
             <button onclick="startTutorial()" class="menu-btn py-4 px-6 rounded-xl font-bold text-green-400 tracking-wide text-left shadow-[0_0_10px_rgba(34,197,94,0.3)]">
                 <i class="fas fa-graduation-cap mr-2"></i> Didacticiel
             </button>
-            <button onclick="alert('Aucun événement en cours.')" class="menu-btn py-4 px-6 rounded-xl font-bold text-purple-400 tracking-wide text-left opacity-70">
+            <button onclick="showNotification('Aucun événement en cours pour le moment.', 'ÉVÉNEMENTS')" class="menu-btn py-4 px-6 rounded-xl font-bold text-purple-400 tracking-wide text-left opacity-70">
                 <i class="fas fa-calendar-alt mr-2"></i> Événements en Ligne
             </button>
             <button onclick="currentMode='tournament'; selectionStep='player'; showScreen('screen-select');" class="menu-btn py-4 px-6 rounded-xl font-bold text-red-400 tracking-wide text-left shadow-[0_0_10px_rgba(239,68,68,0.3)]">
@@ -347,11 +348,7 @@
             <i class="fas fa-sign-out-alt"></i>
         </button>
         <h2 id="tournament-round-title" class="text-3xl font-black text-red-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">QUARTS DE FINALE</h2>
-        
-        <div id="tournament-matchups" class="flex flex-col gap-3 flex-1 overflow-y-auto no-scrollbar pb-6 relative z-10">
-            <!-- Rempli par le JS -->
-        </div>
-
+        <div id="tournament-matchups" class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto no-scrollbar pb-6 relative z-10"></div>
         <button id="btn-tournament-start" onclick="startTournamentMatch()" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10">COMBATTRE</button>
     </div>
 
@@ -362,14 +359,16 @@
             <i class="fas fa-arrow-left"></i>
         </button>
         <h2 class="text-3xl font-black text-blue-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">CLASSEMENT MONDIAL</h2>
-        <div id="leaderboard-list" class="flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar space-y-3 pb-10 relative z-10">
-            <!-- Rempli dynamiquement -->
-        </div>
+        <div id="leaderboard-list" class="flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar space-y-3 pb-10 relative z-10"></div>
     </div>
 
     <!-- ECRAN MATCHMAKING EN LIGNE -->
     <div id="screen-matchmaking" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-[60] hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <!-- BOUTON RETOUR POUR ANNULER RECHERCHE -->
+        <button onclick="cancelMatchmaking()" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
         <div class="relative w-32 h-32 flex items-center justify-center mb-8 z-10">
             <div class="absolute inset-0 rounded-full border-4 border-blue-500/30 animate-ping"></div>
             <div class="absolute inset-2 rounded-full border-4 border-blue-500/60 animate-ping" style="animation-delay: 0.2s"></div>
@@ -378,6 +377,37 @@
         </div>
         <h2 class="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(59,130,246,0.8)] tracking-widest animate-pulse text-center relative z-10">RECHERCHE D'ADVERSAIRE</h2>
         <p class="text-gray-400 mt-2 text-sm font-bold tracking-widest relative z-10" id="matchmaking-text">CONNEXION AU SERVEUR...</p>
+    </div>
+
+    <!-- ECRAN SHIFUMI (PIERRE PAPIER CISEAUX) -->
+    <div id="screen-rps" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-[55] hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-30 blur-md anim-sway-bg dynamic-menu-bg"></div>
+        <h2 class="text-3xl font-black text-yellow-400 mb-8 z-10 drop-shadow-lg text-center relative">SHIFUMI</h2>
+        
+        <div class="flex w-full justify-around items-center px-6 z-10 mb-8 max-w-md mx-auto">
+            <div class="flex flex-col items-center">
+                <img id="rps-p-img" src="" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-blue-500 mb-2 object-cover shadow-[0_0_15px_rgba(59,130,246,0.6)]">
+                <div id="rps-p-choice" class="text-5xl bg-gray-800 w-20 h-20 flex items-center justify-center rounded-xl border border-gray-600 shadow-inner">?</div>
+            </div>
+            <div class="text-2xl font-black text-white italic drop-shadow-md">VS</div>
+            <div class="flex flex-col items-center">
+                <img id="rps-e-img" src="" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-red-500 mb-2 object-cover scale-x-[-1] shadow-[0_0_15px_rgba(239,68,68,0.6)]">
+                <div id="rps-e-choice" class="text-5xl bg-gray-800 w-20 h-20 flex items-center justify-center rounded-xl border border-gray-600 shadow-inner">?</div>
+            </div>
+        </div>
+
+        <p id="rps-status" class="text-xl text-white font-bold mb-8 z-10 animate-pulse text-center px-4">Choisissez votre coup !</p>
+        
+        <div id="rps-buttons" class="flex gap-4 z-10">
+            <button onclick="playRps('✊')" class="text-4xl bg-blue-600 hover:bg-blue-500 w-16 h-16 flex items-center justify-center rounded-full shadow-[0_0_15px_rgba(59,130,246,0.6)] active:scale-90 transition-transform border-2 border-blue-400">✊</button>
+            <button onclick="playRps('✋')" class="text-4xl bg-green-600 hover:bg-green-500 w-16 h-16 flex items-center justify-center rounded-full shadow-[0_0_15px_rgba(34,197,94,0.6)] active:scale-90 transition-transform border-2 border-green-400">✋</button>
+            <button onclick="playRps('✌️')" class="text-4xl bg-red-600 hover:bg-red-500 w-16 h-16 flex items-center justify-center rounded-full shadow-[0_0_15px_rgba(239,68,68,0.6)] active:scale-90 transition-transform border-2 border-red-400">✌️</button>
+        </div>
+
+        <div id="rps-choice-ui" class="flex flex-col gap-4 z-10 hidden w-64 max-w-[80%]">
+            <button onclick="chooseTurn('first')" class="py-4 bg-blue-600 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform border border-blue-400">Jouer en Premier</button>
+            <button onclick="chooseTurn('second')" class="py-4 bg-gray-700 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform border border-gray-500">Jouer en Deuxième</button>
+        </div>
     </div>
 
     <!-- ECRAN OPTIONS -->
@@ -394,14 +424,12 @@
                     <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-sound"></div>
                 </button>
             </div>
-            
             <div class="flex justify-between items-center mb-6">
                 <span class="font-bold text-lg"><i class="fas fa-smile mr-2 text-yellow-400"></i> Émotes Multijoueur</span>
                 <button onclick="toggleEmotes()" class="w-14 h-8 rounded-full bg-green-500 relative transition-colors duration-300" id="btn-emote-toggle">
                     <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-emote"></div>
                 </button>
             </div>
-
             <p class="text-xs text-gray-400 text-center">Active ou désactive l'audio global et les réactions.</p>
         </div>
     </div>
@@ -419,10 +447,7 @@
             </div>
         </div>
         <p class="text-center text-gray-400 text-sm mb-4 relative z-10">Achetez des exorcistes ou fléaux scellés pour les débloquer.</p>
-        
-        <div id="market-grid" class="grid grid-cols-2 gap-4 flex-1 w-full max-w-lg mx-auto overflow-y-auto pb-24 relative z-10 content-start px-2">
-            <!-- Rempli dynamiquement -->
-        </div>
+        <div id="market-grid" class="grid grid-cols-2 gap-4 flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto pb-24 relative z-10 content-start px-2"></div>
     </div>
 
     <!-- ECRAN CREDITS -->
@@ -449,22 +474,16 @@
     </div>
 
     <!-- ECRAN DE SELECTION -->
-    <div id="screen-select" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-3 sm:p-4 relative">
+    <div id="screen-select" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-3 sm:p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button id="btn-back-select" onclick="goBackSelect()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
-        <h2 id="select-title" class="text-xl sm:text-2xl font-bold text-center mt-2 mb-1 text-purple-400 z-10 relative z-10">Choisissez votre Exorciste</h2>
-        
-        <!-- Conteneur Dynamique Embelli pour les Stats (Ligne/Tournoi) -->
-        <div id="select-desc-container" class="text-center mb-3 z-10 relative z-10">
-            <p id="select-desc" class="text-gray-500 text-xs sm:text-sm">Le destin du monde est entre vos mains.</p>
-        </div>
-        
-        <!-- Grille compactée -->
-        <div id="character-grid" class="grid grid-cols-2 grid-rows-6 gap-2 sm:gap-3 flex-1 w-full h-full pb-2 relative z-10"></div>
-
-        <div id="difficulty-grid" class="hidden flex-col justify-center gap-4 w-full max-w-sm mx-auto flex-1 pb-6 mt-2 relative z-10">
+        <h2 id="select-title" class="text-xl sm:text-2xl font-bold text-center mt-2 mb-1 text-purple-400 z-10 relative">Choisissez votre Exorciste</h2>
+        <div id="select-desc-container" class="text-center mb-3 relative z-10"></div>
+        <!-- GRILLE DE SELECTION AMELIORÉE (SCROLL) -->
+        <div id="character-grid" class="grid grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-10 relative z-10 content-start px-2"></div>
+        <div id="difficulty-grid" class="hidden flex-col justify-center gap-4 w-full max-w-sm mx-auto flex-1 min-h-0 pb-6 mt-2 relative z-10">
             <button onclick="startGame('facile')" class="w-full py-4 rounded-xl bg-green-900/50 border-2 border-green-500 text-green-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(34,197,94,0.3)]">Facile</button>
             <button onclick="startGame('normal')" class="w-full py-4 rounded-xl bg-blue-900/50 border-2 border-blue-500 text-blue-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.3)]">Normal</button>
             <button onclick="startGame('difficile')" class="w-full py-4 rounded-xl bg-orange-900/50 border-2 border-orange-500 text-orange-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(249,115,22,0.3)]">Difficile</button>
@@ -472,7 +491,7 @@
         </div>
     </div>
 
-    <!-- ECRAN VS (Animation de début de combat) -->
+    <!-- ECRAN VS -->
     <div id="screen-vs" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-35 hidden overflow-hidden">
         <div class="absolute inset-0 bg-[url('terrain_de_combat_Shibuya.jpeg')] bg-cover bg-center opacity-30 blur-sm"></div>
         <div id="vs-content" class="w-full h-full">
@@ -494,13 +513,10 @@
 
     <!-- ECRAN DE COMBAT -->
     <div id="screen-battle" class="absolute inset-0 flex flex-col bg-gray-900 z-30 hidden">
-        
-        <!-- BOUTON PAUSE / QUITTER -->
         <button onclick="showExitModal()" class="absolute top-4 left-4 z-50 bg-gray-900/80 border border-gray-600 p-2 rounded-full shadow-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-all w-10 h-10 flex items-center justify-center active:scale-90">
             <i class="fas fa-sign-out-alt"></i>
         </button>
 
-        <!-- BOUTON EMOTES -->
         <button id="btn-emote" onclick="toggleEmotePanel()" class="absolute top-4 right-4 z-50 bg-gray-900/80 border border-gray-600 p-2 rounded-full shadow-lg text-yellow-400 hover:text-yellow-300 hover:bg-gray-800 transition-all w-10 h-10 flex items-center justify-center active:scale-90 hidden">
             <i class="fas fa-smile"></i>
         </button>
@@ -519,30 +535,22 @@
         <div class="glass-panel p-3 shrink-0 flex items-center justify-between shadow-md z-20 pl-16">
             <div class="flex flex-col w-[60%]">
                 <div class="flex items-center gap-2 mb-1">
-                    <span id="enemy-name" class="font-bold text-red-400 text-sm truncate">Ryomen Sukuna</span>
+                    <span id="enemy-name" class="font-bold text-red-400 text-sm truncate"></span>
                     <div id="enemy-team-roster" class="flex gap-1 shrink-0"></div>
                 </div>
-                <span id="enemy-difficulty-label" class="text-[8px] text-gray-400 tracking-widest uppercase">NORMAL</span>
-                
+                <span id="enemy-difficulty-label" class="text-[8px] text-gray-400 tracking-widest uppercase"></span>
                 <div class="w-full bg-gray-900 rounded-full h-3 mt-1 relative overflow-hidden border border-gray-700">
                     <div id="enemy-hp-bar" class="bg-red-500 h-3 rounded-full bar-transition" style="width: 100%;"></div>
-                    <span id="enemy-hp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-bold drop-shadow-md">1000/1000</span>
+                    <span id="enemy-hp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-bold drop-shadow-md"></span>
                 </div>
-                
                 <div class="w-full bg-gray-900 rounded-full h-2 mt-1 relative overflow-hidden border border-gray-700">
                     <div id="enemy-ce-bar" class="bg-purple-600 h-2 rounded-full bar-transition shadow-[0_0_5px_rgba(147,51,234,0.5)]" style="width: 50%;"></div>
-                    <span id="enemy-ce-text" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md">50/100</span>
+                    <span id="enemy-ce-text" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md"></span>
                 </div>
-
-                <div class="flex justify-between mt-1">
-                    <span id="enemy-status" class="text-[10px] font-bold text-yellow-400"></span>
-                </div>
+                <div class="flex justify-between mt-1"><span id="enemy-status" class="text-[10px] font-bold text-yellow-400"></span></div>
             </div>
-            
             <div class="flex items-center gap-2">
-                <button onclick="showEnemyStats()" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center text-gray-300 hover:bg-gray-700 active:scale-90 transition-transform shadow-md">
-                    <i class="fas fa-search text-sm"></i>
-                </button>
+                <button onclick="showEnemyStats()" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center text-gray-300 hover:bg-gray-700 active:scale-90 transition-transform shadow-md"><i class="fas fa-search text-sm"></i></button>
                 <img id="enemy-avatar" src="" alt="Ennemi" class="w-14 h-14 rounded-full border-2 border-red-500 object-cover shadow-[0_0_10px_rgba(239,68,68,0.5)] bg-gray-800">
             </div>
         </div>
@@ -550,8 +558,6 @@
         <!-- ARENA -->
         <div id="arena-container" class="flex-1 relative">
             <div id="arena" class="absolute inset-0 flex items-center justify-center overflow-hidden bg-default">
-                
-                <!-- BACKGROUND DE CLASH -->
                 <div id="clash-bg-container" class="absolute inset-0 z-[1] hidden overflow-hidden">
                     <div class="absolute inset-0 bg-yellow-300 animate-pulse opacity-30" style="filter: blur(8px);"></div>
                     <div id="clash-bg-player" class="absolute inset-0 bg-cover bg-center" style="clip-path: polygon(0% 0%, 52% 0%, 42% 50%, 54% 50%, 43% 100%, 0% 100%);"></div>
@@ -561,14 +567,10 @@
                         <polyline points="52,0 42,50 54,50 43,100" fill="none" stroke="#fff" stroke-width="0.5" />
                     </svg>
                 </div>
-
-                <!-- VIDÉO DE TERRITOIRE -->
                 <video id="domain-video" class="absolute inset-0 w-full h-full object-cover hidden z-[2] opacity-90" playsinline></video>
-
                 <div id="domain-name-display" class="absolute inset-0 flex items-center justify-center z-[3] opacity-0 transition-opacity duration-500 pointer-events-none">
                     <h2 class="text-4xl font-black text-white text-center drop-shadow-[0_0_20px_rgba(0,0,0,1)] tracking-widest px-4"></h2>
                 </div>
-                
                 <div class="flex justify-between w-full px-4 items-center z-[4] relative mt-10">
                     <img id="sprite-player" src="" alt="Joueur" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-blue-500 transition-all z-20">
                     <img id="sprite-enemy" src="" alt="Ennemi" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-red-500 transition-all scale-x-[-1] z-10">
@@ -584,9 +586,7 @@
 
         <!-- COMBAT LOG & TURN INDICATOR -->
         <div class="bg-black/80 flex flex-col shrink-0 border-t border-gray-700 z-20">
-            <div id="turn-indicator" class="text-center text-xs font-bold py-1 bg-blue-900/50 text-blue-300 transition-colors">
-                C'EST VOTRE TOUR
-            </div>
+            <div id="turn-indicator" class="text-center text-xs font-bold py-1 bg-blue-900/50 text-blue-300 transition-colors"></div>
             <div id="combat-log" class="h-24 p-2 overflow-y-auto no-scrollbar text-sm space-y-1 text-gray-300 font-mono"></div>
         </div>
 
@@ -595,12 +595,12 @@
             <div class="p-3 border-b border-gray-700 flex justify-between items-end bg-gray-900/50">
                 <div class="w-1/2 pr-3 flex flex-col">
                     <div class="flex items-center gap-2 mb-1">
-                        <span id="player-name" class="font-bold text-blue-400 text-sm truncate">Yuji Itadori</span>
+                        <span id="player-name" class="font-bold text-blue-400 text-sm truncate"></span>
                         <div id="player-team-roster" class="flex gap-1 shrink-0"></div>
                     </div>
                     <div class="w-full bg-gray-900 rounded-full h-4 border border-gray-700 relative">
                         <div id="player-hp-bar" class="bg-green-500 h-4 rounded-full bar-transition" style="width: 100%;"></div>
-                        <span id="player-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md">100/100</span>
+                        <span id="player-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md"></span>
                     </div>
                 </div>
                 <div class="w-1/2 pl-3 border-l border-gray-700 flex flex-col">
@@ -609,11 +609,10 @@
                     </div>
                     <div class="w-full bg-gray-900 rounded-full h-4 border border-gray-700 relative">
                         <div id="player-ce-bar" class="bg-purple-600 h-4 rounded-full bar-transition shadow-[0_0_8px_rgba(147,51,234,0.8)]" style="width: 50%;"></div>
-                        <span id="player-ce-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md">50/100</span>
+                        <span id="player-ce-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md"></span>
                     </div>
                 </div>
             </div>
-
             <div id="action-buttons" class="grid grid-cols-2 gap-2 p-3 relative"></div>
         </div>
     </div>
@@ -644,9 +643,7 @@
         <img id="gameover-image" src="" class="w-40 h-40 rounded-full border-4 object-cover mb-4 hidden z-10 transition-all duration-500">
         <h2 id="gameover-title" class="text-5xl font-black mb-4 z-10 relative">VICTOIRE</h2>
         <p id="gameover-desc" class="text-gray-300 mb-8 text-lg z-10">L'ennemi a été exorcisé.</p>
-        <div id="gameover-buttons" class="flex flex-col sm:flex-row gap-4 w-full max-w-sm z-10">
-            <!-- Boutons dynamiques générés en JS -->
-        </div>
+        <div id="gameover-buttons" class="flex flex-col sm:flex-row gap-4 w-full max-w-sm z-10"></div>
     </div>
 
     <script>
@@ -665,11 +662,11 @@
         const auth = firebase.auth();
         const db = firebase.database();
         
-        let myRole = null;       // 'p1' (host) ou 'p2' (guest)
-        let matchId = null;      // ID de la partie en cours
-        let matchRef = null;     // Référence Firebase vers la partie
+        let myRole = null;       
+        let matchId = null;      
+        let matchRef = null;     
 
-        /* --- DONNÉES GLOBALES ET SAUVEGARDE --- */
+        /* --- VARIABLES GLOBALES --- */
         let playerCoins = 25; 
         let globalPlayerPseudo = "";
         let isMuted = false;
@@ -677,6 +674,7 @@
         let currentMode = 'tournament'; 
         let hasSave = false; 
         let isPlayerTurn = false;
+        let firstPlayerRole = 'p1';
         
         let onlineWins = 0;
         let onlineLosses = 0;
@@ -685,13 +683,18 @@
         let player = null;
         let enemy = null;
 
-        /* RNG Synchronisé pour le multijoueur */
+        /* RNG Synchronisé */
         let sharedRNG = 1;
         function gameRandom() { 
             if (currentMode !== 'online') return Math.random(); 
             let x = Math.sin(sharedRNG++) * 10000; 
             return x - Math.floor(x); 
         }
+
+        /* --- FILE D'ATTENTE DES ACTIONS --- */
+        let actionQueue = [];
+        let isProcessingQueue = false;
+        let isBattleReady = false; 
 
         const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
         
@@ -747,9 +750,10 @@
             { id: 'yuji', name: 'Yuji Itadori', img: 'Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg', color: 'from-orange-600 to-red-600', locked: false, price: 0, hp: 500, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 25, desc: 'Coup de poing basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Poing Divergent', cost: 20, dmg: 50, desc: 'Un double impact dévastateur.', type: 'attack', attr: 'Neutre' }, { name: 'Rayon Noir', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Ténèbres' }, { name: 'Assaut Furieux', cost: 70, dmg: 120, desc: 'Un enchaînement inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
             { id: 'megumi', name: 'Megumi Fushiguro', img: 'megumi.jpg', color: 'from-green-700 to-teal-900', locked: false, price: 0, hp: 450, ce: 40, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Chiens de Jade', cost: 0, dmg: 25, desc: 'Morsure basique. Restaure 15 CE.', type: 'basic', attr: 'Ténèbres' }, { name: 'Nue (Oiseau)', cost: 25, dmg: 40, desc: 'Attaque électrique. 30% de chance d\'étourdir 1 tour.', effect: 'chance-stun', type: 'attack', attr: 'Foudre' }, { name: 'Éléphant de Max', cost: 40, dmg: 70, desc: 'Écrase l\'ennemi sous une pression d\'eau.', type: 'attack', attr: 'Eau' }, { name: 'Jardin des Ombres', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour et octroie Esquive constante.', effect: 'domain-evade', type: 'domain', domainClass: 'domain-megumi', video: "territoire_de_Megumi.mp4", attr: 'Ténèbres' } ] },
             { id: 'nobara', name: 'Nobara Kugisaki', img: 'nobara.jpg', color: 'from-amber-700 to-red-800', locked: false, price: 0, hp: 430, ce: 30, maxCe: 100, attr: 'Terre', moves: [ { name: 'Coup de Marteau', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Terre' }, { name: 'Projection de Clous', cost: 15, dmg: 35, desc: 'Tire des clous imprégnés de CE.', type: 'attack', attr: 'Terre' }, { name: 'Résonance', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Pince à Cheveux', cost: 60, dmg: 140, desc: 'Fait exploser tous les clous plantés.', type: 'attack', attr: 'Feu' } ] },
-            { id: 'maki', name: 'Maki Zenin', img: 'maki.jpeg', color: 'from-emerald-700 to-green-900', locked: true, price: 800, hp: 510, ce: 30, maxCe: 100, attr: 'Plante', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 30, desc: 'Coup de poing basique puissant. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Lancer d\'Arme', cost: 20, dmg: 45, desc: 'Projette une arme maudite avec force.', type: 'attack', attr: 'Terre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Éveil Physique', cost: 70, dmg: 130, desc: 'Une démonstration de force brute inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
-            { id: 'nanami', name: 'Kento Nanami', img: 'nanami.jpg', color: 'from-yellow-600 to-yellow-800', locked: true, price: 800, hp: 470, ce: 40, maxCe: 100, attr: 'Terre', moves: [ { name: 'Lame Émoussée', cost: 0, dmg: 25, desc: 'Coup d\'épée basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Point Faible', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Terre' }, { name: 'Heures Supplémentaires', cost: 40, dmg: 0, desc: 'Libération d\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Effondrement', cost: 65, dmg: 110, desc: 'Frappe le point critique. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Terre' } ] },
-            { id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800', locked: true, price: 1500, hp: 460, ce: 40, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack', attr: 'Terre' }, { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4", attr: 'Foudre' } ] },
+            { id: 'maki', name: 'Maki Zenin', img: 'maki.jpeg', color: 'from-emerald-700 to-green-900', locked: false, price: 800, hp: 510, ce: 30, maxCe: 100, attr: 'Plante', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 30, desc: 'Coup de poing basique puissant. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Lancer d\'Arme', cost: 20, dmg: 45, desc: 'Projette une arme maudite avec force.', type: 'attack', attr: 'Terre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Éveil Physique', cost: 70, dmg: 130, desc: 'Une démonstration de force brute inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
+            { id: 'nanami', name: 'Kento Nanami', img: 'nanami.jpg', color: 'from-yellow-600 to-yellow-800', locked: false, price: 800, hp: 470, ce: 40, maxCe: 100, attr: 'Terre', moves: [ { name: 'Lame Émoussée', cost: 0, dmg: 25, desc: 'Coup d\'épée basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Point Faible', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Terre' }, { name: 'Heures Supplémentaires', cost: 40, dmg: 0, desc: 'Libération d\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Effondrement', cost: 65, dmg: 110, desc: 'Frappe le point critique. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Terre' } ] },
+            { id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800', locked: false, price: 1500, hp: 460, ce: 40, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack', attr: 'Terre' }, { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4", attr: 'Foudre' } ] },
+            { id: 'todo', name: 'Aoi Todo', img: 'todo.jpg', color: 'from-blue-700 to-indigo-900', locked: false, price: 1500, hp: 530, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 25, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Boogie Woogie', cost: 20, dmg: 40, desc: 'Frappe désorientante. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Neutre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Rayon Noir', cost: 70, dmg: 130, desc: 'Impact explosif critique.', type: 'attack', attr: 'Ténèbres' } ] },
             { id: 'toji', name: 'Toji Fushiguro', img: 'Toji.jpeg', color: 'from-gray-600 to-gray-900', locked: true, price: 1500, hp: 560, ce: 50, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Katana Ordinaire', cost: 0, dmg: 35, desc: 'Coup de lame simple et brutal. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Pistolet', cost: 20, dmg: 50, desc: 'Tire sur l\'adversaire avec précision.', type: 'attack', attr: 'Feu' }, { name: 'Nuage Flottant', cost: 50, dmg: 90, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Lance du Ciel Inversée', cost: 80, dmg: 140, desc: 'Annule les techniques. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' } ] },
             { id: 'mahito', name: 'Mahito', img: 'mahito.jpeg', color: 'from-blue-700 to-indigo-900', locked: true, price: 2000, hp: 520, ce: 50, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Lames Corporelles', cost: 0, dmg: 25, desc: 'Transformation en lames. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Âme Multiple', cost: 30, dmg: 50, desc: 'Projette des âmes transfigurées.', type: 'attack', attr: 'Ténèbres' }, { name: 'Transfiguration Idéale', cost: 50, dmg: 80, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Orbe de l\'Isolement', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature l\'âme : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-mahito', video: 'territoire_de_Mahito.mp4', attr: 'Ténèbres' } ] },
             { id: 'jogo', name: 'Jogo', img: 'jogo.png', color: 'from-red-600 to-orange-800', locked: true, price: 2000, hp: 450, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Rayon de Flammes', cost: 0, dmg: 25, desc: 'Brûle l\'adversaire. Restaure 15 CE.', type: 'basic', attr: 'Feu' }, { name: 'Insectes Explosifs', cost: 25, dmg: 45, desc: 'Déploie des insectes de feu sonores.', type: 'attack', attr: 'Feu' }, { name: 'Météore Maximum', cost: 60, dmg: 110, desc: 'Invoque un météore géant de flammes.', type: 'attack', attr: 'Terre' }, { name: 'Montagne Cercueil de Fer', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Jogo.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-jogo', video: 'Territoire_de_Jogo.mp4', attr: 'Feu' } ] },
@@ -757,7 +761,6 @@
             { id: 'gojo', name: 'Satoru Gojo', img: 'satoru Gojo.jpg', color: 'from-blue-500 to-purple-600', locked: true, price: 5000, hp: 480, ce: 50, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Corps à corps', cost: 0, dmg: 20, desc: 'Frappe imprégnée d\'énergie. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Rouge (Répulsion)', cost: 30, dmg: 60, desc: 'Projette violemment l\'ennemi.', type: 'attack', attr: 'Feu' }, { name: 'Violet (Hollow)', cost: 60, dmg: 130, desc: 'Détruit la matière au niveau atomique.', type: 'attack', attr: 'Ténèbres' }, { name: 'Sphère de l\'Espace Infini', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature le cerveau : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-gojo', video: "Sphere_de_lespace_infini.mp4", attr: 'Lumière' } ] },
             { id: 'sukuna', name: 'Ryomen Sukuna', img: 'Sukuna.jpeg', color: 'from-red-800 to-black', locked: true, price: 5000, hp: 550, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Frappe Démoniaque', cost: 0, dmg: 30, desc: 'Attaque physique lourde. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack', attr: 'Ténèbres' }, { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack', attr: 'Ténèbres' }, { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4", attr: 'Feu' } ] },
             { id: 'higuruma', name: 'Hiromi Higuruma', img: 'higuruma.jpg', color: 'from-gray-600 to-black', locked: true, price: 2000, hp: 460, ce: 40, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Coup de Maillet', cost: 0, dmg: 25, desc: 'Frappe de base avec le maillet. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Jugement', cost: 25, dmg: 45, desc: 'Invoque Judgeman pour attaquer.', type: 'attack', attr: 'Lumière' }, { name: 'Confiscation', cost: 50, dmg: 80, desc: 'Frappe lourde. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' }, { name: 'Peine de Mort', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature la zone : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-higuruma', video: 'territoire_higuruma.mp4', attr: 'Lumière' } ] },
-            { id: 'todo', name: 'Aoi Todo', img: 'todo.jpg', color: 'from-blue-700 to-indigo-900', locked: true, price: 1500, hp: 530, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 25, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Boogie Woogie', cost: 20, dmg: 40, desc: 'Frappe désorientante. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Neutre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Rayon Noir', cost: 70, dmg: 130, desc: 'Impact explosif critique.', type: 'attack', attr: 'Ténèbres' } ] },
             { id: 'kashimo', name: 'Kashimo Hajime', img: 'kashimo.jpg', color: 'from-cyan-400 to-blue-600', locked: true, price: 3000, hp: 470, ce: 50, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup Électrifié', cost: 0, dmg: 30, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Foudre' }, { name: 'Décharge', cost: 25, dmg: 50, desc: 'Projette une charge électrique.', type: 'attack', attr: 'Foudre' }, { name: 'Accumulation', cost: 40, dmg: 0, desc: 'Canalyse l\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Bête Fantôme Ambre', cost: 85, dmg: 150, desc: 'Attaque ultime surchargée.', type: 'attack', attr: 'Foudre' } ] },
             { id: 'choso', name: 'Choso', img: 'choso.jpg', color: 'from-red-700 to-red-900', locked: true, price: 2000, hp: 480, ce: 40, maxCe: 100, attr: 'Eau', moves: [ { name: 'Tranchant de Sang', cost: 0, dmg: 25, desc: 'Frappe sanglante. Restaure 15 CE.', type: 'basic', attr: 'Eau' }, { name: 'Écaille Rouge Fluide', cost: 40, dmg: 0, desc: 'Booste le métabolisme. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Feu' }, { name: 'Supernova', cost: 45, dmg: 70, desc: 'Explosion d\'orbes de sang.', type: 'attack', attr: 'Eau' }, { name: 'Sang Perforant', cost: 70, dmg: 130, desc: 'Tir concentré perforant.', type: 'attack', attr: 'Eau' } ] },
             { id: 'geto', name: 'Suguru Geto', img: 'geto.jpg', color: 'from-yellow-700 to-yellow-900', locked: true, price: 5000, hp: 490, ce: 60, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 20, desc: 'Frappe technique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Nuée de Fléaux', cost: 25, dmg: 50, desc: 'Projette plusieurs petits fléaux.', type: 'attack', attr: 'Ténèbres' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Maximum: Uzumaki', cost: 85, dmg: 140, desc: 'Concentration totale des fléaux.', type: 'attack', attr: 'Ténèbres' } ] },
@@ -767,6 +770,18 @@
         const $ = id => document.getElementById(id);
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        /* --- SYSTÈME DE NOTIFICATIONS --- */
+        function showNotification(msg, title="ATTENTION") {
+            $('notif-title').innerText = title;
+            $('notif-msg').innerHTML = msg;
+            $('modal-notification').classList.remove('hidden');
+            $('modal-notification').classList.add('flex');
+        }
+        function hideNotification() {
+            $('modal-notification').classList.add('hidden');
+            $('modal-notification').classList.remove('flex');
+        }
 
         /* --- FONCTIONS RÉSEAU ET MATCHMAKING --- */
         async function startMatchmaking() {
@@ -779,7 +794,7 @@
                 try {
                     await auth.signInAnonymously();
                 } catch(e) {
-                    alert("Erreur de connexion serveur !");
+                    showNotification("Erreur de connexion serveur !");
                     showScreen('screen-mode-select');
                     return;
                 }
@@ -791,31 +806,36 @@
             
             queueRef.transaction((currentData) => {
                 if (currentData === null) {
-                    // Création de salle
                     const newMatchRef = db.ref('matches').push();
                     matchId = newMatchRef.key;
                     myRole = 'p1';
                     return { matchId: matchId };
                 } else {
-                    // Rejoindre
                     matchId = currentData.matchId;
                     myRole = 'p2';
-                    return null; // Vide la file
+                    return null; 
                 }
             }, (error, committed, snapshot) => {
                 if (error) {
-                    alert("Erreur de matchmaking !");
+                    showNotification("Erreur de matchmaking !");
                     showScreen('screen-mode-select');
                     return;
                 }
-                
-                // Si on est Hôte et qu'on quitte pendant l'attente
-                if(myRole === 'p1') {
-                    queueRef.onDisconnect().remove();
-                }
-                
+                if(myRole === 'p1') queueRef.onDisconnect().remove();
                 setupMatchRoom(queueRef);
             });
+        }
+
+        function cancelMatchmaking() {
+            if (matchRef) {
+                matchRef.child('status').set('abandoned');
+            }
+            if (myRole === 'p1') {
+                db.ref('matchmaking/waiting').remove();
+                db.ref('matchmaking/waiting').onDisconnect().cancel();
+            }
+            clearNetwork();
+            showScreen('screen-mode-select');
         }
 
         function setupMatchRoom(queueRef) {
@@ -831,24 +851,101 @@
                 const players = snap.val();
                 if (players && players.p1 && players.p2 && $('screen-matchmaking').classList.contains('hidden') === false) {
                     if(myRole === 'p1') queueRef.onDisconnect().cancel();
-                    
                     $('matchmaking-text').innerText = "ADVERSAIRE TROUVÉ !";
-                    setTimeout(() => {
-                        startOnlineBattle(players);
-                    }, 1000);
+                    setTimeout(() => startOnlineBattle(players), 1000);
                 }
             });
 
             matchRef.child('status').on('value', snap => {
-                if(snap.val() === 'abandoned' && !$('screen-battle').classList.contains('hidden')) {
-                    alert("L'adversaire s'est déconnecté. Vous gagnez par abandon !");
-                    endGame('win');
+                if(snap.val() === 'abandoned') {
+                    if (!$('screen-battle').classList.contains('hidden') || !$('screen-rps').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden')) {
+                        showNotification("L'adversaire a fui ! Vous gagnez par abandon.", "VICTOIRE");
+                        if (isBattleReady) {
+                            endGame('win');
+                        } else {
+                            onlineWins++; playerCoins += 50; saveGameData(); 
+                            clearNetwork();
+                            resetGame();
+                        }
+                    } else if (!$('screen-matchmaking').classList.contains('hidden')) {
+                        showNotification("La recherche a été annulée ou l'hôte s'est déconnecté.", "INFO");
+                        clearNetwork();
+                        showScreen('screen-mode-select');
+                    }
                 }
             });
 
             matchRef.child('actions').on('child_added', (snap) => {
                 processNetworkAction(snap.val());
             });
+        }
+
+        /* --- SHIFUMI (RPS) SYSTEM --- */
+        function startRpsPhase() {
+            showScreen('screen-rps');
+            $('rps-status').innerText = "Choisissez votre coup !";
+            $('rps-buttons').classList.remove('hidden');
+            $('rps-choice-ui').classList.add('hidden');
+            $('rps-p-choice').innerText = "?";
+            $('rps-e-choice').innerText = "?";
+
+            matchRef.child('rps').on('value', snap => {
+                const data = snap.val();
+                if(data && data.p1 && data.p2) {
+                    processRps(data.p1, data.p2);
+                } else if (data && data[myRole]) {
+                    $('rps-status').innerText = "En attente de l'adversaire...";
+                    $('rps-buttons').classList.add('hidden');
+                }
+            });
+
+            matchRef.child('turnChoice').on('value', snap => {
+                if(snap.val()) {
+                    firstPlayerRole = snap.val();
+                    matchRef.child('rps').off();
+                    matchRef.child('turnChoice').off();
+                    launchBattleSequence_internal();
+                }
+            });
+        }
+
+        function playRps(choice) {
+            matchRef.child('rps/' + myRole).set(choice);
+            $('rps-p-choice').innerText = choice;
+        }
+
+        function processRps(p1Choice, p2Choice) {
+            let myC = myRole === 'p1' ? p1Choice : p2Choice;
+            let eC = myRole === 'p1' ? p2Choice : p1Choice;
+
+            $('rps-p-choice').innerText = myC;
+            $('rps-e-choice').innerText = eC;
+
+            if(p1Choice === p2Choice) {
+                $('rps-status').innerText = "ÉGALITÉ ! Rejouez.";
+                setTimeout(() => {
+                    if(myRole === 'p1') matchRef.child('rps').remove();
+                    $('rps-buttons').classList.remove('hidden');
+                    $('rps-p-choice').innerText = "?";
+                    $('rps-e-choice').innerText = "?";
+                    $('rps-status').innerText = "Choisissez votre coup !";
+                }, 2000);
+            } else {
+                let p1Wins = (p1Choice === '✊' && p2Choice === '✌️') || (p1Choice === '✋' && p2Choice === '✊') || (p1Choice === '✌️' && p2Choice === '✋');
+                let winnerRole = p1Wins ? 'p1' : 'p2';
+
+                if(myRole === winnerRole) {
+                    $('rps-status').innerText = "VOUS AVEZ GAGNÉ !";
+                    $('rps-choice-ui').classList.remove('hidden');
+                } else {
+                    $('rps-status').innerText = "L'adversaire choisit l'ordre...";
+                }
+            }
+        }
+
+        function chooseTurn(order) {
+            let starter = (order === 'first') ? myRole : (myRole === 'p1' ? 'p2' : 'p1');
+            matchRef.child('turnChoice').set(starter);
         }
 
         function startOnlineBattle(playersData) {
@@ -858,15 +955,15 @@
             playerTeam = myData.team.map(idx => JSON.parse(JSON.stringify(charData[idx])));
             enemyTeam = enemyData.team.map(idx => JSON.parse(JSON.stringify(charData[idx])));
 
-            playerIdx = 0;
-            enemyIdx = 0;
-            player = playerTeam[0];
-            enemy = enemyTeam[0];
+            playerIdx = 0; enemyIdx = 0; player = playerTeam[0]; enemy = enemyTeam[0];
+            player.name = myData.name; enemy.name = enemyData.name;
 
-            player.name = myData.name;
-            enemy.name = enemyData.name;
+            $('rps-p-img').src = player.img;
+            $('rps-p-img').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${player.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            $('rps-e-img').src = enemy.img;
+            $('rps-e-img').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${enemy.name}&backgroundColor=1e293b&textColor=ffffff`; };
 
-            launchBattleSequence_internal();
+            startRpsPhase();
         }
 
         function pushNetworkAction(actionData) {
@@ -874,20 +971,33 @@
             matchRef.child('actions').push(actionData);
         }
 
+        /* --- SYSTÈME DE FILE D'ATTENTE (ACTION QUEUE) --- */
         function processNetworkAction(action) {
-            const targetRole = action.role === myRole ? 'player' : 'enemy';
+            actionQueue.push(action);
+            pumpActionQueue();
+        }
 
-            if(action.type === 'emote') {
-                if(targetRole === 'enemy') sendEmote_internal(action.emoji, 'enemy');
-            } else if (action.type === 'attack') {
-                const attacker = targetRole === 'player' ? player : enemy;
-                const defender = targetRole === 'player' ? enemy : player;
-                executeTurn_internal(attacker, defender, attacker.moves[action.moveIndex], targetRole);
-            } else if (action.type === 'switch') {
-                switchCharacter_internal(action.index, targetRole);
-            } else if (action.type === 'cancelDomain') {
-                cancelDomain_internal(targetRole);
+        async function pumpActionQueue() {
+            if (isProcessingQueue || !isBattleReady) return; 
+            isProcessingQueue = true;
+            
+            while (actionQueue.length > 0) {
+                const action = actionQueue.shift();
+                const targetRole = action.role === myRole ? 'player' : 'enemy';
+
+                if(action.type === 'emote') {
+                    if(targetRole === 'enemy') sendEmote_internal(action.emoji, 'enemy');
+                } else if (action.type === 'attack') {
+                    const attacker = targetRole === 'player' ? player : enemy;
+                    const defender = targetRole === 'player' ? enemy : player;
+                    await executeTurn_internal(attacker, defender, attacker.moves[action.moveIndex], targetRole);
+                } else if (action.type === 'switch') {
+                    await switchCharacter_internal(action.index, targetRole);
+                } else if (action.type === 'cancelDomain') {
+                    await cancelDomain_internal(targetRole);
+                }
             }
+            isProcessingQueue = false;
         }
 
         function clearNetwork() {
@@ -896,7 +1006,12 @@
                 matchRef.child('status').off();
                 matchRef.child('actions').off();
                 matchRef.child('players').off();
+                matchRef.child('rps').off();
+                matchRef.child('turnChoice').off();
             }
+            actionQueue = [];
+            isProcessingQueue = false;
+            isBattleReady = false;
         }
 
         /* --- GESTION MUSIQUE ET SON --- */
@@ -992,7 +1107,13 @@
 
         function handleNewGame() { if (hasSave) { $('modal-new-game').classList.remove('hidden'); $('modal-new-game').classList.add('flex'); } else startFreshGame(); }
         function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
-        function confirmNewGame() { hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = ""; onlineWins = 0; onlineLosses = 0; tournamentTrophies = 0; emotesEnabled = true; charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara'].includes(c.id)); updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); }
+        
+        function confirmNewGame() { 
+            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = ""; onlineWins = 0; onlineLosses = 0; tournamentTrophies = 0; emotesEnabled = true; 
+            charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara', 'maki', 'nanami', 'hakari', 'todo'].includes(c.id)); 
+            updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); 
+        }
+
         function handleContinue() { showScreen('screen-mode-select'); }
         function startFreshGame() { showScreen('screen-mode-select'); }
 
@@ -1032,13 +1153,13 @@
             const randomBg = menuBackgrounds[Math.floor(Math.random() * menuBackgrounds.length)];
             document.querySelectorAll('.dynamic-menu-bg').forEach(bg => bg.style.backgroundImage = `url('${randomBg}')`);
 
-            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament'].forEach(id => $(id).classList.add('hidden'));
+            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps'].forEach(id => $(id).classList.add('hidden'));
             $(screenId).classList.remove('hidden');
             
             if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament'].includes(screenId)) {
                 if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
-            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle'].includes(screenId)) playMusic('battle');
+            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) playMusic('battle');
             
             overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
         }
@@ -1069,7 +1190,7 @@
 
         /* --- NAVIGATION LIGNE & MATCHMAKING --- */
         function goToOnlineMode() { currentMode = 'online'; if (globalPlayerPseudo) showScreen('screen-select'); else showScreen('screen-pseudo'); }
-        function validatePseudo() { const val = $('input-pseudo').value.trim(); if(val.length < 3) { alert("Le pseudo doit contenir au moins 3 caractères."); return; } globalPlayerPseudo = val; saveGameData(); showScreen('screen-select'); }
+        function validatePseudo() { const val = $('input-pseudo').value.trim(); if(val.length < 3) { showNotification("Le pseudo doit contenir au moins 3 caractères."); return; } globalPlayerPseudo = val; saveGameData(); showScreen('screen-select'); }
 
         /* --- SYSTEME DE TOURNOI VS IA --- */
         function initTournament() {
@@ -1109,7 +1230,26 @@
         function hideExitModal() { $('modal-exit').classList.add('hidden'); $('modal-exit').classList.remove('flex'); }
         
         async function confirmExit() {
-            hideExitModal(); clearNetwork(); playMusic('none'); await resetGame();
+            hideExitModal(); 
+            
+            if (currentMode === 'online' && matchRef) {
+                if (!$('screen-rps').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-battle').classList.contains('hidden')) {
+                    onlineLosses++;
+                    playerCoins = Math.max(0, playerCoins - 15);
+                    saveGameData();
+                    matchRef.child('status').set('abandoned');
+                    showNotification("Vous avez fui le combat.<br>-15 Pièces<br>+1 Défaite", "DÉSERTEUR");
+                } else {
+                    matchRef.child('status').set('abandoned');
+                    if (myRole === 'p1') {
+                        db.ref('matchmaking/waiting').remove();
+                    }
+                }
+            }
+            
+            clearNetwork(); 
+            playMusic('none'); 
+            await resetGame();
         }
 
         async function hideGameOverAndReplay() {
@@ -1150,13 +1290,18 @@
         function renderCharacterSelect() {
             const grid = $('character-grid'); grid.innerHTML = '';
             charData.forEach((char, index) => {
-                const card = document.createElement('div'); let isCardLocked = char.locked; let isSelectedOnline = currentMode === 'online' && playerTeamSelection.includes(index); let borderClass = isSelectedOnline ? 'border-4 border-blue-500' : 'border border-white/10'; let baseClasses = `aura-card bg-gradient-to-br ${char.color} rounded-xl p-2 flex flex-col items-center justify-center transform transition-all relative overflow-hidden w-full h-full ${borderClass}`;
+                const card = document.createElement('div'); let isCardLocked = char.locked; let isSelectedOnline = currentMode === 'online' && playerTeamSelection.includes(index); let borderClass = isSelectedOnline ? 'border-4 border-blue-500' : 'border border-white/10'; 
+                
+                // Correction du SCROLL : ajout de 'touch-pan-y'
+                let baseClasses = `aura-card bg-gradient-to-br ${char.color} rounded-xl p-3 flex flex-col items-center justify-center transform transition-all relative overflow-hidden w-full min-h-[130px] touch-pan-y ${borderClass}`;
+                
                 if (isCardLocked) {
-                    card.className = `${baseClasses} opacity-50 grayscale filter cursor-not-allowed z-10`; card.style.animation = 'none'; card.innerHTML = `<img src="${char.img}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/30 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="absolute inset-0 flex items-center justify-center z-20"><i class="fas fa-lock text-3xl text-white drop-shadow-md"></i></div><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/50 z-0"></div>`;
+                    card.className = `${baseClasses} opacity-50 grayscale filter cursor-not-allowed z-10`; card.style.animation = 'none'; card.innerHTML = `<img src="${char.img}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/30 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="absolute inset-0 flex items-center justify-center z-20"><i class="fas fa-lock text-3xl text-white drop-shadow-md"></i></div><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight mt-1">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/50 z-0"></div>`;
                 } else {
-                    card.className = `${baseClasses} cursor-pointer active:scale-95 shadow-lg z-10`; card.style.animationDelay = `${index * 0.15}s`; if(selectionStep === 'enemy' && index === pIndex) { card.classList.add('opacity-50', 'pointer-events-none'); card.style.animation = 'none'; }
+                    // Correction SCROLL : Retrait de active:scale-95 qui bloquait le doigt
+                    card.className = `${baseClasses} cursor-pointer shadow-lg z-10 hover:scale-[1.02]`; card.style.animationDelay = `${index * 0.15}s`; if(selectionStep === 'enemy' && index === pIndex) { card.classList.add('opacity-50', 'pointer-events-none'); card.style.animation = 'none'; }
                     let indexBadge = ''; if (isSelectedOnline) { let pos = playerTeamSelection.indexOf(index) + 1; indexBadge = `<div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border border-white z-30">${pos}</div>`; }
-                    card.innerHTML = `${indexBadge}<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
+                    card.innerHTML = `${indexBadge}<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight mt-1">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
                     if(!(selectionStep === 'enemy' && index === pIndex)) card.onclick = () => selectCharacter(index);
                 }
                 grid.appendChild(card);
@@ -1173,7 +1318,7 @@
             });
         }
 
-        function buyCharacter(charId) { const charIndex = charData.findIndex(c => c.id === charId); if(charIndex === -1) return; const char = charData[charIndex]; if(playerCoins >= char.price) { playerCoins -= char.price; charData[charIndex].locked = false; saveGameData(); renderMarket(); } else alert("Pièces insuffisantes !"); }
+        function buyCharacter(charId) { const charIndex = charData.findIndex(c => c.id === charId); if(charIndex === -1) return; const char = charData[charIndex]; if(playerCoins >= char.price) { playerCoins -= char.price; charData[charIndex].locked = false; saveGameData(); renderMarket(); } else showNotification("Pièces insuffisantes !"); }
         function startTutorial() { currentMode = 'tutorial'; pIndex = charData.findIndex(c => c.id === 'gojo'); eIndex = charData.findIndex(c => c.id === 'sukuna'); if(pIndex !== -1 && eIndex !== -1) startGame('facile'); }
         
         function selectCharacter(index) {
@@ -1237,10 +1382,10 @@
         function closeEnemyStats() { $('modal-enemy-stats').classList.add('hidden'); $('modal-enemy-stats').classList.remove('flex'); }
 
         function initBattle() {
-            sharedRNG = 1; // Resync RNG
+            sharedRNG = 1; 
             
             if(currentMode === 'online') {
-                isPlayerTurn = (myRole === 'p1'); // P1 commence toujours
+                isPlayerTurn = (myRole === firstPlayerRole); 
             } else {
                 isPlayerTurn = true;
             }
@@ -1268,6 +1413,9 @@
             else addLog(`Le combat commence : ${player.name} vs ${enemy.name} !`, 'text-yellow-400 font-bold');
             
             if (currentMode === 'tutorial') addLog("Astuce: Gérez votre Énergie Occulte (CE) pour lancer des attaques puissantes ou votre Territoire.", 'text-blue-300 italic');
+            
+            isBattleReady = true; 
+            pumpActionQueue(); 
             playMusic('battle'); showScreen('screen-battle'); 
         }
 
@@ -1292,7 +1440,11 @@
         }
 
         async function switchCharacter(index, role) {
+            if (isAnimating) return; 
+            
             if (currentMode === 'online' && role === 'player') {
+                if (!isPlayerTurn) return;
+                isAnimating = true; renderActionButtons(); 
                 pushNetworkAction({ type: 'switch', index: index });
             } else if (currentMode !== 'online') {
                 await switchCharacter_internal(index, role);
@@ -1301,9 +1453,9 @@
 
         async function switchCharacter_internal(index, role) {
             let currentEntity = role === 'player' ? player : enemy;
-            if (hasSwitchedThisTurn || isAnimating || currentEntity.activeDomain) return;
+            if (hasSwitchedThisTurn || currentEntity.activeDomain) return;
             
-            isAnimating = true; if (role === 'player') renderActionButtons(); 
+            isAnimating = true; renderActionButtons(); 
             const spriteId = role === 'player' ? 'sprite-player' : 'sprite-enemy';
             $(spriteId).classList.add('anim-vanish'); await wait(500);
             
@@ -1383,7 +1535,12 @@
         }
 
         function addLog(msg, colorClass = 'text-gray-300') { const log = $('combat-log'); const entry = document.createElement('div'); entry.className = `${colorClass} py-0.5 border-b border-gray-800/30`; entry.innerHTML = `> ${msg}`; log.appendChild(entry); log.scrollTop = log.scrollHeight; }
-        function createFloatingText(targetId, text, colorClass) { const target = $(targetId); const rect = target.getBoundingClientRect(); const el = document.createElement('div'); el.className = `floating-text ${colorClass}`; el.innerText = text; el.style.left = `${rect.left + (rect.width/2) - 30 + (Math.random()-0.5)*50}px`; el.style.top = `${rect.top + (rect.height/2) - 30 + (Math.random()-0.5)*50}px`; document.body.appendChild(el); setTimeout(() => el.remove(), 1200); }
+        
+        function createFloatingText(targetId, text, colorClass) { 
+            const target = $(targetId); const rect = target.getBoundingClientRect(); const el = document.createElement('div'); el.className = `floating-text ${colorClass}`; el.innerText = text; 
+            el.style.left = `${rect.left + (rect.width/2) - 30 + (Math.random()-0.5)*50}px`; el.style.top = `${rect.top + (rect.height/2) - 30 + (Math.random()-0.5)*50}px`; document.body.appendChild(el); setTimeout(() => el.remove(), 1200); 
+        }
+
         function shakeScreen() { const container = $('arena-container'); container.classList.add('anim-screen-shake'); setTimeout(() => container.classList.remove('anim-screen-shake'), 500); }
 
         function playAttackSound(damage) {
@@ -1414,7 +1571,11 @@
         }
 
         async function cancelDomain(role) {
+            if (isAnimating) return; 
+
             if (currentMode === 'online' && role === 'player') {
+                if (!isPlayerTurn) return;
+                isAnimating = true; renderActionButtons();
                 pushNetworkAction({ type: 'cancelDomain' });
             } else if (currentMode !== 'online') {
                 await cancelDomain_internal(role);
@@ -1422,7 +1583,6 @@
         }
 
         async function cancelDomain_internal(role) {
-            if (isAnimating && role === 'player') return; 
             isAnimating = true; renderActionButtons();
             
             const entity = role === 'player' ? player : enemy;
@@ -1506,7 +1666,11 @@
         }
 
         function executeTurn(attacker, defender, move, role) {
+            if (isAnimating) return; 
+
             if (currentMode === 'online' && role === 'player') {
+                if (!isPlayerTurn) return;
+                isAnimating = true; renderActionButtons(); 
                 const moveIndex = player.moves.findIndex(m => m.name === move.name);
                 pushNetworkAction({ type: 'attack', moveIndex: moveIndex });
             } else if (currentMode !== 'online') {
@@ -1515,7 +1679,6 @@
         }
 
         async function executeTurn_internal(attacker, defender, move, role) {
-            if (isAnimating && role === 'player') return;
             isAnimating = true; renderActionButtons();
             
             const attackerSpriteId = role === 'player' ? 'sprite-player' : 'sprite-enemy';
@@ -1596,10 +1759,9 @@
         }
 
         async function finalizeTurn(currentRole) {
-            // Permet d'identifier globalement si c'est P1 ou P2 qui vient de jouer (important pour le multijoueur)
             let actorWasP1 = (currentMode === 'online') 
                 ? (myRole === 'p1' && currentRole === 'player') || (myRole === 'p2' && currentRole === 'enemy')
-                : (currentRole === 'player'); // Solo : player agit comme P1
+                : (currentRole === 'player');
             
             if (actorWasP1) {
                 if(currentMode === 'online') isPlayerTurn = (myRole !== 'p1');
@@ -1607,12 +1769,11 @@
                 
                 hasSwitchedThisTurn = false; updateTurnIndicator();
                 
-                // Recharge pour la team du dessus (P2)
                 let p2Team = (currentMode === 'online' && myRole === 'p2') ? playerTeam : enemyTeam;
                 let p2Idx = (currentMode === 'online' && myRole === 'p2') ? playerIdx : enemyIdx;
                 p2Team.forEach((c, i) => { if(c.hp > 0) { let recharge = (i === p2Idx) ? (c.activeDomain ? 5 : 10) : 5; c.ce = Math.min(c.maxCe, c.ce + recharge); } });
                 
-                updateBars(); isAnimating = false; 
+                isAnimating = false; updateBars(); 
                 if(currentMode !== 'online' && currentRole === 'player') setTimeout(enemyAI, 1500);
             } else {
                 await applyDomainEffects();
@@ -1631,7 +1792,6 @@
                 
                 hasSwitchedThisTurn = false; updateTurnIndicator();
                 
-                // Recharge pour la team du bas (P1)
                 let p1Team = (currentMode === 'online' && myRole === 'p2') ? enemyTeam : playerTeam;
                 let p1Idx = (currentMode === 'online' && myRole === 'p2') ? enemyIdx : playerIdx;
                 p1Team.forEach((c, i) => { if(c.hp > 0) { let recharge = (i === p1Idx) ? (c.activeDomain ? 5 : 10) : 5; c.ce = Math.min(c.maxCe, c.ce + recharge); } });
