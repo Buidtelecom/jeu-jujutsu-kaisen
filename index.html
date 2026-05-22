@@ -859,14 +859,7 @@
             matchRef.child('status').on('value', snap => {
                 if(snap.val() === 'abandoned') {
                     if (!$('screen-battle').classList.contains('hidden') || !$('screen-rps').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden')) {
-                        showNotification("L'adversaire a fui ! Vous gagnez par abandon.", "VICTOIRE");
-                        if (isBattleReady) {
-                            endGame('win');
-                        } else {
-                            onlineWins++; playerCoins += 50; saveGameData(); 
-                            clearNetwork();
-                            resetGame();
-                        }
+                        endGame('win_abandon');
                     } else if (!$('screen-matchmaking').classList.contains('hidden')) {
                         showNotification("La recherche a été annulée ou l'hôte s'est déconnecté.", "INFO");
                         clearNetwork();
@@ -1238,7 +1231,8 @@
                     playerCoins = Math.max(0, playerCoins - 15);
                     saveGameData();
                     matchRef.child('status').set('abandoned');
-                    showNotification("Vous avez fui le combat.<br>-15 Pièces<br>+1 Défaite", "DÉSERTEUR");
+                    await endGame('abandon');
+                    return; 
                 } else {
                     matchRef.child('status').set('abandoned');
                     if (myRole === 'p1') {
@@ -1291,14 +1285,11 @@
             const grid = $('character-grid'); grid.innerHTML = '';
             charData.forEach((char, index) => {
                 const card = document.createElement('div'); let isCardLocked = char.locked; let isSelectedOnline = currentMode === 'online' && playerTeamSelection.includes(index); let borderClass = isSelectedOnline ? 'border-4 border-blue-500' : 'border border-white/10'; 
-                
-                // Correction du SCROLL : ajout de 'touch-pan-y'
                 let baseClasses = `aura-card bg-gradient-to-br ${char.color} rounded-xl p-3 flex flex-col items-center justify-center transform transition-all relative overflow-hidden w-full min-h-[130px] touch-pan-y ${borderClass}`;
                 
                 if (isCardLocked) {
                     card.className = `${baseClasses} opacity-50 grayscale filter cursor-not-allowed z-10`; card.style.animation = 'none'; card.innerHTML = `<img src="${char.img}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/30 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="absolute inset-0 flex items-center justify-center z-20"><i class="fas fa-lock text-3xl text-white drop-shadow-md"></i></div><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight mt-1">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/50 z-0"></div>`;
                 } else {
-                    // Correction SCROLL : Retrait de active:scale-95 qui bloquait le doigt
                     card.className = `${baseClasses} cursor-pointer shadow-lg z-10 hover:scale-[1.02]`; card.style.animationDelay = `${index * 0.15}s`; if(selectionStep === 'enemy' && index === pIndex) { card.classList.add('opacity-50', 'pointer-events-none'); card.style.animation = 'none'; }
                     let indexBadge = ''; if (isSelectedOnline) { let pos = playerTeamSelection.indexOf(index) + 1; indexBadge = `<div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border border-white z-30">${pos}</div>`; }
                     card.innerHTML = `${indexBadge}<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight mt-1">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
@@ -1838,28 +1829,53 @@
 
         async function endGame(result) {
             playMusic('none');
-            const deadSprite = result === 'win' ? $('sprite-enemy') : $('sprite-player');
-            const winner = result === 'win' ? player : enemy;
             
-            deadSprite.classList.add('anim-vanish'); await wait(1800); 
+            const isWin = result === 'win' || result === 'win_abandon';
+            const isAbandon = result === 'abandon';
+            
+            const deadSprite = isWin ? $('sprite-enemy') : $('sprite-player');
+            const winner = isWin ? player : enemy; 
+            
+            if (!$('screen-battle').classList.contains('hidden') && !isAbandon && result !== 'win_abandon') {
+                deadSprite.classList.add('anim-vanish'); 
+                await wait(1800); 
+            } else if (!$('screen-battle').classList.contains('hidden')) {
+                await wait(500); 
+            }
+            
+            const overlay = $('transition-overlay');
+            overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100');
+            await wait(500); 
+            
+            ['screen-battle', 'screen-vs', 'screen-rps', 'screen-matchmaking'].forEach(id => $(id).classList.add('hidden'));
             
             const modal = $('modal-gameover'); modal.classList.remove('hidden'); modal.classList.add('flex');
             const winImg = $('gameover-image');
             winImg.onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${winner.name}&backgroundColor=1e293b&textColor=ffffff`; };
             winImg.src = winner.img;
-            winImg.classList.remove('hidden'); winImg.className = `w-40 h-40 rounded-full border-4 object-cover mb-4 z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)] ${result === 'win' ? 'border-green-500 shadow-green-500/50' : 'border-red-500 shadow-red-500/50'}`;
+            winImg.classList.remove('hidden'); 
+            winImg.className = `w-40 h-40 rounded-full border-4 object-cover mb-4 z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)] ${isWin ? 'border-green-500 shadow-green-500/50' : 'border-red-500 shadow-red-500/50'}`;
 
             const btnContainer = $('gameover-buttons'); btnContainer.innerHTML = '';
 
-            if (result === 'win') {
+            overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
+
+            if (isWin) {
                 if(currentMode === 'tutorial') {
                     $('gameover-title').innerText = 'TUTO TERMINÉ !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Continuer</button>`;
                 } else if (currentMode === 'online') {
                     onlineWins++; let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); playerCoins += earnedCoins; saveGameData(); 
                     $('gameover-title').innerText = 'VICTOIRE !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
-                    $('gameover-desc').innerHTML = `Vous avez vaincu l'équipe de ${enemy.name}.<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                    
+                    if (result === 'win_abandon') {
+                        $('gameover-desc').innerHTML = `L'adversaire a pris la fuite !<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                    } else {
+                        $('gameover-desc').innerHTML = `Vous avez vaincu l'équipe de ${enemy.name}.<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                    }
+                    
                     btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
+                    clearNetwork();
                 } else if (currentMode === 'tournament') {
                     let currentMatches = tState.bracket[tState.round]; currentMatches[0].winner = currentMatches[0].p1; 
                     let nextRoundPlayers = [currentMatches[0].winner]; for(let i=1; i<currentMatches.length; i++) { let m = currentMatches[i]; m.winner = Math.random() > 0.5 ? m.p1 : m.p2; nextRoundPlayers.push(m.winner); }
@@ -1879,16 +1895,25 @@
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                 }
             } else {
-                $('gameover-title').innerText = 'MORT'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-900 drop-shadow-lg z-10 relative';
+                $('gameover-title').innerText = 'DÉFAITE'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-900 drop-shadow-lg z-10 relative';
+                
                 if (currentMode === 'tournament') {
                     $('gameover-title').innerText = 'ÉLIMINÉ'; $('gameover-desc').innerText = `Vous avez été éliminé du tournoi.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                } else if (isAbandon) {
+                    $('gameover-title').innerText = 'DÉSERTEUR !'; 
+                    $('gameover-desc').innerHTML = `Vous avez fui le combat.<br><span class="text-red-400 font-bold mt-2 inline-block text-2xl">-15 Pièces</span>`;
+                    btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                    clearNetwork();
                 } else {
                     $('gameover-desc').innerText = `Votre équipe a été décimée...`;
                     if (currentMode === 'online') {
                         onlineLosses++; saveGameData();
                         btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
-                    } else btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                        clearNetwork();
+                    } else {
+                        btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                    }
                 }
             }
         }
