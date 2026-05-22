@@ -586,7 +586,10 @@
 
         <!-- COMBAT LOG & TURN INDICATOR -->
         <div class="bg-black/80 flex flex-col shrink-0 border-t border-gray-700 z-20">
-            <div id="turn-indicator" class="text-center text-xs font-bold py-1 bg-blue-900/50 text-blue-300 transition-colors"></div>
+            <div id="turn-indicator-container" class="flex justify-center items-center py-1 bg-blue-900/50 transition-colors border-b border-blue-500/50 gap-2">
+                <div id="turn-indicator" class="text-center text-xs font-bold text-blue-300"></div>
+                <span id="turn-timer" class="bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md hidden">20s</span>
+            </div>
             <div id="combat-log" class="h-24 p-2 overflow-y-auto no-scrollbar text-sm space-y-1 text-gray-300 font-mono"></div>
         </div>
 
@@ -597,6 +600,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span id="player-name" class="font-bold text-blue-400 text-sm truncate"></span>
                         <div id="player-team-roster" class="flex gap-1 shrink-0"></div>
+                        <button id="btn-inspect-team" onclick="showPlayerTeamStats()" class="hidden w-6 h-6 rounded-full bg-gray-800 border border-blue-500/50 flex items-center justify-center text-blue-300 hover:bg-gray-700 active:scale-90 transition-transform shadow-md ml-1"><i class="fas fa-users text-[10px]"></i></button>
                     </div>
                     <div class="w-full bg-gray-900 rounded-full h-4 border border-gray-700 relative">
                         <div id="player-hp-bar" class="bg-green-500 h-4 rounded-full bar-transition" style="width: 100%;"></div>
@@ -634,6 +638,19 @@
                     </div>
                 </div>
                 <div id="inspect-moves" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar pr-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EQUIPE JOUEUR -->
+    <div id="modal-player-team" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-blue-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)] flex flex-col max-h-[85vh]">
+            <div class="bg-gradient-to-r from-blue-900 to-black p-3 flex justify-between items-center border-b border-blue-500/30 shrink-0">
+                <h3 class="font-bold text-blue-400 text-lg flex items-center gap-2"><i class="fas fa-users"></i> Mon Équipe</h3>
+                <button onclick="closePlayerTeamStats()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto no-scrollbar space-y-4" id="player-team-list">
+                <!-- Javascript -->
             </div>
         </div>
     </div>
@@ -691,10 +708,13 @@
             return x - Math.floor(x); 
         }
 
-        /* --- FILE D'ATTENTE DES ACTIONS --- */
+        /* --- FILE D'ATTENTE DES ACTIONS ET TIMER --- */
         let actionQueue = [];
         let isProcessingQueue = false;
         let isBattleReady = false; 
+        
+        let turnTimerId = null;
+        let turnTimeRemaining = 20;
 
         const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
         
@@ -964,7 +984,7 @@
             matchRef.child('actions').push(actionData);
         }
 
-        /* --- SYSTÈME DE FILE D'ATTENTE (ACTION QUEUE) --- */
+        /* --- SYSTÈME DE FILE D'ATTENTE (ACTION QUEUE) ET MINUTEUR --- */
         function processNetworkAction(action) {
             actionQueue.push(action);
             pumpActionQueue();
@@ -994,6 +1014,7 @@
         }
 
         function clearNetwork() {
+            stopTurnTimer();
             if (currentMode === 'online' && matchRef) {
                 matchRef.child('status').onDisconnect().cancel();
                 matchRef.child('status').off();
@@ -1007,6 +1028,52 @@
             isBattleReady = false;
         }
 
+        function startTurnTimer() {
+            stopTurnTimer();
+            if (currentMode !== 'online') return;
+            
+            turnTimeRemaining = 20;
+            const timerEl = $('turn-timer');
+            if(timerEl) {
+                timerEl.innerText = turnTimeRemaining + 's';
+                timerEl.classList.remove('hidden');
+                timerEl.classList.remove('animate-pulse');
+            }
+            
+            turnTimerId = setInterval(() => {
+                turnTimeRemaining--;
+                if(timerEl) {
+                    timerEl.innerText = turnTimeRemaining + 's';
+                    if (turnTimeRemaining <= 5) timerEl.classList.add('animate-pulse');
+                }
+                
+                if (turnTimeRemaining <= 0) {
+                    stopTurnTimer();
+                    if (isPlayerTurn && !isAnimating) {
+                        const affordableMoves = player.moves.filter(m => m.cost <= player.ce);
+                        let move = affordableMoves.find(m => m.type === 'basic') || affordableMoves[0];
+                        if (player.activeDomain && !move) {
+                            cancelDomain('player');
+                        } else if (move) {
+                            executeTurn(player, enemy, move, 'player');
+                        } else {
+                            executeTurn(player, enemy, player.moves[0], 'player');
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTurnTimer() {
+            if(turnTimerId) clearInterval(turnTimerId);
+            turnTimerId = null;
+            const timerEl = $('turn-timer');
+            if(timerEl) {
+                timerEl.classList.add('hidden');
+                timerEl.classList.remove('animate-pulse');
+            }
+        }
+
         /* --- GESTION MUSIQUE ET SON --- */
         function pauseAudio(audioElement) { try { if (!audioElement.paused) audioElement.pause(); } catch (e) {} }
         function stopAudioAndReset(audioElement) { try { if (!audioElement.paused) audioElement.pause(); if (!isNaN(audioElement.duration)) audioElement.currentTime = 0; } catch (e) {} }
@@ -1018,7 +1085,7 @@
             else if (type === 'battle') { pauseAudio(bgM); if (batM.paused) try { await batM.play(); } catch(e) {} }
         }
 
-        /* --- GESTION DES EMOTES --- */
+        /* --- GESTION DES EMOTES ET STATS D'EQUIPE --- */
         function toggleEmotePanel() {
             const panel = $('emote-panel');
             if(panel.classList.contains('hidden')) panel.classList.remove('hidden'); else panel.classList.add('hidden');
@@ -1049,6 +1116,58 @@
             setTimeout(() => el.remove(), 2500);
 
             if(role === 'player') $('emote-panel').classList.add('hidden');
+        }
+
+        function showPlayerTeamStats() {
+            if (currentMode !== 'online' && currentMode !== 'tournament') return;
+            const container = $('player-team-list');
+            container.innerHTML = '';
+            
+            playerTeam.forEach((c, idx) => {
+                const charEl = document.createElement('div');
+                charEl.className = `bg-gray-800 rounded-lg p-3 border ${idx === playerIdx ? 'border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'border-gray-700'}`;
+                
+                let weakTo = attrAdvantage[c.attr].weak.map(a => `${attrEmojis[a]} ${a}`).join(', ') || 'Aucune';
+                let strongVs = attrAdvantage[c.attr].strong.map(a => `${attrEmojis[a]} ${a}`).join(', ') || 'Aucun';
+                
+                let movesHtml = c.moves.map(move => {
+                    let typeColor = move.type === 'domain' ? 'text-purple-400 font-bold' : (move.type === 'heal' ? 'text-green-400' : (move.cost > 30 ? 'text-red-400' : 'text-gray-300'));
+                    return `
+                    <div class="bg-gray-900 rounded p-2 mb-1 border border-gray-700">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs ${typeColor}">${attrEmojis[move.attr]} ${move.name}</span>
+                            <div class="flex gap-1">
+                                ${move.dmg > 0 ? `<span class="text-[9px] bg-red-900/50 text-red-200 px-1 py-0.5 rounded border border-red-500/30"><i class="fas fa-fire-alt"></i> ${move.dmg}</span>` : ''}
+                                <span class="text-[9px] bg-purple-900/50 text-purple-200 px-1 py-0.5 rounded border border-purple-500/30"><i class="fas fa-bolt"></i> ${move.cost}</span>
+                            </div>
+                        </div>
+                        <p class="text-[9px] text-gray-400 leading-tight">${move.desc}</p>
+                    </div>`;
+                }).join('');
+
+                charEl.innerHTML = `
+                    <div class="flex items-center gap-3 mb-2">
+                        <img src="${c.img}" class="w-10 h-10 rounded-full border ${idx === playerIdx ? 'border-blue-500' : 'border-gray-500'} object-cover">
+                        <div>
+                            <div class="font-bold text-white text-sm">${c.name} <span class="text-[10px] ml-1 bg-gray-700 px-1.5 py-0.5 rounded border border-gray-600">${attrEmojis[c.attr]} ${c.attr}</span></div>
+                            <div class="text-[9px] text-green-400 mt-0.5">Fort vs: ${strongVs}</div>
+                            <div class="text-[9px] text-red-400">Faible vs: ${weakTo}</div>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        ${movesHtml}
+                    </div>
+                `;
+                container.appendChild(charEl);
+            });
+
+            $('modal-player-team').classList.remove('hidden');
+            $('modal-player-team').classList.add('flex');
+        }
+
+        function closePlayerTeamStats() {
+            $('modal-player-team').classList.add('hidden');
+            $('modal-player-team').classList.remove('flex');
         }
 
         /* --- PRELOADER --- */
@@ -1377,8 +1496,10 @@
             
             if(currentMode === 'online') {
                 isPlayerTurn = (myRole === firstPlayerRole); 
+                $('btn-inspect-team').classList.remove('hidden');
             } else {
                 isPlayerTurn = true;
+                $('btn-inspect-team').classList.add('hidden');
             }
             
             isAnimating = false; hasSwitchedThisTurn = false;
@@ -1407,6 +1528,7 @@
             
             isBattleReady = true; 
             pumpActionQueue(); 
+            startTurnTimer();
             playMusic('battle'); showScreen('screen-battle'); 
         }
 
@@ -1482,9 +1604,17 @@
         }
 
         function updateTurnIndicator() {
+            const wrapper = $('turn-indicator-container');
             const indicator = $('turn-indicator');
-            if (isPlayerTurn) { indicator.innerText = "C'EST VOTRE TOUR"; indicator.className = "text-center text-xs font-bold py-1 bg-blue-900/80 text-blue-300 transition-colors border-b border-blue-500/50"; } 
-            else { indicator.innerText = "TOUR DE L'ENNEMI..."; indicator.className = "text-center text-xs font-bold py-1 bg-red-900/80 text-red-300 transition-colors border-b border-red-500/50"; }
+            if (isPlayerTurn) { 
+                indicator.innerText = "C'EST VOTRE TOUR"; 
+                indicator.className = "text-center text-xs font-bold text-blue-300"; 
+                wrapper.className = "flex justify-center items-center py-1 bg-blue-900/80 transition-colors border-b border-blue-500/50 gap-2";
+            } else { 
+                indicator.innerText = "TOUR DE L'ENNEMI..."; 
+                indicator.className = "text-center text-xs font-bold text-red-300"; 
+                wrapper.className = "flex justify-center items-center py-1 bg-red-900/80 transition-colors border-b border-red-500/50 gap-2";
+            }
         }
 
         function updateBars() {
@@ -1566,6 +1696,7 @@
 
             if (currentMode === 'online' && role === 'player') {
                 if (!isPlayerTurn) return;
+                stopTurnTimer();
                 isAnimating = true; renderActionButtons();
                 pushNetworkAction({ type: 'cancelDomain' });
             } else if (currentMode !== 'online') {
@@ -1574,6 +1705,7 @@
         }
 
         async function cancelDomain_internal(role) {
+            stopTurnTimer();
             isAnimating = true; renderActionButtons();
             
             const entity = role === 'player' ? player : enemy;
@@ -1661,6 +1793,7 @@
 
             if (currentMode === 'online' && role === 'player') {
                 if (!isPlayerTurn) return;
+                stopTurnTimer();
                 isAnimating = true; renderActionButtons(); 
                 const moveIndex = player.moves.findIndex(m => m.name === move.name);
                 pushNetworkAction({ type: 'attack', moveIndex: moveIndex });
@@ -1670,6 +1803,7 @@
         }
 
         async function executeTurn_internal(attacker, defender, move, role) {
+            stopTurnTimer();
             isAnimating = true; renderActionButtons();
             
             const attackerSpriteId = role === 'player' ? 'sprite-player' : 'sprite-enemy';
@@ -1789,6 +1923,8 @@
                 
                 isAnimating = false; updateBars();
             }
+            
+            startTurnTimer();
         }
 
         async function enemyAI() {
@@ -1829,6 +1965,7 @@
 
         async function endGame(result) {
             playMusic('none');
+            stopTurnTimer();
             
             const isWin = result === 'win' || result === 'win_abandon';
             const isAbandon = result === 'abandon';
@@ -1919,6 +2056,7 @@
         }
 
         async function resetGame() {
+            stopTurnTimer();
             const overlay = $('transition-overlay'); overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100'); await wait(500); 
             $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden'); 
             clearNetwork();
