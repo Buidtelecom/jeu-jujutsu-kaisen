@@ -250,6 +250,16 @@
         </div>
     </div>
 
+    <!-- MODAL DAILY REWARD -->
+    <div id="modal-daily-reward" class="absolute inset-0 bg-black/90 z-[350] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="bg-gray-900 border border-yellow-500 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+            <i class="fas fa-gift text-5xl text-yellow-400 mb-4 animate-bounce"></i>
+            <h3 class="text-2xl font-black text-white mb-2">BONUS JOURNALIER</h3>
+            <p class="text-sm text-gray-300 mb-6 font-bold">+50 Pièces pour votre connexion !</p>
+            <button onclick="claimDailyReward()" class="w-full py-3 bg-yellow-600 text-black rounded-lg font-black hover:bg-yellow-500 transition-colors shadow-[0_0_15px_rgba(234,179,8,0.5)] active:scale-95">RÉCUPÉRER</button>
+        </div>
+    </div>
+
     <!-- DOUBLE VALIDATION EXIT MODAL -->
     <div id="modal-exit" class="absolute inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
         <div class="bg-gray-900 border border-gray-600 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(0,0,0,0.8)]">
@@ -291,13 +301,72 @@
             <button id="btn-new-game" onclick="handleNewGame()" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">NOUVELLE PARTIE</button>
             <button id="btn-continue" onclick="handleContinue()" disabled class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed">CONTINUER</button>
             <button onclick="showScreen('screen-options')" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">OPTIONS</button>
-            <button onclick="showScreen('screen-leaderboard'); renderLeaderboard();" class="menu-btn py-3 px-6 rounded-lg font-bold text-blue-400 tracking-wide flex justify-between items-center">
+            <button onclick="showScreen('screen-profile'); renderProfile();" class="menu-btn py-3 px-6 rounded-lg font-bold text-teal-400 tracking-wide flex justify-between items-center">
+                <span>PROFIL</span> <i class="fas fa-user"></i>
+            </button>
+            <button onclick="showScreen('screen-leaderboard'); switchLeaderboardTab('global');" class="menu-btn py-3 px-6 rounded-lg font-bold text-blue-400 tracking-wide flex justify-between items-center">
                 <span>CLASSEMENT</span> <i class="fas fa-trophy"></i>
             </button>
             <button onclick="showScreen('screen-market'); renderMarket();" class="menu-btn py-3 px-6 rounded-lg font-bold text-yellow-400 tracking-wide flex justify-between items-center">
                 <span>MARCHÉ</span> <i class="fas fa-store"></i>
             </button>
-            <button onclick="showScreen('screen-credits')" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">CRÉDITS</button>
+            <button onclick="showScreen('screen-credits')" class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-300 tracking-wide">CRÉDITS</button>
+        </div>
+    </div>
+
+    <!-- ECRAN PROFIL -->
+    <div id="screen-profile" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4 overflow-y-auto no-scrollbar">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="text-3xl font-black text-teal-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">MON PROFIL</h2>
+        
+        <div class="flex-1 w-full max-w-lg mx-auto relative z-10 space-y-6 pb-10">
+            <!-- Pseudo & Country Section -->
+            <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-lg">
+                <h3 class="text-white font-bold mb-3 text-lg border-b border-gray-600 pb-2">Informations Joueur</h3>
+                <div class="flex gap-3 mb-2">
+                    <input type="text" id="profile-pseudo-input" class="flex-1 bg-gray-900 border border-gray-600 text-white rounded-lg p-3 focus:outline-none focus:border-teal-400 font-bold placeholder-gray-500" placeholder="Votre pseudo...">
+                    <button onclick="changePseudo()" class="bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg px-4 transition-colors shadow-md active:scale-95"><i class="fas fa-save"></i></button>
+                </div>
+                <p id="profile-pseudo-info" class="text-[10px] text-gray-400 italic mb-4"></p>
+                
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-400 font-bold mb-1 uppercase tracking-wider">Nationalité (Apparaît dans le classement)</label>
+                    <select id="profile-country-select" onchange="changeCountry()" class="bg-gray-900 border border-gray-600 text-white rounded-lg p-3 focus:outline-none focus:border-teal-400 font-bold appearance-none">
+                        <!-- Rempli par le JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-lg">
+                <h3 class="text-white font-bold mb-4 text-lg border-b border-gray-600 pb-2">Statistiques Multijoueur</h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700 text-center">
+                        <i class="fas fa-trophy text-blue-400 text-2xl mb-1 drop-shadow-md"></i>
+                        <div class="text-xs text-gray-400 uppercase font-bold">Victoires</div>
+                        <div id="stat-wins" class="text-2xl font-black text-white">0</div>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700 text-center">
+                        <i class="fas fa-skull text-red-400 text-2xl mb-1 drop-shadow-md"></i>
+                        <div class="text-xs text-gray-400 uppercase font-bold">Défaites</div>
+                        <div id="stat-losses" class="text-2xl font-black text-white">0</div>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700 text-center">
+                        <i class="fas fa-fire text-orange-400 text-2xl mb-1 drop-shadow-md"></i>
+                        <div class="text-xs text-gray-400 uppercase font-bold">Série Max</div>
+                        <div id="stat-streak" class="text-2xl font-black text-white">0</div>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded-xl border border-gray-700 text-center">
+                        <i class="fas fa-chart-pie text-purple-400 text-2xl mb-1 drop-shadow-md"></i>
+                        <div class="text-xs text-gray-400 uppercase font-bold">Ratio V/D</div>
+                        <div id="stat-ratio" class="text-2xl font-black text-white">0%</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -327,7 +396,7 @@
         </div>
     </div>
 
-    <!-- ECRAN PSEUDO EN LIGNE -->
+    <!-- ECRAN PSEUDO EN LIGNE (Conservé au cas où, mais remplacé par la génération auto) -->
     <div id="screen-pseudo" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-40 hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="showScreen('screen-mode-select')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
@@ -358,14 +427,19 @@
         <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
-        <h2 class="text-3xl font-black text-blue-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">CLASSEMENT MONDIAL</h2>
+        <h2 class="text-3xl font-black text-blue-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">CLASSEMENT</h2>
+        
+        <div class="flex justify-center gap-4 mt-2 mb-4 z-10 relative max-w-lg mx-auto w-full">
+            <button id="tab-global" onclick="switchLeaderboardTab('global')" class="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-sm">GLOBAL (Pièces)</button>
+            <button id="tab-daily" onclick="switchLeaderboardTab('daily')" class="flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-sm">JOURNALIER (Victoires)</button>
+        </div>
+
         <div id="leaderboard-list" class="flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar space-y-3 pb-10 relative z-10"></div>
     </div>
 
     <!-- ECRAN MATCHMAKING EN LIGNE -->
     <div id="screen-matchmaking" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-[60] hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <!-- BOUTON RETOUR POUR ANNULER RECHERCHE -->
         <button onclick="cancelMatchmaking()" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
@@ -481,7 +555,6 @@
         </button>
         <h2 id="select-title" class="text-xl sm:text-2xl font-bold text-center mt-2 mb-1 text-purple-400 z-10 relative">Choisissez votre Exorciste</h2>
         <div id="select-desc-container" class="text-center mb-3 relative z-10"></div>
-        <!-- GRILLE DE SELECTION AMELIORÉE (SCROLL) -->
         <div id="character-grid" class="grid grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-10 relative z-10 content-start px-2"></div>
         <div id="difficulty-grid" class="hidden flex-col justify-center gap-4 w-full max-w-sm mx-auto flex-1 min-h-0 pb-6 mt-2 relative z-10">
             <button onclick="startGame('facile')" class="w-full py-4 rounded-xl bg-green-900/50 border-2 border-green-500 text-green-400 font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(34,197,94,0.3)]">Facile</button>
@@ -649,9 +722,7 @@
                 <h3 class="font-bold text-blue-400 text-lg flex items-center gap-2"><i class="fas fa-users"></i> Mon Équipe</h3>
                 <button onclick="closePlayerTeamStats()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
             </div>
-            <div class="p-4 overflow-y-auto no-scrollbar space-y-4" id="player-team-list">
-                <!-- Javascript -->
-            </div>
+            <div class="p-4 overflow-y-auto no-scrollbar space-y-4" id="player-team-list"></div>
         </div>
     </div>
 
@@ -683,9 +754,23 @@
         let matchId = null;      
         let matchRef = null;     
 
+        /* --- LISTE DES DRAPEAUX --- */
+        const countryList = [
+            { code: "INTL", name: "International", emoji: "🌍" }, { code: "FR", name: "France", emoji: "🇫🇷" }, { code: "CM", name: "Cameroun", emoji: "🇨🇲" }, { code: "CI", name: "Côte d'Ivoire", emoji: "🇨🇮" },
+            { code: "SN", name: "Sénégal", emoji: "🇸🇳" }, { code: "ML", name: "Mali", emoji: "🇲🇱" }, { code: "DZ", name: "Algérie", emoji: "🇩🇿" }, { code: "MA", name: "Maroc", emoji: "🇲🇦" },
+            { code: "TN", name: "Tunisie", emoji: "🇹🇳" }, { code: "CA", name: "Canada", emoji: "🇨🇦" }, { code: "BE", name: "Belgique", emoji: "🇧🇪" }, { code: "CH", name: "Suisse", emoji: "🇨🇭" },
+            { code: "US", name: "États-Unis", emoji: "🇺🇸" }, { code: "GB", name: "Royaume-Uni", emoji: "🇬🇧" }, { code: "JP", name: "Japon", emoji: "🇯🇵" }, { code: "BR", name: "Brésil", emoji: "🇧🇷" },
+            { code: "ES", name: "Espagne", emoji: "🇪🇸" }, { code: "IT", name: "Italie", emoji: "🇮🇹" }, { code: "DE", name: "Allemagne", emoji: "🇩🇪" }, { code: "PT", name: "Portugal", emoji: "🇵🇹" },
+            { code: "CG", name: "Congo", emoji: "🇨🇬" }, { code: "CD", name: "RD Congo", emoji: "🇨🇩" }, { code: "GA", name: "Gabon", emoji: "🇬🇦" }, { code: "MG", name: "Madagascar", emoji: "🇲🇬" },
+            { code: "GN", name: "Guinée", emoji: "🇬🇳" }, { code: "TG", name: "Togo", emoji: "🇹🇬" }, { code: "BJ", name: "Bénin", emoji: "🇧🇯" }, { code: "BF", name: "Burkina Faso", emoji: "🇧🇫" }
+        ];
+
         /* --- VARIABLES GLOBALES --- */
         let playerCoins = 25; 
         let globalPlayerPseudo = "";
+        let playerCountryEmoji = "🌍";
+        let lastPseudoChangeDate = 0;
+        
         let isMuted = false;
         let emotesEnabled = true; 
         let currentMode = 'tournament'; 
@@ -695,7 +780,13 @@
         
         let onlineWins = 0;
         let onlineLosses = 0;
+        let currentWinStreak = 0;
+        let maxWinStreak = 0;
+        
         let tournamentTrophies = 0;
+        let dailyWins = 0;
+        let dailyWinsDate = "";
+        let lastDailyRewardDate = "";
 
         let player = null;
         let enemy = null;
@@ -716,8 +807,6 @@
         let turnTimerId = null;
         let turnTimeRemaining = 20;
 
-        const fakePseudos = ["ShadowSlayer", "Ryomen_99", "GojoFan", "CursedKing", "SatoruPro", "Yuji_Ghost", "MakiSimp", "DemonGod", "SpecialGrade", "SorcererZ", "JogoGoat", "Mahito_Soul"];
-        
         const assetsToPreload = [
             "terrain_de_combat_Shibuya.jpeg", "Sphere_de_lespace_infini_arriere_plan.jpeg",
             "lhotel_demoniaque_arriere_plan.jpeg", "image_du_territoire_de_megumi.jpg",
@@ -1170,7 +1259,189 @@
             $('modal-player-team').classList.remove('flex');
         }
 
-        /* --- PRELOADER --- */
+        /* --- GESTION PROFIL ET NATIONALITE --- */
+        function renderProfile() {
+            $('profile-pseudo-input').value = globalPlayerPseudo;
+            
+            const select = $('profile-country-select');
+            select.innerHTML = '';
+            countryList.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c.emoji;
+                opt.innerText = `${c.emoji} ${c.name}`;
+                if(c.emoji === playerCountryEmoji) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            $('stat-wins').innerText = onlineWins;
+            $('stat-losses').innerText = onlineLosses;
+            $('stat-streak').innerText = maxWinStreak;
+            
+            let totalGames = onlineWins + onlineLosses;
+            let ratio = totalGames === 0 ? 0 : Math.round((onlineWins / totalGames) * 100);
+            $('stat-ratio').innerText = ratio + '%';
+
+            updatePseudoInfoText();
+        }
+
+        function updatePseudoInfoText() {
+            const now = Date.now();
+            const days30 = 30 * 24 * 60 * 60 * 1000;
+            if (lastPseudoChangeDate !== 0 && (now - lastPseudoChangeDate) < days30) {
+                const daysLeft = Math.ceil((days30 - (now - lastPseudoChangeDate)) / (1000 * 60 * 60 * 24));
+                $('profile-pseudo-info').innerText = `Modifiable dans ${daysLeft} jour(s).`;
+                $('profile-pseudo-info').className = "text-[10px] text-red-400 font-bold mb-4";
+            } else {
+                $('profile-pseudo-info').innerText = "Vous pouvez modifier votre pseudo.";
+                $('profile-pseudo-info').className = "text-[10px] text-green-400 font-bold mb-4";
+            }
+        }
+
+        function changePseudo() {
+            const now = Date.now();
+            const days30 = 30 * 24 * 60 * 60 * 1000;
+            if (lastPseudoChangeDate !== 0 && (now - lastPseudoChangeDate) < days30) {
+                showNotification("Vous devez attendre 30 jours entre chaque modification de pseudo.", "ACTION REFUSÉE");
+                return;
+            }
+            const input = $('profile-pseudo-input').value.trim();
+            if(input.length < 3) {
+                showNotification("Le pseudo doit contenir au moins 3 caractères.", "ERREUR");
+                return;
+            }
+            globalPlayerPseudo = input;
+            lastPseudoChangeDate = now;
+            saveGameData();
+            updatePseudoInfoText();
+            showNotification("Pseudo mis à jour avec succès !", "SUCCÈS");
+        }
+
+        function changeCountry() {
+            playerCountryEmoji = $('profile-country-select').value;
+            saveGameData();
+        }
+
+        /* --- SYSTÈME DE RÉCOMPENSES JOURNALIÈRES & CLASSEMENT FIREBASE --- */
+        
+        function syncUserDataToFirebase() {
+            if(!auth.currentUser) return;
+            const uid = auth.currentUser.uid;
+            
+            db.ref('users/' + uid).update({
+                name: globalPlayerPseudo || "Exorciste Anonyme",
+                coins: playerCoins,
+                country: playerCountryEmoji
+            });
+            
+            const today = new Date().toISOString().split('T')[0];
+            db.ref(`daily_leaderboard/${today}/${uid}`).update({
+                name: globalPlayerPseudo || "Exorciste Anonyme",
+                wins: dailyWins,
+                country: playerCountryEmoji
+            });
+        }
+
+        function checkDailyReward() {
+            const today = new Date().toISOString().split('T')[0];
+            if (lastDailyRewardDate !== today) {
+                $('modal-daily-reward').classList.remove('hidden');
+                $('modal-daily-reward').classList.add('flex');
+            }
+        }
+
+        function claimDailyReward() {
+            const today = new Date().toISOString().split('T')[0];
+            lastDailyRewardDate = today;
+            playerCoins += 50;
+            saveGameData();
+            $('modal-daily-reward').classList.add('hidden');
+            $('modal-daily-reward').classList.remove('flex');
+            showNotification("Vous avez reçu 50 Pièces de connexion !", "RÉCOMPENSE");
+        }
+
+        async function checkDailyLeaderboardReward() {
+            if(!auth.currentUser) return;
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const claimedKey = 'jjk_claimed_lb_' + yesterday;
+            if(localStorage.getItem(claimedKey)) return;
+
+            const snap = await db.ref(`daily_leaderboard/${yesterday}`).orderByChild('wins').limitToLast(1).once('value');
+            if(snap.exists()) {
+                let topUserUid = Object.keys(snap.val())[0];
+                if(topUserUid === auth.currentUser.uid) {
+                    showNotification("Félicitations ! Vous avez fini 1er du classement multijoueur d'hier !<br>+500 Pièces", "CHAMPION DU JOUR");
+                    playerCoins += 500;
+                    saveGameData();
+                    localStorage.setItem(claimedKey, 'true');
+                }
+            }
+        }
+
+        let currentLbTab = 'global';
+        function switchLeaderboardTab(tab) {
+            currentLbTab = tab;
+            if(tab === 'global') {
+                $('tab-global').className = "flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-sm";
+                $('tab-daily').className = "flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-sm";
+            } else {
+                $('tab-daily').className = "flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-sm";
+                $('tab-global').className = "flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-sm";
+            }
+            renderRealLeaderboard(tab);
+        }
+
+        async function renderRealLeaderboard(tab) {
+            const list = $('leaderboard-list');
+            list.innerHTML = '<p class="text-center text-gray-400 mt-10 animate-pulse">Chargement du classement...</p>';
+            
+            let ref;
+            let valKey;
+            
+            if(tab === 'global') {
+                ref = db.ref('users').orderByChild('coins').limitToLast(50);
+                valKey = 'coins';
+            } else {
+                const today = new Date().toISOString().split('T')[0];
+                ref = db.ref(`daily_leaderboard/${today}`).orderByChild('wins').limitToLast(50);
+                valKey = 'wins';
+            }
+            
+            try {
+                const snap = await ref.once('value');
+                let players = [];
+                snap.forEach(child => { players.push({uid: child.key, ...child.val()}); });
+                players.sort((a,b) => b[valKey] - a[valKey]); 
+                
+                list.innerHTML = '';
+                if(players.length === 0) {
+                    list.innerHTML = '<p class="text-center text-gray-400 mt-10">Aucun joueur classé pour le moment.</p>';
+                    return;
+                }
+
+                players.forEach((p, index) => {
+                    const item = document.createElement('div');
+                    let isMe = (auth.currentUser && p.uid === auth.currentUser.uid);
+                    
+                    item.className = `flex items-center justify-between p-3 rounded-lg border ${isMe ? 'bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-800 border-gray-700'}`;
+                    
+                    let rankMedal = `<span class="font-black ${isMe ? 'text-blue-300' : 'text-gray-500'} w-6 text-sm">#${index + 1}</span>`;
+                    if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
+                    if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
+                    if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
+
+                    let valDisplay = tab === 'global' ? `<i class="fas fa-coins text-xs mr-1 text-yellow-400"></i> <span class="text-yellow-400">${p[valKey]}</span>` : `<i class="fas fa-trophy text-xs mr-1 text-blue-400"></i> <span class="text-blue-400">${p[valKey]} V.</span>`;
+                    
+                    let userCountry = p.country || '🌍';
+
+                    item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span class="font-bold text-white">${userCountry} ${p.name} ${isMe ? '(Vous)' : ''}</span></div><div class="font-bold">${valDisplay}</div>`;
+                    list.appendChild(item);
+                });
+            } catch(e) {
+                list.innerHTML = '<p class="text-center text-red-400 mt-10">Erreur de connexion au classement.</p>';
+            }
+        }
+
+        /* --- PRELOADER ET DEMARRAGE --- */
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
@@ -1187,28 +1458,52 @@
         }
 
         function retryConnection() { $('modal-connection').classList.add('hidden'); $('modal-connection').classList.remove('flex'); $('loader-fill').style.width = '0%'; $('loader-text').innerText = 'Initialisation du cache... 0%'; preloadAssets(); }
-        function hideLoaderAndStart() { $('screen-loader').classList.add('hidden'); $('screen-loader').classList.remove('flex'); showScreen('screen-menu'); }
+        function hideLoaderAndStart() { $('screen-loader').classList.add('hidden'); $('screen-loader').classList.remove('flex'); showScreen('screen-menu'); checkDailyReward(); }
 
         /* --- FONCTIONS DE SAUVEGARDE --- */
         function loadGameData() {
             const saved = localStorage.getItem('jjk_save_v2');
+            const today = new Date().toISOString().split('T')[0];
+            
             if (saved) {
                 hasSave = true; const data = JSON.parse(saved);
                 if (data.pseudo) globalPlayerPseudo = data.pseudo;
+                else globalPlayerPseudo = "Exorciste" + rand(1000, 9999);
+                
                 if (data.coins !== undefined) playerCoins = data.coins;
                 if (data.onlineWins !== undefined) onlineWins = data.onlineWins;
                 if (data.onlineLosses !== undefined) onlineLosses = data.onlineLosses;
+                if (data.currentWinStreak !== undefined) currentWinStreak = data.currentWinStreak;
+                if (data.maxWinStreak !== undefined) maxWinStreak = data.maxWinStreak;
+                if (data.playerCountryEmoji !== undefined) playerCountryEmoji = data.playerCountryEmoji;
+                if (data.lastPseudoChangeDate !== undefined) lastPseudoChangeDate = data.lastPseudoChangeDate;
+                
                 if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.emotesEnabled !== undefined) emotesEnabled = data.emotesEnabled;
                 if (data.unlocked) data.unlocked.forEach(id => { const c = charData.find(char => char.id === id); if(c) c.locked = false; });
-            } else playerCoins = 25; 
+                
+                if (data.dailyWinsDate !== today) { dailyWins = 0; dailyWinsDate = today; } 
+                else { dailyWins = data.dailyWins || 0; dailyWinsDate = data.dailyWinsDate; }
+                
+                lastDailyRewardDate = data.lastDailyRewardDate || "";
+            } else {
+                playerCoins = 25; 
+                dailyWinsDate = today;
+                globalPlayerPseudo = "Exorciste" + rand(1000, 9999);
+            }
             updateMenuButtons();
             if(!emotesEnabled) { $('knob-emote').classList.remove('translate-x-6'); $('knob-emote').classList.add('translate-x-0'); $('btn-emote-toggle').classList.remove('bg-green-500'); $('btn-emote-toggle').classList.add('bg-gray-600'); }
         }
 
         function saveGameData() {
-            localStorage.setItem('jjk_save_v2', JSON.stringify({ pseudo: globalPlayerPseudo, coins: playerCoins, unlocked: charData.filter(c => !c.locked).map(c => c.id), onlineWins: onlineWins, onlineLosses: onlineLosses, tournamentTrophies: tournamentTrophies, emotesEnabled: emotesEnabled }));
+            localStorage.setItem('jjk_save_v2', JSON.stringify({ 
+                pseudo: globalPlayerPseudo, coins: playerCoins, unlocked: charData.filter(c => !c.locked).map(c => c.id), 
+                onlineWins: onlineWins, onlineLosses: onlineLosses, tournamentTrophies: tournamentTrophies, emotesEnabled: emotesEnabled,
+                dailyWins: dailyWins, dailyWinsDate: dailyWinsDate, lastDailyRewardDate: lastDailyRewardDate,
+                currentWinStreak: currentWinStreak, maxWinStreak: maxWinStreak, playerCountryEmoji: playerCountryEmoji, lastPseudoChangeDate: lastPseudoChangeDate
+            }));
             hasSave = true; updateMenuButtons();
+            syncUserDataToFirebase();
         }
 
         function updateMenuButtons() {
@@ -1221,7 +1516,7 @@
         function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
         
         function confirmNewGame() { 
-            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = ""; onlineWins = 0; onlineLosses = 0; tournamentTrophies = 0; emotesEnabled = true; 
+            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0;
             charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara', 'maki', 'nanami', 'hakari', 'todo'].includes(c.id)); 
             updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); 
         }
@@ -1263,45 +1558,30 @@
             await wait(500); 
             
             const randomBg = menuBackgrounds[Math.floor(Math.random() * menuBackgrounds.length)];
-            document.querySelectorAll('.dynamic-menu-bg').forEach(bg => bg.style.backgroundImage = `url('${randomBg}')`);
+            document.querySelectorAll('.dynamic-menu-bg').forEach(bg => {
+                bg.style.backgroundImage = `url('${randomBg}')`;
+            });
 
-            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps'].forEach(id => $(id).classList.add('hidden'));
-            $(screenId).classList.remove('hidden');
+            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps', 'screen-profile'].forEach(id => {
+                const el = $(id);
+                if(el) el.classList.add('hidden');
+            });
+
+            const targetScreen = $(screenId);
+            if(targetScreen) targetScreen.classList.remove('hidden');
             
-            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament'].includes(screenId)) {
+            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-profile'].includes(screenId)) {
                 if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
-            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) playMusic('battle');
+            } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) {
+                playMusic('battle');
+            }
             
             overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
         }
 
-        /* --- CLASSEMENT MONDIAL --- */
-        function renderLeaderboard() {
-            const list = $('leaderboard-list'); list.innerHTML = '';
-            const fakeLeaderboardTop = [ { name: "Ryomen_99", coins: 85000 }, { name: "GojoFan", coins: 72000 }, { name: "ShadowSlayer", coins: 54000 }, { name: "SpecialGrade", coins: 38000 }, { name: "DemonGod", coins: 25000 } ];
-            
-            fakeLeaderboardTop.forEach((p, index) => {
-                const item = document.createElement('div'); item.className = `flex items-center justify-between p-3 rounded-lg border bg-gray-800 border-gray-700`;
-                let rankMedal = `<span class="font-black text-gray-500 w-6">${index + 1}.</span>`;
-                if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
-                if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
-                if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
-                item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span class="font-bold text-gray-300">${p.name}</span></div><div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${p.coins}</div>`;
-                list.appendChild(item);
-            });
-            const sep = document.createElement('div'); sep.className = "text-center text-gray-500 my-2"; sep.innerHTML = '<i class="fas fa-ellipsis-v"></i>'; list.appendChild(sep);
-            
-            let playerRank = 1678;
-            if (playerCoins > 25) playerRank = Math.max(6, 1678 - Math.floor((playerCoins - 25) / 15));
-            const pName = globalPlayerPseudo || "Vous (Anonyme)"; const pItem = document.createElement('div');
-            pItem.className = `flex items-center justify-between p-3 rounded-lg border bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] mt-2`;
-            pItem.innerHTML = `<div class="flex items-center gap-3"><span class="font-black text-blue-300 w-10 text-sm">#${playerRank}</span><span class="font-bold text-white">${pName}</span></div><div class="font-bold text-yellow-400"><i class="fas fa-coins text-xs mr-1"></i> ${playerCoins}</div>`;
-            list.appendChild(pItem);
-        }
-
         /* --- NAVIGATION LIGNE & MATCHMAKING --- */
-        function goToOnlineMode() { currentMode = 'online'; if (globalPlayerPseudo) showScreen('screen-select'); else showScreen('screen-pseudo'); }
+        function goToOnlineMode() { currentMode = 'online'; showScreen('screen-select'); }
         function validatePseudo() { const val = $('input-pseudo').value.trim(); if(val.length < 3) { showNotification("Le pseudo doit contenir au moins 3 caractères."); return; } globalPlayerPseudo = val; saveGameData(); showScreen('screen-select'); }
 
         /* --- SYSTEME DE TOURNOI VS IA --- */
@@ -1347,6 +1627,7 @@
             if (currentMode === 'online' && matchRef) {
                 if (!$('screen-rps').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-battle').classList.contains('hidden')) {
                     onlineLosses++;
+                    currentWinStreak = 0;
                     playerCoins = Math.max(0, playerCoins - 15);
                     saveGameData();
                     matchRef.child('status').set('abandoned');
@@ -2002,7 +2283,10 @@
                     $('gameover-title').innerText = 'TUTO TERMINÉ !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Continuer</button>`;
                 } else if (currentMode === 'online') {
-                    onlineWins++; let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); playerCoins += earnedCoins; saveGameData(); 
+                    onlineWins++; dailyWins++; currentWinStreak++;
+                    if(currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
+                    
+                    let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); playerCoins += earnedCoins; saveGameData(); 
                     $('gameover-title').innerText = 'VICTOIRE !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
                     
                     if (result === 'win_abandon') {
@@ -2038,6 +2322,7 @@
                     $('gameover-title').innerText = 'ÉLIMINÉ'; $('gameover-desc').innerText = `Vous avez été éliminé du tournoi.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                 } else if (isAbandon) {
+                    currentWinStreak = 0;
                     $('gameover-title').innerText = 'DÉSERTEUR !'; 
                     $('gameover-desc').innerHTML = `Vous avez fui le combat.<br><span class="text-red-400 font-bold mt-2 inline-block text-2xl">-15 Pièces</span>`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
@@ -2045,7 +2330,7 @@
                 } else {
                     $('gameover-desc').innerText = `Votre équipe a été décimée...`;
                     if (currentMode === 'online') {
-                        onlineLosses++; saveGameData();
+                        onlineLosses++; currentWinStreak = 0; saveGameData();
                         btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
                         clearNetwork();
                     } else {
@@ -2063,8 +2348,19 @@
             await showScreen('screen-menu');
         }
 
-        // --- DÉMARRAGE INITIAL ---
-        window.onload = () => { loadGameData(); preloadAssets(); };
+        // --- AUTH & DÉMARRAGE INITIAL ---
+        window.onload = () => { 
+            auth.onAuthStateChanged((user) => {
+                if(user) {
+                    syncUserDataToFirebase();
+                    checkDailyLeaderboardReward();
+                } else {
+                    auth.signInAnonymously();
+                }
+            });
+            loadGameData(); 
+            preloadAssets(); 
+        };
     </script>
 </body>
 </html>
