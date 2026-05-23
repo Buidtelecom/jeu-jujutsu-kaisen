@@ -495,8 +495,8 @@
         </button>
         <h2 class="text-3xl font-black text-white mb-8 z-10 drop-shadow-lg text-center relative z-10">CHOIX DU MODE</h2>
         <div class="flex flex-col gap-4 w-72 sm:w-80 relative z-10">
-            <button onclick="showNotification('Le mode Histoire sera disponible dans une prochaine mise à jour !', 'INFO')" class="menu-btn py-4 px-6 rounded-xl font-bold text-gray-400 tracking-wide text-left opacity-70">
-                <i class="fas fa-book-open mr-2"></i> Mode Histoire
+            <button onclick="currentMode='shibuya'; selectionStep='player'; playerTeamSelection=[]; showScreen('screen-select');" class="menu-btn py-4 px-6 rounded-xl font-bold text-purple-400 tracking-wide text-left shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                <i class="fas fa-torii-gate mr-2"></i> L'Incident de Shibuya
             </button>
             <button onclick="goToOnlineMode()" class="menu-btn py-4 px-6 rounded-xl font-bold text-blue-400 tracking-wide text-left shadow-[0_0_10px_rgba(59,130,246,0.3)]">
                 <i class="fas fa-globe mr-2"></i> Combat en Ligne
@@ -533,10 +533,29 @@
         <button onclick="confirmExit()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-sign-out-alt"></i>
         </button>
-        <h2 id="tournament-round-title" class="text-3xl font-black text-red-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">QUARTS DE FINALE</h2>
+                <h2 id="tournament-round-title" class="text-3xl font-black text-red-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">QUARTS DE FINALE</h2>
         <div id="tournament-matchups" class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto no-scrollbar pb-6 relative z-10"></div>
         <button id="btn-tournament-start" onclick="startTournamentMatch()" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10">COMBATTRE</button>
     </div>
+
+    <div id="screen-shibuya" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-4">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
+        <button onclick="confirmExit()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
+        <h2 id="shibuya-stage-title" class="text-3xl font-black text-purple-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">ÉTAGE 1 / 10</h2>
+        <div id="shibuya-current-match" class="flex-1 flex flex-col justify-center min-h-0 pb-6 relative z-10"></div>
+        <button onclick="startShibuyaMatch()" class="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.5)] mt-4 mb-2 shrink-0 relative z-10 border border-purple-400">PÉNÉTRER DANS LA ZONE</button>
+    </div>
+
+    <div id="modal-shibuya-buffs" class="absolute inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-gray-900 border border-purple-500 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(168,85,247,0.3)] flex flex-col">
+            <h3 class="text-2xl font-black text-purple-400 mb-2 text-center drop-shadow-md">BONUS OCCULTE</h3>
+            <p class="text-xs text-gray-400 text-center mb-6">Sélectionnez une amélioration pour la suite.</p>
+            <div id="shibuya-buffs-container" class="space-y-3"></div>
+        </div>
+    </div>
+
 
     <!-- ECRAN CLASSEMENT -->
     <div id="screen-leaderboard" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
@@ -1027,7 +1046,8 @@
         };
 
 
-        let tState = { round: 0, bracket: [], phase: 'matchups' };
+                let tState = { round: 0, bracket: [], phase: 'matchups' };
+        let sState = { stage: 0, buffs: {}, enemies: [] }; // Variables Shibuya
 
         let playerTeamSelection = [];
         let playerTeam = [];
@@ -2505,7 +2525,7 @@
                 bg.style.backgroundImage = `url('${randomBg}')`;
             });
 
-            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-rps', 'screen-profile', 'screen-clan', 'screen-tv'].forEach(id => {
+                        ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-shibuya', 'screen-rps', 'screen-profile', 'screen-clan', 'screen-tv'].forEach(id => {
                 const el = $(id);
                 if(el) el.classList.add('hidden');
             });
@@ -2513,7 +2533,8 @@
             const targetScreen = $(screenId);
             if(targetScreen) targetScreen.classList.remove('hidden');
             
-            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-profile', 'screen-clan', 'screen-tv'].includes(screenId)) {
+            if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-shibuya', 'screen-profile', 'screen-clan', 'screen-tv'].includes(screenId)) {
+
                 if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
             } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) {
@@ -2554,11 +2575,127 @@
             else { btn.innerText = "TOUR SUIVANT"; btn.className = "w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.5)] mt-4 mb-2 shrink-0 relative z-10"; }
         }
 
-        function startTournamentMatch() {
+                function startTournamentMatch() {
             if(tState.phase === 'results') { tState.round++; tState.phase = 'matchups'; renderTournament(); return; }
             let currentMatch = tState.bracket[tState.round][0]; pIndex = charData.findIndex(c => c.id === currentMatch.p1.id); eIndex = charData.findIndex(c => c.id === currentMatch.p2.id);
             launchBattleSequence(); 
         }
+
+        /* --- SYSTEME SHIBUYA (ROGUELITE) --- */
+        function initShibuya() {
+            sState.stage = 0; sState.buffs = { dmgBoost: 0, hpRegen: 0, ceRegen: 0 }; sState.enemies = [];
+            playerTeam = playerTeamSelection.map(idx => JSON.parse(JSON.stringify(charData[idx])));
+            playerTeam.forEach(c => { c.maxHp = c.hp; }); 
+            
+            // Génère 10 adversaires aléatoires (la difficulté augmentera via l'IA)
+            let availableBots = [...charData];
+            for(let i=0; i<10; i++) {
+                let rIdx = rand(0, availableBots.length - 1);
+                sState.enemies.push(JSON.parse(JSON.stringify(availableBots[rIdx])));
+            }
+            renderShibuya();
+            showScreen('screen-shibuya');
+        }
+
+        function renderShibuya() {
+            $('shibuya-stage-title').innerText = `ÉTAGE ${sState.stage + 1} / 10`;
+            let enemy = sState.enemies[sState.stage];
+            
+            if(sState.stage < 3) difficultyLevel = 'normal';
+            else if(sState.stage < 7) difficultyLevel = 'difficile';
+            else difficultyLevel = 'extreme';
+
+            let container = $('shibuya-current-match'); 
+            container.innerHTML = `
+                <p class="text-xs text-gray-400 font-bold mb-4 uppercase tracking-widest text-center">Menace Détectée (Difficulté: ${difficultyLevel.toUpperCase()})</p>
+                <div class="flex justify-between items-center bg-gray-800 p-4 rounded-xl border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] relative z-10 w-full max-w-sm mx-auto">
+                    <div class="flex flex-col items-center w-[40%]">
+                        <img src="${playerTeam[0].img}" class="w-16 h-16 rounded-full border-2 border-blue-500 object-cover shadow-lg">
+                        <span class="text-xs font-bold mt-2 text-center text-blue-400 truncate w-full">Votre Escouade</span>
+                        <span class="text-[10px] text-gray-400">${playerTeam.filter(c=>c.hp>0).length} en vie</span>
+                    </div>
+                    <div class="text-2xl font-black text-white w-[20%] text-center italic">VS</div>
+                    <div class="flex flex-col items-center w-[40%]">
+                        <img src="${enemy.img}" class="w-16 h-16 rounded-full border-2 border-red-500 object-cover scale-x-[-1] shadow-lg">
+                        <span class="text-xs font-bold mt-2 text-center text-red-400 truncate w-full">${enemy.name}</span>
+                        <span class="text-[10px] text-gray-400">${attrEmojis[enemy.attr]} ${enemy.attr}</span>
+                    </div>
+                </div>`;
+        }
+
+        function startShibuyaMatch() {
+            enemyTeam = [sState.enemies[sState.stage]];
+            playerIdx = playerTeam.findIndex(c => c.hp > 0); 
+            enemyIdx = 0; 
+            player = playerTeam[playerIdx]; 
+            enemy = enemyTeam[0];
+            launchBattleSequence_internal();
+        }
+
+        const shibuyaBuffList = [
+            { id: 'heal', name: 'Ration de Survie', desc: 'Restaure 40% des PV Max de toute l\'escouade.', icon: 'fa-medkit', color: 'text-green-400' },
+            { id: 'hpRegen', name: 'Régénération Passive', desc: 'Restaure +15 PV à chaque tour.', icon: 'fa-heartbeat', color: 'text-green-500' },
+            { id: 'ceRegen', name: 'Afflux Occulte', desc: 'Régénère +10 CE supplémentaire par tour.', icon: 'fa-bolt', color: 'text-purple-400' },
+            { id: 'dmgBoost', name: 'Zone de Tension', desc: 'Augmente tous les dégâts infligés de 15%.', icon: 'fa-fire-alt', color: 'text-red-400' },
+            { id: 'maxHp', name: 'Renforcement Charnel', desc: 'Augmente les PV Max de l\'escouade de 20% (Soigne ce montant).', icon: 'fa-shield-alt', color: 'text-blue-400' }
+        ];
+
+        async function showShibuyaBuffs() {
+            $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden');
+            
+            let choices = [];
+            let pool = [...shibuyaBuffList];
+            for(let i=0; i<3; i++) {
+                let r = rand(0, pool.length-1);
+                choices.push(pool[r]);
+                pool.splice(r, 1);
+            }
+
+            let container = $('shibuya-buffs-container');
+            container.innerHTML = '';
+            choices.forEach(buff => {
+                container.innerHTML += `
+                    <button onclick="selectShibuyaBuff('${buff.id}')" class="w-full bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl p-4 flex items-center gap-4 transition-all active:scale-95 shadow-md">
+                        <i class="fas ${buff.icon} text-3xl ${buff.color} drop-shadow-md w-10 text-center"></i>
+                        <div class="text-left flex-1">
+                            <div class="font-bold text-white text-sm">${buff.name}</div>
+                            <div class="text-[10px] text-gray-400 leading-tight mt-1">${buff.desc}</div>
+                        </div>
+                    </button>
+                `;
+            });
+
+            $('modal-shibuya-buffs').classList.remove('hidden');
+            $('modal-shibuya-buffs').classList.add('flex');
+        }
+
+        function selectShibuyaBuff(id) {
+            if(id === 'heal') {
+                playerTeam.forEach(c => { if(c.hp > 0) c.hp = Math.min(c.maxHp, c.hp + (c.maxHp * 0.4)); });
+            } else if(id === 'hpRegen') {
+                sState.buffs.hpRegen += 15;
+            } else if(id === 'ceRegen') {
+                sState.buffs.ceRegen += 10;
+            } else if(id === 'dmgBoost') {
+                sState.buffs.dmgBoost += 0.15;
+            } else if(id === 'maxHp') {
+                playerTeam.forEach(c => {
+                    if(c.hp > 0) {
+                        let bonus = Math.floor(c.maxHp * 0.2);
+                        c.maxHp += bonus;
+                        c.hp += bonus;
+                    }
+                });
+            }
+            
+            $('modal-shibuya-buffs').classList.add('hidden');
+            $('modal-shibuya-buffs').classList.remove('flex');
+            
+            sState.stage++;
+            renderShibuya();
+            showScreen('screen-shibuya');
+        }
+
 
         async function hideGameOverAndShowTournament() { $('modal-gameover').classList.add('hidden'); $('modal-gameover').classList.remove('flex'); $('gameover-image').classList.add('hidden'); renderTournament(); await showScreen('screen-tournament'); }
         function showExitModal() { $('modal-exit').classList.remove('hidden'); $('modal-exit').classList.add('flex'); }
@@ -2607,15 +2744,17 @@
             await showScreen('screen-mode-select');
         }
 
-        function updateSelectionUI() {
+                function updateSelectionUI() {
             $('btn-back-select').classList.remove('hidden');
             if (selectionStep === 'player') {
                 $('select-title').innerText = "Choisissez votre Exorciste"; 
                 if (currentMode === 'online') $('select-desc-container').innerHTML = `<p class="text-center text-gray-400 text-xs mb-2">Sélectionnez 3 personnages (${playerTeamSelection.length}/3)</p><div class="flex justify-center items-center gap-3 text-[10px] sm:text-xs font-bold bg-gray-800/80 rounded-full px-4 py-1.5 inline-flex border border-gray-600 shadow-inner mt-1"><span class="text-green-400"><i class="fas fa-circle text-[8px] animate-pulse mb-0.5"></i> Multijoueur</span><span class="text-blue-400"><i class="fas fa-trophy"></i> ${onlineWins} V</span><span class="text-red-400"><i class="fas fa-skull"></i> ${onlineLosses} D</span></div>`;
+                else if (currentMode === 'shibuya') $('select-desc-container').innerHTML = `<p class="text-center text-gray-400 text-xs mb-2">Formez votre escouade de 3 exorcistes (${playerTeamSelection.length}/3)</p><div class="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-bold bg-purple-900/40 rounded-full px-4 py-1.5 inline-flex border border-purple-600 shadow-[0_0_10px_rgba(168,85,247,0.2)] mt-1"><span class="text-purple-400"><i class="fas fa-torii-gate text-sm"></i> Roguelite - 10 Étages</span></div>`;
                 else if (currentMode === 'tournament') $('select-desc-container').innerHTML = `<div class="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-bold bg-yellow-900/40 rounded-full px-4 py-1.5 inline-flex border border-yellow-600 shadow-[0_0_10px_rgba(202,138,4,0.2)] mt-1"><span class="text-yellow-400"><i class="fas fa-crown text-sm"></i> Trophées remportés : ${tournamentTrophies}</span></div>`;
                 else $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Le destin du monde est entre vos mains.</p>`;
                 $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex'); renderCharacterSelect();
             } else if (selectionStep === 'enemy') {
+
                 $('select-title').innerText = "Choisissez l'Adversaire"; $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Qui allez-vous affronter ?</p>`; $('character-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('flex'); renderCharacterSelect();
             } else if (selectionStep === 'difficulty') {
                 $('select-title').innerText = "Choisissez la Difficulté"; $('select-desc-container').innerHTML = `<p id="select-desc" class="text-center text-gray-500 text-xs sm:text-sm mb-3 z-10 relative z-10">Préparez-vous au combat mortel.</p>`; $('character-grid').classList.add('hidden'); $('difficulty-grid').classList.remove('hidden'); $('difficulty-grid').classList.add('flex');
@@ -2660,14 +2799,25 @@
         function buyCharacter(charId) { const charIndex = charData.findIndex(c => c.id === charId); if(charIndex === -1) return; const char = charData[charIndex]; if(playerCoins >= char.price) { playerCoins -= char.price; charData[charIndex].locked = false; saveGameData(); renderMarket(); } else showNotification("Pièces insuffisantes !"); }
         function startTutorial() { currentMode = 'tutorial'; pIndex = charData.findIndex(c => c.id === 'gojo'); eIndex = charData.findIndex(c => c.id === 'sukuna'); if(pIndex !== -1 && eIndex !== -1) startGame('facile'); }
         
-        function selectCharacter(index) {
+                        function selectCharacter(index) {
             if(selectionStep === 'player') { 
-                if (currentMode === 'online') { if (!playerTeamSelection.includes(index)) { playerTeamSelection.push(index); if (playerTeamSelection.length === 3) startMatchmaking(); else updateSelectionUI(); } else { playerTeamSelection = playerTeamSelection.filter(i => i !== index); updateSelectionUI(); } } 
+                if (currentMode === 'online' || currentMode === 'shibuya') { 
+                    if (!playerTeamSelection.includes(index)) { 
+                        playerTeamSelection.push(index); 
+                        if (playerTeamSelection.length === 3) { 
+                            if (currentMode === 'online') startMatchmaking(); 
+                            else initShibuya(); 
+                        } else updateSelectionUI(); 
+                    } else { 
+                        playerTeamSelection = playerTeamSelection.filter(i => i !== index); updateSelectionUI(); 
+                    } 
+                } 
                 else if (currentMode === 'tournament') { pIndex = index; selectionStep = 'difficulty'; updateSelectionUI(); } 
                 else { pIndex = index; selectionStep = 'enemy'; updateSelectionUI(); }
             } 
             else if (selectionStep === 'enemy') { eIndex = index; selectionStep = 'difficulty'; updateSelectionUI(); }
         }
+
 
         function startGame(diff) {
             if (currentMode === 'tournament' && selectionStep === 'difficulty') { difficultyLevel = diff; initTournament(); return; }
@@ -2683,9 +2833,14 @@
             }
         }
 
-        async function launchBattleSequence_internal() {
-            playerTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
+                async function launchBattleSequence_internal() {
+            if (currentMode !== 'shibuya') {
+                playerTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
+            } else {
+                playerTeam.forEach(c => { c.buffs = {}; c.activeDomain = null; }); // Ne réinitialise pas les PV en Shibuya !
+            }
             enemyTeam.forEach(c => { c.maxHp = c.hp; c.buffs = {}; c.activeDomain = null; });
+
 
             $('sprite-player').classList.remove('anim-vanish'); $('sprite-enemy').classList.remove('anim-vanish');
 
@@ -3122,9 +3277,11 @@
             
             let damage = move.dmg;
 
-            if (move.type !== 'heal' && move.type !== 'domain' && move.dmg > 0) {
+                        if (move.type !== 'heal' && move.type !== 'domain' && move.dmg > 0) {
                 let multiplier = 1;
-                if (attrAdvantage[move.attr].strong.includes(defender.attr)) multiplier = 1.5;
+                if (currentMode === 'shibuya' && role === 'player' && sState.buffs.dmgBoost > 0) multiplier += sState.buffs.dmgBoost;
+                if (attrAdvantage[move.attr].strong.includes(defender.attr)) multiplier += 0.5;
+
                 if (attrAdvantage[move.attr].weak.includes(defender.attr)) multiplier = 0.5;
                 damage = Math.floor(damage * multiplier);
                 if (multiplier > 1) { addLog(`Super Efficace ! (${attrEmojis[move.attr]} vs ${attrEmojis[defender.attr]})`, 'text-green-400 font-bold'); createFloatingText(defenderSpriteId, 'EFFICACE', 'text-green-400'); } 
@@ -3193,9 +3350,19 @@
                 
                 hasSwitchedThisTurn = false; updateTurnIndicator();
                 
-                let p1Team = (currentMode === 'online' && myRole === 'p2') ? enemyTeam : playerTeam;
+                                let p1Team = (currentMode === 'online' && myRole === 'p2') ? enemyTeam : playerTeam;
                 let p1Idx = (currentMode === 'online' && myRole === 'p2') ? enemyIdx : playerIdx;
-                p1Team.forEach((c, i) => { if(c.hp > 0) { let recharge = (i === p1Idx) ? (c.activeDomain ? 5 : 10) : 5; c.ce = Math.min(c.maxCe, c.ce + recharge); } });
+                p1Team.forEach((c, i) => { 
+                    if(c.hp > 0) { 
+                        let recharge = (i === p1Idx) ? (c.activeDomain ? 5 : 10) : 5; 
+                        if (currentMode === 'shibuya') { 
+                            recharge += (sState.buffs.ceRegen || 0); 
+                            c.hp = Math.min(c.maxHp, c.hp + (sState.buffs.hpRegen || 0)); 
+                        }
+                        c.ce = Math.min(c.maxCe, c.ce + recharge); 
+                    } 
+                });
+
                 
                 isAnimating = false; updateBars();
             }
@@ -3303,8 +3470,20 @@
                     
                     btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
                     clearNetwork();
+                                } else if (currentMode === 'shibuya') {
+                    if (sState.stage >= 9) {
+                        let earnedCoins = 300; playerCoins += earnedCoins; saveGameData(); 
+                        $('gameover-title').innerText = 'SURVIVANT DE SHIBUYA !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-red-600 drop-shadow-lg z-10 relative';
+                        $('gameover-desc').innerHTML = `Vous avez exorcisé toutes les menaces.<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+                        btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                    } else {
+                        $('gameover-title').innerText = 'ÉTAGE TERMINÉ'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
+                        $('gameover-desc').innerText = `L'équipe se repose brièvement.`;
+                        btnContainer.innerHTML = `<button onclick="showShibuyaBuffs()" class="w-full px-10 py-4 bg-purple-600 text-white rounded-full font-bold text-xl shadow-[0_0_20px_rgba(168,85,247,0.5)] active:scale-95 transition-transform">Choisir un Bonus</button>`;
+                    }
                 } else if (currentMode === 'tournament') {
                     let currentMatches = tState.bracket[tState.round]; currentMatches[0].winner = currentMatches[0].p1; 
+ 
                     let nextRoundPlayers = [currentMatches[0].winner]; for(let i=1; i<currentMatches.length; i++) { let m = currentMatches[i]; m.winner = Math.random() > 0.5 ? m.p1 : m.p2; nextRoundPlayers.push(m.winner); }
                     if (tState.round < 2) { let nextMatches = []; for(let i=0; i<nextRoundPlayers.length; i+=2) nextMatches.push({ p1: nextRoundPlayers[i], p2: nextRoundPlayers[i+1], winner: null }); tState.bracket.push(nextMatches); }
                     tState.phase = 'results';
@@ -3324,10 +3503,14 @@
             } else {
                 $('gameover-title').innerText = 'DÉFAITE'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-900 drop-shadow-lg z-10 relative';
                 
-                if (currentMode === 'tournament') {
+                                if (currentMode === 'tournament') {
                     $('gameover-title').innerText = 'ÉLIMINÉ'; $('gameover-desc').innerText = `Vous avez été éliminé du tournoi.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
+                } else if (currentMode === 'shibuya') {
+                    $('gameover-title').innerText = 'DÉCIMÉ'; $('gameover-desc').innerText = `Votre escouade est tombée à l'étage ${sState.stage + 1}.`;
+                    btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                 } else if (isAbandon) {
+
                     currentWinStreak = 0;
                     $('gameover-title').innerText = 'DÉSERTEUR !'; 
                     $('gameover-desc').innerHTML = `Vous avez fui le combat.<br><span class="text-red-400 font-bold mt-2 inline-block text-2xl">-15 Pièces</span>`;
