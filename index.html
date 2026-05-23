@@ -133,12 +133,30 @@
         }
         .aura-card { animation: cursed-aura 2.5s infinite ease-in-out; }
 
-        /* Flèche animée tutoriel */
+                /* Flèche animée tutoriel */
         @keyframes point-left {
             0%, 100% { transform: translate(0, -50%); }
             50% { transform: translate(-8px, -50%); }
         }
         .anim-point-left { animation: point-left 1s infinite; }
+
+        /* Animations d'inactivité (Idle) */
+        @keyframes idle-breath-p {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-4px) scale(1.02); }
+        }
+        @keyframes idle-breath-e {
+            0%, 100% { transform: translateY(0) scale(1) scaleX(-1); }
+            50% { transform: translateY(-4px) scale(1.02) scaleX(-1); }
+        }
+        @keyframes idle-btn-pulse {
+            0%, 100% { border-color: rgba(75, 85, 99, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            50% { border-color: rgba(96, 165, 250, 0.6); box-shadow: 0 0 12px rgba(96, 165, 250, 0.4); }
+        }
+        .anim-idle-p { animation: idle-breath-p 3s ease-in-out infinite; }
+        .anim-idle-e { animation: idle-breath-e 3s ease-in-out infinite; }
+        .anim-idle-btn { animation: idle-btn-pulse 2s ease-in-out infinite; }
+
 
         .anim-strike-p { animation: strike-player 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
         .anim-strike-e { animation: strike-enemy 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
@@ -689,9 +707,14 @@
             <i class="fas fa-sign-out-alt"></i>
         </button>
 
-        <button id="btn-emote" onclick="toggleEmotePanel()" class="absolute top-4 right-4 z-50 bg-gray-900/80 border border-gray-600 p-2 rounded-full shadow-lg text-yellow-400 hover:text-yellow-300 hover:bg-gray-800 transition-all w-10 h-10 flex items-center justify-center active:scale-90 hidden">
+                <button id="btn-emote" onclick="toggleEmotePanel()" class="absolute top-4 right-4 z-50 bg-gray-900/80 border border-gray-600 p-2 rounded-full shadow-lg text-yellow-400 hover:text-yellow-300 hover:bg-gray-800 transition-all w-10 h-10 flex items-center justify-center active:scale-90 hidden">
             <i class="fas fa-smile"></i>
         </button>
+
+        <button onclick="showElementRules()" class="absolute top-4 right-16 z-50 bg-gray-900/80 border border-gray-600 p-2 rounded-full shadow-lg text-blue-400 hover:text-blue-300 hover:bg-gray-800 transition-all w-10 h-10 flex items-center justify-center active:scale-90">
+            <i class="fas fa-info-circle"></i>
+        </button>
+
         <div id="emote-panel" class="absolute top-16 right-4 z-50 hidden grid grid-cols-3 gap-2 bg-gray-900/95 border border-gray-600 p-3 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md">
             <button onclick="sendEmote('😂', 'player')" class="text-2xl hover:scale-125 transition-transform">😂</button>
             <button onclick="sendEmote('😡', 'player')" class="text-2xl hover:scale-125 transition-transform">😡</button>
@@ -748,11 +771,12 @@
                 <div id="domain-name-display" class="absolute inset-0 flex items-center justify-center z-[3] opacity-0 transition-opacity duration-500 pointer-events-none">
                     <h2 class="text-4xl font-black text-white text-center drop-shadow-[0_0_20px_rgba(0,0,0,1)] tracking-widest px-4"></h2>
                 </div>
-                <div class="flex justify-between w-full px-4 items-center z-[4] relative mt-10">
-                    <img id="sprite-player" src="" alt="Joueur" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-blue-500 transition-all z-20">
-                    <img id="sprite-enemy" src="" alt="Ennemi" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-red-500 transition-all scale-x-[-1] z-10">
+                                <div class="flex justify-between w-full px-4 items-center z-[4] relative mt-10">
+                    <img id="sprite-player" src="" alt="Joueur" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-blue-500 transition-all z-20 anim-idle-p">
+                    <img id="sprite-enemy" src="" alt="Ennemi" class="w-28 h-28 md:w-36 md:h-36 sprite-img border-4 border-red-500 transition-all scale-x-[-1] z-10 anim-idle-e">
                 </div>
             </div>
+
 
             <!-- BOITE DE DIALOGUE TUTORIEL -->
             <div id="tutorial-box" class="absolute bottom-4 left-4 right-4 sm:left-auto sm:w-80 z-50 bg-blue-900/95 border-2 border-blue-400 p-3 rounded-lg flex items-center gap-3 hidden shadow-[0_0_20px_rgba(59,130,246,0.8)]">
@@ -826,7 +850,44 @@
                 <h3 class="font-bold text-blue-400 text-lg flex items-center gap-2"><i class="fas fa-users"></i> Mon Équipe</h3>
                 <button onclick="closePlayerTeamStats()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
             </div>
-            <div class="p-4 overflow-y-auto no-scrollbar space-y-4" id="player-team-list"></div>
+            <div class="p-4 overflow-y-auto no-scrollbar space-y-4" id="player-team-list"></div> </div> </div> <div id="modal-public-profile" class="absolute inset-0 bg-black/80 z-[150] hidden flex-col items-center justify-center p-4 backdrop-blur-sm"> <div class="bg-gray-900 border border-teal-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(20,184,166,0.3)]"> <div class="bg-gradient-to-r from-teal-950 to-black p-3 flex justify-between items-center border-b border-teal-500/30"> <h3 class="font-bold text-teal-400 text-lg flex items-center gap-2"><i class="fas fa-user"></i> Profil de l'Exorciste</h3> <button onclick="closePublicProfile()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button> </div> <div class="p-5 text-center space-y-4"> <div id="public-profile-loading" class="text-gray-400 animate-pulse font-bold py-6">Chargement du profil...</div> <div id="public-profile-content" class="hidden space-y-4"> <div class="text-2xl font-black text-white" id="pub-pseudo">-</div> <div class="text-sm font-bold text-orange-400" id="pub-clan"><i class="fas fa-users"></i> Clan : <span id="pub-clan-name">-</span></div> <div class="grid grid-cols-2 gap-3 mt-2"> <div class="bg-gray-800 p-3 rounded-lg border border-gray-700"> <div class="text-[10px] text-gray-400 uppercase font-bold">Pièces</div> <div id="pub-coins" class="text-lg font-black text-yellow-400">-</div> </div> <div class="bg-gray-800 p-3 rounded-lg border border-gray-700"> <div class="text-[10px] text-gray-400 uppercase font-bold">Origine</div> <div id="pub-country" class="text-lg font-black text-white">-</div> </div> <div class="bg-gray-800 p-2 rounded-lg border border-gray-700"> <div class="text-[10px] text-gray-400 uppercase font-bold text-green-400">Victoires</div> <div id="pub-wins" class="text-base font-black text-white">-</div> </div> <div class="bg-gray-800 p-2 rounded-lg border border-gray-700"> <div class="text-[10px] text-gray-400 uppercase font-bold text-red-400">Défaites</div> <div id="pub-losses" class="text-base font-black text-white">-</div> </div> <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 col-span-2 flex justify-around items-center"> <div><span class="text-[10px] text-gray-400 block uppercase font-bold">Série Max</span><span id="pub-streak" class="text-sm font-black text-orange-400">-</span></div> <div><span class="text-[10px] text-gray-400 block uppercase font-bold">Ratio V/D</span><span id="pub-ratio" class="text-sm font-black text-purple-400">-</span></div> </div> </div> <p class="text-[10px] text-gray-500 italic">Données synchronisées via la base globale.</p> </div> </div> </div> </div>
+
+    <div id="modal-element-rules" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-blue-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            <div class="bg-gradient-to-r from-blue-900 to-black p-3 flex justify-between items-center border-b border-blue-500/30">
+                <h3 class="font-bold text-white text-lg flex items-center gap-2"><i class="fas fa-info-circle text-blue-400"></i> Affinités Élémentaires</h3>
+                <button onclick="closeElementRules()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4 space-y-2 text-sm text-gray-300">
+                <p class="text-center font-bold text-xs text-gray-400 mb-2 uppercase tracking-widest">Le Cycle de la Nature</p>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-red-500">🔥 Feu</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-green-500">🍃 Plante</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-green-500">🍃 Plante</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-yellow-600">🪨 Terre</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-yellow-600">🪨 Terre</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-yellow-400">⚡ Foudre</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-yellow-400">⚡ Foudre</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-blue-400">💧 Eau</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-blue-400">💧 Eau</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-red-500">🔥 Feu</span>
+                </div>
+                
+                <p class="text-center font-bold text-xs text-gray-400 mt-4 mb-2 uppercase tracking-widest">Le Cycle Occulte</p>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-purple-500">🌑 Ténèbres</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-yellow-200">✨ Lumière</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-yellow-200">✨ Lumière</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-gray-400">👊 Neutre</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 font-bold">
+                    <span class="text-gray-400">👊 Neutre</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-purple-500">🌑 Ténèbres</span>
+                </div>
+                <p class="text-[10px] text-gray-500 text-center mt-2 italic">Avantage : Dégâts +50% | Désavantage : Dégâts -50%</p>
+            </div>
         </div>
     </div>
 
@@ -954,16 +1015,17 @@
 
         const attrEmojis = { 'Feu':'🔥', 'Eau':'💧', 'Plante':'🍃', 'Foudre':'⚡', 'Terre':'🪨', 'Ténèbres':'🌑', 'Lumière':'✨', 'Neutre':'👊' };
         
-        const attrAdvantage = {
-            'Feu': { strong: ['Plante'], weak: ['Eau', 'Terre'] },
-            'Eau': { strong: ['Feu', 'Terre'], weak: ['Plante', 'Foudre'] },
-            'Plante': { strong: ['Eau', 'Terre'], weak: ['Feu'] },
-            'Foudre': { strong: ['Eau'], weak: ['Terre', 'Plante'] },
-            'Terre': { strong: ['Feu', 'Foudre'], weak: ['Eau', 'Plante'] },
-            'Ténèbres': { strong: ['Lumière'], weak: ['Lumière'] },
-            'Lumière': { strong: ['Ténèbres'], weak: ['Ténèbres'] },
-            'Neutre': { strong: [], weak: [] }
+                const attrAdvantage = {
+            'Feu': { strong: ['Plante'], weak: ['Eau'] },
+            'Plante': { strong: ['Terre'], weak: ['Feu'] },
+            'Terre': { strong: ['Foudre'], weak: ['Plante'] },
+            'Foudre': { strong: ['Eau'], weak: ['Terre'] },
+            'Eau': { strong: ['Feu'], weak: ['Foudre'] },
+            'Ténèbres': { strong: ['Lumière'], weak: ['Neutre'] },
+            'Lumière': { strong: ['Neutre'], weak: ['Ténèbres'] },
+            'Neutre': { strong: ['Ténèbres'], weak: ['Lumière'] }
         };
+
 
         let tState = { round: 0, bracket: [], phase: 'matchups' };
 
@@ -977,19 +1039,19 @@
 
         const charData = [
             { id: 'yuji', name: 'Yuji Itadori', img: 'Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg', color: 'from-orange-600 to-red-600', locked: false, price: 0, hp: 500, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 25, desc: 'Coup de poing basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Poing Divergent', cost: 20, dmg: 50, desc: 'Un double impact dévastateur.', type: 'attack', attr: 'Neutre' }, { name: 'Rayon Noir', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Ténèbres' }, { name: 'Assaut Furieux', cost: 70, dmg: 120, desc: 'Un enchaînement inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
-            { id: 'megumi', name: 'Megumi Fushiguro', img: 'megumi.jpg', color: 'from-green-700 to-teal-900', locked: false, price: 0, hp: 450, ce: 40, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Chiens de Jade', cost: 0, dmg: 25, desc: 'Morsure basique. Restaure 15 CE.', type: 'basic', attr: 'Ténèbres' }, { name: 'Nue (Oiseau)', cost: 25, dmg: 40, desc: 'Attaque électrique. 30% de chance d\'étourdir 1 tour.', effect: 'chance-stun', type: 'attack', attr: 'Foudre' }, { name: 'Éléphant de Max', cost: 40, dmg: 70, desc: 'Écrase l\'ennemi sous une pression d\'eau.', type: 'attack', attr: 'Eau' }, { name: 'Jardin des Ombres', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour et octroie Esquive constante.', effect: 'domain-evade', type: 'domain', domainClass: 'domain-megumi', video: "territoire_de_Megumi.mp4", attr: 'Ténèbres' } ] },
+            { id: 'megumi', name: 'Megumi Fushiguro', img: 'megumi.jpg', color: 'from-green-700 to-teal-900', locked: false, price: 0, hp: 450, ce: 40, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Chiens de Jade', cost: 0, dmg: 25, desc: 'Morsure basique. Restaure 15 CE.', type: 'basic', attr: 'Ténèbres' }, { name: 'Nue (Oiseau)', cost: 25, dmg: 40, desc: 'Attaque électrique. 30% de chance d\'étourdir 1 tour.', effect: 'chance-stun', type: 'attack', attr: 'Foudre' }, { name: 'Éléphant de Max', cost: 40, dmg: 70, desc: 'Écrase l\'ennemi sous une pression d\'eau.', type: 'attack', attr: 'Eau' }, { name: 'Jardin des Ombres', cost: 80, dmg: 25, desc: 'Domaine (-5 PV/tour). Inflige 25 DGT/tour et octroie Esquive constante.', effect: 'domain-evade', type: 'domain', domainClass: 'domain-megumi', video: "territoire_de_Megumi.mp4", attr: 'Ténèbres' } ] },
             { id: 'nobara', name: 'Nobara Kugisaki', img: 'nobara.jpg', color: 'from-amber-700 to-red-800', locked: false, price: 0, hp: 430, ce: 30, maxCe: 100, attr: 'Terre', moves: [ { name: 'Coup de Marteau', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Terre' }, { name: 'Projection de Clous', cost: 15, dmg: 35, desc: 'Tire des clous imprégnés de CE.', type: 'attack', attr: 'Terre' }, { name: 'Résonance', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Pince à Cheveux', cost: 60, dmg: 140, desc: 'Fait exploser tous les clous plantés.', type: 'attack', attr: 'Feu' } ] },
             { id: 'maki', name: 'Maki Zenin', img: 'maki.jpeg', color: 'from-emerald-700 to-green-900', locked: false, price: 800, hp: 510, ce: 30, maxCe: 100, attr: 'Plante', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 30, desc: 'Coup de poing basique puissant. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Lancer d\'Arme', cost: 20, dmg: 45, desc: 'Projette une arme maudite avec force.', type: 'attack', attr: 'Terre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Éveil Physique', cost: 70, dmg: 130, desc: 'Une démonstration de force brute inarrêtable.', type: 'attack', attr: 'Neutre' } ] },
             { id: 'nanami', name: 'Kento Nanami', img: 'nanami.jpg', color: 'from-yellow-600 to-yellow-800', locked: false, price: 800, hp: 470, ce: 40, maxCe: 100, attr: 'Terre', moves: [ { name: 'Lame Émoussée', cost: 0, dmg: 25, desc: 'Coup d\'épée basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Point Faible', cost: 35, dmg: 60, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Terre' }, { name: 'Heures Supplémentaires', cost: 40, dmg: 0, desc: 'Libération d\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Effondrement', cost: 65, dmg: 110, desc: 'Frappe le point critique. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Terre' } ] },
-            { id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800', locked: false, price: 1500, hp: 460, ce: 40, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack', attr: 'Terre' }, { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-15 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4", attr: 'Foudre' } ] },
+            { id: 'hakari', name: 'Kinji Hakari', img: 'hakari.jpg', color: 'from-pink-600 to-purple-800', locked: false, price: 1500, hp: 460, ce: 40, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 20, desc: 'Frappe basique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Portes de Train', cost: 25, dmg: 45, desc: 'Emprisonne l\'ennemi entre deux portes.', type: 'attack', attr: 'Terre' }, { name: 'Jackpot', cost: 40, dmg: 0, desc: 'Régénération automatique. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Repos Mortel du Joueur', cost: 80, dmg: 25, desc: 'Domaine (-5 PV/tour). Inflige 25 DGT/tour. 65% de chance d\'esquive (40% en conflit).', effect: 'domain-evade', type: 'domain', domainClass: 'domain-hakari', video: "territoire_dHakari.mp4", attr: 'Foudre' } ] },
             { id: 'todo', name: 'Aoi Todo', img: 'todo.jpg', color: 'from-blue-700 to-indigo-900', locked: false, price: 1500, hp: 530, ce: 30, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Coup de Poing', cost: 0, dmg: 25, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Boogie Woogie', cost: 20, dmg: 40, desc: 'Frappe désorientante. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Neutre' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Rayon Noir', cost: 70, dmg: 130, desc: 'Impact explosif critique.', type: 'attack', attr: 'Ténèbres' } ] },
             { id: 'toji', name: 'Toji Fushiguro', img: 'Toji.jpeg', color: 'from-gray-600 to-gray-900', locked: true, price: 1500, hp: 560, ce: 50, maxCe: 100, attr: 'Neutre', moves: [ { name: 'Katana Ordinaire', cost: 0, dmg: 35, desc: 'Coup de lame simple et brutal. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Pistolet', cost: 20, dmg: 50, desc: 'Tire sur l\'adversaire avec précision.', type: 'attack', attr: 'Feu' }, { name: 'Nuage Flottant', cost: 50, dmg: 90, desc: 'Coup critique. 50% de chance de restaurer 30 CE.', effect: 'blackflash', type: 'attack', attr: 'Plante' }, { name: 'Lance du Ciel Inversée', cost: 80, dmg: 140, desc: 'Annule les techniques. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' } ] },
-            { id: 'mahito', name: 'Mahito', img: 'mahito.jpeg', color: 'from-blue-700 to-indigo-900', locked: true, price: 2000, hp: 520, ce: 50, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Lames Corporelles', cost: 0, dmg: 25, desc: 'Transformation en lames. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Âme Multiple', cost: 30, dmg: 50, desc: 'Projette des âmes transfigurées.', type: 'attack', attr: 'Ténèbres' }, { name: 'Transfiguration Idéale', cost: 50, dmg: 80, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Orbe de l\'Isolement', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature l\'âme : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-mahito', video: 'territoire_de_Mahito.mp4', attr: 'Ténèbres' } ] },
-            { id: 'jogo', name: 'Jogo', img: 'jogo.png', color: 'from-red-600 to-orange-800', locked: true, price: 2000, hp: 450, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Rayon de Flammes', cost: 0, dmg: 25, desc: 'Brûle l\'adversaire. Restaure 15 CE.', type: 'basic', attr: 'Feu' }, { name: 'Insectes Explosifs', cost: 25, dmg: 45, desc: 'Déploie des insectes de feu sonores.', type: 'attack', attr: 'Feu' }, { name: 'Météore Maximum', cost: 60, dmg: 110, desc: 'Invoque un météore géant de flammes.', type: 'attack', attr: 'Terre' }, { name: 'Montagne Cercueil de Fer', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Jogo.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-jogo', video: 'Territoire_de_Jogo.mp4', attr: 'Feu' } ] },
+            { id: 'mahito', name: 'Mahito', img: 'mahito.jpeg', color: 'from-blue-700 to-indigo-900', locked: true, price: 2000, hp: 520, ce: 50, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Lames Corporelles', cost: 0, dmg: 25, desc: 'Transformation en lames. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Âme Multiple', cost: 30, dmg: 50, desc: 'Projette des âmes transfigurées.', type: 'attack', attr: 'Ténèbres' }, { name: 'Transfiguration Idéale', cost: 50, dmg: 80, desc: 'Dégâts accrus (+50%) si l\'ennemi a plus de 50% de ses PV.', effect: 'resonance', type: 'attack', attr: 'Ténèbres' }, { name: 'Orbe de l\'Isolement', cost: 100, dmg: 25, desc: 'Domaine (-5 PV/tour). Sature l\'âme : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-mahito', video: 'territoire_de_Mahito.mp4', attr: 'Ténèbres' } ] },
+            { id: 'jogo', name: 'Jogo', img: 'jogo.png', color: 'from-red-600 to-orange-800', locked: true, price: 2000, hp: 450, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Rayon de Flammes', cost: 0, dmg: 25, desc: 'Brûle l\'adversaire. Restaure 15 CE.', type: 'basic', attr: 'Feu' }, { name: 'Insectes Explosifs', cost: 25, dmg: 45, desc: 'Déploie des insectes de feu sonores.', type: 'attack', attr: 'Feu' }, { name: 'Météore Maximum', cost: 60, dmg: 110, desc: 'Invoque un météore géant de flammes.', type: 'attack', attr: 'Terre' }, { name: 'Montagne Cercueil de Fer', cost: 90, dmg: 40, desc: 'Domaine (-5 PV/tour). Inflige 40 DGT/tour et soigne Jogo.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-jogo', video: 'Territoire_de_Jogo.mp4', attr: 'Feu' } ] },
             { id: 'yuta', name: 'Yuta Okkotsu', img: 'yuta.jpeg', color: 'from-slate-400 to-gray-700', locked: true, price: 3000, hp: 490, ce: 60, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Coup de Katana', cost: 0, dmg: 25, desc: 'Coup d\'épée. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Inversion de Sort', cost: 40, dmg: 0, desc: 'Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Appel de Rika', cost: 45, dmg: 80, desc: 'Rika frappe violemment l\'ennemi.', type: 'attack', attr: 'Ténèbres' }, { name: 'Amour Sincère', cost: 85, dmg: 150, desc: 'Un rayon d\'énergie occulte pure.', type: 'attack', attr: 'Lumière' } ] },
-            { id: 'gojo', name: 'Satoru Gojo', img: 'satoru Gojo.jpg', color: 'from-blue-500 to-purple-600', locked: true, price: 5000, hp: 480, ce: 50, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Corps à corps', cost: 0, dmg: 20, desc: 'Frappe imprégnée d\'énergie. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Rouge (Répulsion)', cost: 30, dmg: 60, desc: 'Projette violemment l\'ennemi.', type: 'attack', attr: 'Feu' }, { name: 'Violet (Hollow)', cost: 60, dmg: 130, desc: 'Détruit la matière au niveau atomique.', type: 'attack', attr: 'Ténèbres' }, { name: 'Sphère de l\'Espace Infini', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature le cerveau : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-gojo', video: "Sphere_de_lespace_infini.mp4", attr: 'Lumière' } ] },
-            { id: 'sukuna', name: 'Ryomen Sukuna', img: 'Sukuna.jpeg', color: 'from-red-800 to-black', locked: true, price: 5000, hp: 550, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Frappe Démoniaque', cost: 0, dmg: 30, desc: 'Attaque physique lourde. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack', attr: 'Ténèbres' }, { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack', attr: 'Ténèbres' }, { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-15 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4", attr: 'Feu' } ] },
-            { id: 'higuruma', name: 'Hiromi Higuruma', img: 'higuruma.jpg', color: 'from-gray-600 to-black', locked: true, price: 2000, hp: 460, ce: 40, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Coup de Maillet', cost: 0, dmg: 25, desc: 'Frappe de base avec le maillet. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Jugement', cost: 25, dmg: 45, desc: 'Invoque Judgeman pour attaquer.', type: 'attack', attr: 'Lumière' }, { name: 'Confiscation', cost: 50, dmg: 80, desc: 'Frappe lourde. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' }, { name: 'Peine de Mort', cost: 100, dmg: 25, desc: 'Domaine (-15 PV/tour). Sature la zone : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-higuruma', video: 'territoire_higuruma.mp4', attr: 'Lumière' } ] },
+            { id: 'gojo', name: 'Satoru Gojo', img: 'satoru Gojo.jpg', color: 'from-blue-500 to-purple-600', locked: true, price: 5000, hp: 480, ce: 50, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Corps à corps', cost: 0, dmg: 20, desc: 'Frappe imprégnée d\'énergie. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Rouge (Répulsion)', cost: 30, dmg: 60, desc: 'Projette violemment l\'ennemi.', type: 'attack', attr: 'Feu' }, { name: 'Violet (Hollow)', cost: 60, dmg: 130, desc: 'Détruit la matière au niveau atomique.', type: 'attack', attr: 'Ténèbres' }, { name: 'Sphère de l\'Espace Infini', cost: 100, dmg: 25, desc: 'Domaine (-5 PV/tour). Sature le cerveau : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-gojo', video: "Sphere_de_lespace_infini.mp4", attr: 'Lumière' } ] },
+            { id: 'sukuna', name: 'Ryomen Sukuna', img: 'Sukuna.jpeg', color: 'from-red-800 to-black', locked: true, price: 5000, hp: 550, ce: 50, maxCe: 100, attr: 'Feu', moves: [ { name: 'Frappe Démoniaque', cost: 0, dmg: 30, desc: 'Attaque physique lourde. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Dissection', cost: 20, dmg: 45, desc: 'Coupe rapide et invisible.', type: 'attack', attr: 'Ténèbres' }, { name: 'Clivage', cost: 45, dmg: 90, desc: 'S\'adapte à l\'adversaire pour le trancher.', type: 'attack', attr: 'Ténèbres' }, { name: 'Autel Démoniaque', cost: 90, dmg: 40, desc: 'Domaine (-5 PV/tour). Inflige 40 DGT/tour et soigne Sukuna.', effect: 'domain-lifesteal', type: 'domain', domainClass: 'domain-sukuna', video: "Lhotel_demoniaque.mp4", attr: 'Feu' } ] },
+            { id: 'higuruma', name: 'Hiromi Higuruma', img: 'higuruma.jpg', color: 'from-gray-600 to-black', locked: true, price: 2000, hp: 460, ce: 40, maxCe: 100, attr: 'Lumière', moves: [ { name: 'Coup de Maillet', cost: 0, dmg: 25, desc: 'Frappe de base avec le maillet. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Jugement', cost: 25, dmg: 45, desc: 'Invoque Judgeman pour attaquer.', type: 'attack', attr: 'Lumière' }, { name: 'Confiscation', cost: 50, dmg: 80, desc: 'Frappe lourde. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Lumière' }, { name: 'Peine de Mort', cost: 100, dmg: 25, desc: 'Domaine (-5 PV/tour). Sature la zone : 65% de chance d\'étourdir l\'ennemi par tour.', effect: 'domain-stun', type: 'domain', domainClass: 'domain-higuruma', video: 'territoire_higuruma.mp4', attr: 'Lumière' } ] },
             { id: 'kashimo', name: 'Kashimo Hajime', img: 'kashimo.jpg', color: 'from-cyan-400 to-blue-600', locked: true, price: 3000, hp: 470, ce: 50, maxCe: 100, attr: 'Foudre', moves: [ { name: 'Coup Électrifié', cost: 0, dmg: 30, desc: 'Frappe de base. Restaure 15 CE.', type: 'basic', attr: 'Foudre' }, { name: 'Décharge', cost: 25, dmg: 50, desc: 'Projette une charge électrique.', type: 'attack', attr: 'Foudre' }, { name: 'Accumulation', cost: 40, dmg: 0, desc: 'Canalyse l\'énergie. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Lumière' }, { name: 'Bête Fantôme Ambre', cost: 85, dmg: 150, desc: 'Attaque ultime surchargée.', type: 'attack', attr: 'Foudre' } ] },
             { id: 'choso', name: 'Choso', img: 'choso.jpg', color: 'from-red-700 to-red-900', locked: true, price: 2000, hp: 480, ce: 40, maxCe: 100, attr: 'Eau', moves: [ { name: 'Tranchant de Sang', cost: 0, dmg: 25, desc: 'Frappe sanglante. Restaure 15 CE.', type: 'basic', attr: 'Eau' }, { name: 'Écaille Rouge Fluide', cost: 40, dmg: 0, desc: 'Booste le métabolisme. Se soigne de 80 PV.', effect: 'heal', type: 'heal', attr: 'Feu' }, { name: 'Supernova', cost: 45, dmg: 70, desc: 'Explosion d\'orbes de sang.', type: 'attack', attr: 'Eau' }, { name: 'Sang Perforant', cost: 70, dmg: 130, desc: 'Tir concentré perforant.', type: 'attack', attr: 'Eau' } ] },
             { id: 'geto', name: 'Suguru Geto', img: 'geto.jpg', color: 'from-yellow-700 to-yellow-900', locked: true, price: 5000, hp: 490, ce: 60, maxCe: 100, attr: 'Ténèbres', moves: [ { name: 'Arts Martiaux', cost: 0, dmg: 20, desc: 'Frappe technique. Restaure 15 CE.', type: 'basic', attr: 'Neutre' }, { name: 'Nuée de Fléaux', cost: 25, dmg: 50, desc: 'Projette plusieurs petits fléaux.', type: 'attack', attr: 'Ténèbres' }, { name: 'Nuage Flottant', cost: 45, dmg: 85, desc: 'Frappe armée puissante.', type: 'attack', attr: 'Plante' }, { name: 'Maximum: Uzumaki', cost: 85, dmg: 140, desc: 'Concentration totale des fléaux.', type: 'attack', attr: 'Ténèbres' } ] },
@@ -1476,10 +1538,67 @@
             $('modal-player-team').classList.add('flex');
         }
 
-        function closePlayerTeamStats() {
+                function closePlayerTeamStats() {
             $('modal-player-team').classList.add('hidden');
             $('modal-player-team').classList.remove('flex');
         }
+
+        function showElementRules() {
+            $('modal-element-rules').classList.remove('hidden');
+            $('modal-element-rules').classList.add('flex');
+        }
+
+        function closeElementRules() {
+            $('modal-element-rules').classList.add('hidden');
+            $('modal-element-rules').classList.remove('flex');
+        }
+
+        /* --- FONCTIONS DE PROFIL PUBLIC EN LIGNE --- */
+        function showPublicPlayerProfile(uid) {
+            if(!uid || uid === 'system') return;
+            $('modal-public-profile').classList.remove('hidden');
+            $('modal-public-profile').classList.add('flex');
+            $('public-profile-loading').classList.remove('hidden');
+            $('public-profile-content').classList.add('hidden');
+
+            db.ref('users/' + uid).once('value', async (snap) => {
+                const u = snap.val();
+                if(!u) {
+                    $('public-profile-loading').innerText = "Impossible de charger ce profil.";
+                    return;
+                }
+                $('pub-pseudo').innerText = `${u.country || '🌍'} ${u.name || 'Anonyme'}`;
+                $('pub-coins').innerHTML = `<i class="fas fa-coins text-yellow-400 mr-1"></i> <span class="text-yellow-400">${u.coins !== undefined ? u.coins : 0}</span>`;
+                $('pub-country').innerText = u.country || '🌍';
+
+                if(u.clanId) {
+                    const clanSnap = await db.ref(`clans/${u.clanId}/info/name`).once('value');
+                    $('pub-clan-name').innerText = clanSnap.exists() ? clanSnap.val() : "Aucun";
+                } else {
+                    $('pub-clan-name').innerText = "Aucun";
+                }
+
+                const w = u.wins || 0;
+                const l = u.losses || 0;
+                const s = u.streak || 0;
+                const totalGames = w + l;
+                const ratioPercent = totalGames === 0 ? 0 : Math.round((w / totalGames) * 100);
+
+                $('pub-wins').innerText = w;
+                $('pub-losses').innerText = l;
+                $('pub-streak').innerText = `🔥 ${s}`;
+                $('pub-ratio').innerText = `📊 ${ratioPercent}%`;
+
+                $('public-profile-loading').classList.add('hidden');
+                $('public-profile-content').classList.remove('hidden');
+            });
+        }
+
+        function closePublicProfile() {
+            $('modal-public-profile').classList.add('hidden');
+            $('modal-public-profile').classList.remove('flex');
+        }
+
 
         /* --- GESTION PROFIL ET NATIONALITE --- */
         function renderProfile() {
@@ -1553,7 +1672,10 @@
                 name: globalPlayerPseudo || "Exorciste Anonyme",
                 coins: playerCoins,
                 country: playerCountryEmoji,
-                clanId: playerClanId || null
+                clanId: playerClanId || null,
+                wins: onlineWins,
+                losses: onlineLosses,
+                streak: maxWinStreak
             });
             
             const today = new Date().toISOString().split('T')[0];
@@ -1656,7 +1778,7 @@
                     
                     let userCountry = p.country || '🌍';
 
-                    item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span class="font-bold text-white">${userCountry} ${p.name} ${isMe ? '(Vous)' : ''}</span></div><div class="font-bold">${valDisplay}</div>`;
+                    item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span onclick="showPublicPlayerProfile('${p.uid}')" class="font-bold text-white cursor-pointer hover:underline">${userCountry} ${p.name} ${isMe ? '(Vous)' : ''}</span></div><div class="font-bold">${valDisplay}</div>`;
                     list.appendChild(item);
                 });
             } catch(e) {
@@ -1836,7 +1958,7 @@
                     }
                     
                     div.innerHTML = `
-                        <div class="font-bold ${isMe ? 'text-blue-400' : 'text-gray-300'} text-xs mb-1">${isMe ? 'Moi' : msg.name}</div>
+                        <div onclick="showPublicPlayerProfile('${msg.uid}')" class="font-bold ${isMe ? 'text-blue-400' : 'text-gray-300'} text-xs mb-1 cursor-pointer hover:underline">${isMe ? 'Moi' : msg.name}</div>
                         <div class="${msg.fulfilled ? 'text-gray-400' : 'text-yellow-100'}"><i class="fas fa-coins text-yellow-400 mr-1"></i> ${msg.text}</div>
                         ${actionHtml}
                     `;
@@ -1844,12 +1966,13 @@
                     const isMe = msg.uid === auth.currentUser.uid;
                     div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
                     div.innerHTML = `
-                        <span class="text-[10px] text-gray-500 font-bold mb-0.5 px-1">${isMe ? 'Moi' : msg.name}</span>
+                        <span onclick="showPublicPlayerProfile('${msg.uid}')" class="text-[10px] text-gray-500 font-bold mb-0.5 px-1 cursor-pointer hover:underline">${isMe ? 'Moi' : msg.name}</span>
                         <div class="p-2 rounded-xl text-sm max-w-[80%] ${isMe ? 'bg-blue-600 text-white rounded-tr-none shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-gray-700 text-gray-100 rounded-tl-none border border-gray-600'} break-words">
                             ${msg.text}
                         </div>
                     `;
                 }
+                
                 chatBox.appendChild(div);
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
@@ -1887,12 +2010,13 @@
                 const isLeader = data.role === 'leader';
                 const canKick = isClanLeader && !isMe;
                 
-                let kickBtn = canKick ? `<button onclick="kickClanMember('${uid}', '${data.name}')" class="bg-red-600/80 hover:bg-red-500 text-white text-[10px] px-2 py-1 rounded ml-2 transition-colors border border-red-500"><i class="fas fa-ban"></i> Bannir</button>` : '';
+                let safeName = data.name.replace(/'/g, "\\'");
+                let kickBtn = canKick ? `<button onclick="kickClanMember('${uid}', '${safeName}')" class="bg-red-600/80 hover:bg-red-500 text-white text-[10px] px-2 py-1 rounded ml-2 transition-colors border border-red-500"><i class="fas fa-ban"></i> Bannir</button>` : '';
                 let roleBadge = isLeader ? `<span class="bg-yellow-600 text-black text-[9px] font-bold px-1.5 py-0.5 rounded ml-2">CHEF</span>` : `<span class="bg-gray-700 text-gray-300 text-[9px] font-bold px-1.5 py-0.5 rounded ml-2">MEMBRE</span>`;
                 
                 list.innerHTML += `
                     <div class="bg-gray-800 p-2 rounded-lg border ${isMe ? 'border-blue-500' : 'border-gray-700'} flex justify-between items-center">
-                        <div class="flex items-center text-sm font-bold text-white">
+                        <div onclick="showPublicPlayerProfile('${uid}')" class="flex items-center text-sm font-bold text-white cursor-pointer hover:underline">
                             ${data.name} ${isMe ? '<span class="text-blue-400 ml-1 text-xs">(Vous)</span>' : ''} ${roleBadge}
                         </div>
                         ${kickBtn}
@@ -2788,10 +2912,11 @@
             container.innerHTML = '';
             player.moves.forEach((move, index) => {
                 let isDomainActive = player.activeDomain && move.type === 'domain'; let canAfford = isDomainActive ? true : player.ce >= move.cost; let isEnabled = canAfford && isPlayerTurn && !isAnimating; let isTutorialTarget = false;
-                if (currentMode === 'tutorial' && !isDomainActive) { if (tutorialStep < tutorialSequence.length) { if (index !== tutorialSequence[tutorialStep].targetMove) isEnabled = false; else { isTutorialTarget = true; isEnabled = true; } } }
+                                if (currentMode === 'tutorial' && !isDomainActive) { if (tutorialStep < tutorialSequence.length) { if (index !== tutorialSequence[tutorialStep].targetMove) isEnabled = false; else { isTutorialTarget = true; isEnabled = true; } } }
                 
-                const btn = document.createElement('button'); btn.className = `p-2 rounded-lg text-left flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${isEnabled ? 'bg-gray-800 border border-gray-600 hover:bg-gray-700 active:scale-95 shadow-md' : 'bg-gray-900 border border-gray-800 opacity-40 cursor-not-allowed'}`;
+                const btn = document.createElement('button'); btn.className = `p-2 rounded-lg text-left flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${isEnabled ? 'bg-gray-800 border border-gray-600 hover:bg-gray-700 active:scale-95 shadow-md anim-idle-btn' : 'bg-gray-900 border border-gray-800 opacity-40 cursor-not-allowed'}`;
                 if (isTutorialTarget) btn.classList.add('border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.6)]');
+
 
                 if (isDomainActive) {
                     btn.innerHTML = `<div class="flex justify-between items-center w-full mb-1"><span class="text-xs text-yellow-400 font-bold truncate pr-1">Annuler Territoire</span></div><span class="text-[9px] text-gray-400 leading-tight">Désactiver le territoire pour stopper la perte de PV.</span>`;
@@ -2872,7 +2997,7 @@
             let isClash = player.activeDomain && enemy.activeDomain;
 
             if (player.activeDomain) {
-                player.hp -= 15; createFloatingText('sprite-player', '-15 (Domaine)', 'text-red-500');
+                player.hp -= 5; createFloatingText('sprite-player', '-5 (Domaine)', 'text-red-500');
                 let dmgMult = isClash ? 0.5 : 1; let attrMultP = 1;
                 if (attrAdvantage[player.activeDomain.attr].strong.includes(enemy.attr)) attrMultP = 1.5; if (attrAdvantage[player.activeDomain.attr].weak.includes(enemy.attr)) attrMultP = 0.5;
 
@@ -2892,7 +3017,7 @@
             }
 
             if (enemy.activeDomain) {
-                enemy.hp -= 15; createFloatingText('sprite-enemy', '-15 (Domaine)', 'text-red-500');
+                enemy.hp -= 5; createFloatingText('sprite-enemy', '-5 (Domaine)', 'text-red-500');
                 let dmgMult = isClash ? 0.5 : 1; let attrMultE = 1;
                 if (attrAdvantage[enemy.activeDomain.attr].strong.includes(player.attr)) attrMultE = 1.5; if (attrAdvantage[enemy.activeDomain.attr].weak.includes(player.attr)) attrMultE = 0.5;
 
