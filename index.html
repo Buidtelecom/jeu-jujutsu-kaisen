@@ -2614,46 +2614,65 @@
         }
 
 
-                        /* --- PRELOADER ET DEMARRAGE --- */
+                                /* --- PRELOADER ET DEMARRAGE --- */
+        window.ramCache = []; // Empêche l'application de supprimer les fichiers de la RAM (Garbage Collection)
 
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
             
-            // Force le préchargement des balises audio HTML existantes pour les WebViews
-            document.querySelectorAll('audio').forEach(audio => audio.load());
-            
             const total = assetsToPreload.length; 
             let loaded = 0; 
-            let errors = 0;
             
-            const loadFile = async (url) => { 
-                try { 
-                    // Retrait de 'no-cors' pour autoriser la mise en cache complète des médias
-                    const response = await fetch(url, { cache: 'force-cache' }); 
-                    
-                    if (!response.ok) {
-                        console.warn("Fichier manquant sur GitHub : " + url);
-                        errors++;
-                    } else if(url.match(/\.(jpg|jpeg|png)$/i)) {
-                        // Force l'injection en mémoire vive (RAM)
-                        const img = new Image();
-                        img.src = url;
+            const loadFile = (url) => { 
+                return new Promise((resolve) => {
+                    // Sécurité : Timeout de 12s par fichier pour ne pas bloquer le jeu si la connexion est lente
+                    let isResolved = false;
+                    const timeout = setTimeout(() => { if(!isResolved){ isResolved = true; resolve(); } }, 12000);
+
+                    const finish = () => {
+                        if(isResolved) return;
+                        isResolved = true;
+                        clearTimeout(timeout);
+                        loaded++; 
+                        progressFill.style.width = Math.floor((loaded / total) * 100) + '%'; 
+                        progressText.innerText = `Extraction des fichiers... ${Math.floor((loaded / total) * 100)}%`; 
+                        resolve();
+                    };
+
+                    try {
+                        if (url.match(/\.(jpg|jpeg|png)$/i)) {
+                            const img = new Image();
+                            img.onload = finish;   // Le code ATTEND que l'image soit vraiment prête
+                            img.onerror = finish;
+                            img.src = url;
+                            window.ramCache.push(img); // Injection forcée en mémoire vive
+                        } else if (url.match(/\.(mp3|wav)$/i)) {
+                            const audio = new Audio();
+                            audio.oncanplaythrough = finish; // Le code ATTEND que le son soit lisible
+                            audio.onerror = finish;
+                            audio.src = url;
+                            audio.load();
+                            window.ramCache.push(audio);
+                        } else if (url.match(/\.(mp4)$/i)) {
+                            // Fetch standard avec conversion en Blob (fichier brut) pour forcer le cache disque sur les vidéos
+                            fetch(url, { cache: 'force-cache' }).then(res => res.blob()).then(blob => {
+                                window.ramCache.push(blob);
+                                finish();
+                            }).catch(finish);
+                        } else {
+                            finish();
+                        }
+                    } catch(e) {
+                        finish();
                     }
-                } catch (e) { 
-                    console.error("Erreur de téléchargement : " + url);
-                    errors++; 
-                } 
-                loaded++; 
-                progressFill.style.width = Math.floor((loaded / total) * 100) + '%'; 
-                progressText.innerText = `Chargement des ressources... ${Math.floor((loaded / total) * 100)}%`; 
+                });
             };
             
-            await Promise.all(assetsToPreload.map(url => loadFile(url)));
-            
-            if (errors > 0) {
-                console.log(errors + " fichiers introuvables. Vérifiez les majuscules/espaces sur GitHub.");
-                // On ne bloque plus le jeu entier pour un fichier manquant
+            // Chargement par petits lots de 4 pour éviter de faire planter l'application Web2App
+            for (let i = 0; i < total; i += 4) {
+                const batch = assetsToPreload.slice(i, i + 4);
+                await Promise.all(batch.map(url => loadFile(url)));
             }
             
             if (!navigator.onLine) { 
@@ -2662,7 +2681,7 @@
                 return; 
             }
             
-            progressText.innerText = "Ressources prêtes !"; 
+            progressText.innerText = "Téléchargement complet !"; 
             progressText.classList.add('text-green-400'); 
             $('loader-text').classList.remove('animate-pulse'); 
             $('loader-btn').classList.remove('hidden');
