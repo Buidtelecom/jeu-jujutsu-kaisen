@@ -651,10 +651,13 @@
     </div>
 
     <!-- ECRAN CLASSEMENT -->
-        <div id="screen-leaderboard" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+            <div id="screen-leaderboard" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
+        </button>
+        <button onclick="showScreenInfo('leaderboard')" class="absolute top-4 right-4 text-blue-400 hover:text-blue-300 transition-colors text-2xl z-50">
+            <i class="fas fa-info-circle"></i>
         </button>
         <h2 class="text-3xl font-black text-blue-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">CLASSEMENT</h2>
         
@@ -942,7 +945,7 @@
     </div>
 
     <!-- MODAL INSPECTION ENNEMI -->
-    <div id="modal-enemy-stats" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div id="modal-enemy-stats" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-gray-900 border border-red-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(239,68,68,0.3)]">
             <div class="bg-gradient-to-r from-red-900 to-black p-3 flex justify-between items-center border-b border-red-500/30">
                 <h3 class="font-bold text-red-400 text-lg flex items-center gap-2"><i class="fas fa-search"></i> Informations Ennemi</h3>
@@ -958,6 +961,26 @@
                     </div>
                 </div>
                 <div id="inspect-moves" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar pr-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-char-preview" class="absolute inset-0 bg-black/80 z-[150] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-blue-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            <div class="bg-gradient-to-r from-blue-900 to-black p-3 flex justify-between items-center border-b border-blue-500/30">
+                <h3 class="font-bold text-blue-400 text-lg flex items-center gap-2"><i class="fas fa-address-card"></i> Fiche Combattant</h3>
+                <button onclick="closeCharPreview()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <img id="preview-avatar" src="" class="w-12 h-12 rounded-full border border-blue-500 object-cover" alt="Avatar">
+                    <div>
+                        <div id="preview-name" class="font-bold text-white">Nom</div>
+                        <div id="preview-attr-info" class="text-[10px] font-bold text-blue-400 mt-1"></div>
+                        <div class="text-xs text-gray-400 mt-1">Techniques Innées</div>
+                    </div>
+                </div>
+                <div id="preview-moves" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar pr-1"></div>
             </div>
         </div>
     </div>
@@ -1693,17 +1716,41 @@
                 title = "Système de Clan"; content = "<b>Guerres de Clan :</b> Avec 5 membres minimum, participez à une guerre asynchrone (24h de préparation, 24h d'attaque).<br><br><b>Défense :</b> Chaque membre doit définir une équipe de 3 personnages qui sera contrôlée par l'IA contre les attaquants.<br><br><b>Entraide :</b> Utilisez le chat pour demander ou offrir des pièces (5 pièces par don) et évoluer plus vite.";
             } else if (screenType === 'market') {
                 title = "Marché Noir"; content = "Débloquez les personnages les plus puissants (Sukuna, Gojo, etc.) à l'aide de pièces.<br><br><b>Obtenir des pièces :</b><br>- Victoires en multijoueur<br>- Réussite des tournois<br>- Bonus de connexion journalière<br>- Survie dans l'Incident de Shibuya.";
-            } else if (screenType === 'tournament') {
+                        } else if (screenType === 'tournament') {
                 title = "Tournoi VS IA"; content = "Un arbre de championnat à 8 participants.<br><br>Gagnez pour empocher la récompense de difficulté. Si vous perdez, vous êtes éliminé.<br>La difficulté Extrême est redoutable mais très lucrative !";
             } else if (screenType === 'shibuya') {
                 title = "L'Incident de Shibuya"; content = "<b>Mode Roguelite :</b> Survivez à 10 étages consécutifs sans restauration totale de vos PV.<br><br><b>Bonus Occultes :</b> Après chaque étage, choisissez une amélioration vitale (Soin, Dégâts, Régénération). Si votre équipe meurt, la partie est terminée.";
+            } else if (screenType === 'leaderboard') {
+                title = "Classements Mondiaux"; content = "<b>Global :</b> Classe les joueurs selon le nombre total de pièces accumulées. Devenez le plus riche !<br><br><b>Journalier :</b> Réinitialisé chaque jour. Gagnez des matchs en ligne pour monter. Le 1er gagne un gros bonus le lendemain !<br><br><b>Clans :</b> Classe les clans en fonction de leurs victoires en Guerres de Clan.";
             }
             $('info-modal-title').innerHTML = `<i class="fas fa-info-circle"></i> ${title}`; $('info-modal-content').innerHTML = content;
             $('modal-screen-info').classList.remove('hidden'); $('modal-screen-info').classList.add('flex');
         }
+
         function closeScreenInfo() { $('modal-screen-info').classList.add('hidden'); $('modal-screen-info').classList.remove('flex'); }
 
-        /* --- FONCTIONS DE PROFIL PUBLIC EN LIGNE --- */
+        function showCharPreview(index) {
+            const char = charData[index];
+            $('preview-avatar').src = char.img; $('preview-avatar').alt = char.name; 
+            $('preview-name').innerHTML = `${char.name} <span class="text-xs ml-1 bg-gray-800 px-2 py-0.5 rounded-full border border-gray-600">${attrEmojis[char.attr]} ${char.attr}</span>`;
+            $('preview-avatar').onerror = function() { this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff`; };
+            
+            let weakTo = attrAdvantage[char.attr].weak.map(a => `${attrEmojis[a]} ${a}`).join(', ') || 'Aucune';
+            let strongVs = attrAdvantage[char.attr].strong.map(a => `${attrEmojis[a]} ${a}`).join(', ') || 'Aucun';
+            $('preview-attr-info').innerHTML = `<span class="text-green-400">Fort vs: ${strongVs}</span> | <span class="text-red-400">Faible vs: ${weakTo}</span>`;
+            
+            const container = $('preview-moves'); container.innerHTML = '';
+            char.moves.forEach(move => {
+                const moveEl = document.createElement('div'); moveEl.className = 'bg-gray-800 rounded p-2 border border-gray-700';
+                let typeColor = move.type === 'domain' ? 'text-purple-400 font-bold' : (move.type === 'heal' ? 'text-green-400' : (move.cost > 30 ? 'text-red-400' : 'text-gray-300'));
+                moveEl.innerHTML = `<div class="flex justify-between items-center mb-1"><span class="text-sm ${typeColor}">${attrEmojis[move.attr]} ${move.name}</span><div class="flex gap-1">${move.dmg > 0 ? `<span class="text-[10px] bg-red-900/50 text-red-200 px-1.5 py-0.5 rounded border border-red-500/30 whitespace-nowrap"><i class="fas fa-fire-alt"></i> DGT: ${move.dmg}</span>` : ''}<span class="text-[10px] bg-purple-900/50 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30 whitespace-nowrap"><i class="fas fa-bolt"></i> CE: ${move.cost}</span></div></div><p class="text-[10px] text-gray-400 leading-tight">${move.desc}</p>`;
+                container.appendChild(moveEl);
+            });
+            $('modal-char-preview').classList.remove('hidden'); $('modal-char-preview').classList.add('flex');
+        }
+
+        function closeCharPreview() { $('modal-char-preview').classList.add('hidden'); $('modal-char-preview').classList.remove('flex'); }
+
         function showPublicPlayerProfile(uid) {
             if(!uid || uid === 'system') return;
             $('modal-public-profile').classList.remove('hidden');
@@ -2936,7 +2983,7 @@
             if (selectionStep !== 'player' || !$('screen-mode-select').classList.contains('hidden') === false) updateSelectionUI();
         }
 
-        function renderCharacterSelect() {
+                function renderCharacterSelect() {
             const grid = $('character-grid'); grid.innerHTML = '';
             charData.forEach((char, index) => {
                 const card = document.createElement('div'); let isCardLocked = char.locked; let isSelectedOnline = currentMode === 'online' && playerTeamSelection.includes(index); let borderClass = isSelectedOnline ? 'border-4 border-blue-500' : 'border border-white/10'; 
@@ -2947,7 +2994,8 @@
                 } else {
                     card.className = `${baseClasses} cursor-pointer shadow-lg z-10 hover:scale-[1.02]`; card.style.animationDelay = `${index * 0.15}s`; if(selectionStep === 'enemy' && index === pIndex) { card.classList.add('opacity-50', 'pointer-events-none'); card.style.animation = 'none'; }
                     let indexBadge = ''; if (isSelectedOnline) { let pos = playerTeamSelection.indexOf(index) + 1; indexBadge = `<div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border border-white z-30">${pos}</div>`; }
-                    card.innerHTML = `${indexBadge}<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight mt-1">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
+                    let infoBtn = `<button onclick="event.stopPropagation(); showCharPreview(${index})" class="absolute top-1 left-1 bg-gray-900/80 hover:bg-gray-700 text-blue-400 w-7 h-7 rounded-full flex items-center justify-center text-[11px] border border-blue-500/50 z-30 transition-colors shadow-md"><i class="fas fa-address-card"></i></button>`;
+                    card.innerHTML = `${infoBtn}${indexBadge}<img src="${char.img}" alt="${char.name}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full mb-1 border-2 border-white/50 z-10 shadow-md" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${char.name}&backgroundColor=1e293b&textColor=ffffff'"><div class="font-bold text-white text-center z-10 text-[10px] sm:text-xs leading-tight mt-1">${char.name} ${attrEmojis[char.attr]}</div><div class="absolute inset-0 bg-black/30 z-0"></div>`;
                     if(!(selectionStep === 'enemy' && index === pIndex)) card.onclick = () => selectCharacter(index);
                 }
                 grid.appendChild(card);
