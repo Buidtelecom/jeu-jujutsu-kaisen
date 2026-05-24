@@ -2614,8 +2614,9 @@
         }
 
 
-                                        /* --- PRELOADER AMÉLIORÉ --- */
+                                                /* --- PRELOADER AMÉLIORÉ --- */
         window.ramCache = []; 
+        window.videoCache = {}; // Cache local spécial pour les vidéos
 
         async function preloadAssets() {
             const progressFill = $('loader-fill');
@@ -2657,6 +2658,12 @@
                             audio.src = url;
                             audio.load();
                             window.ramCache.push(audio);
+                        } else if (url.match(/\.(mp4)$/i)) {
+                            // On télécharge la vidéo et on la transforme en fichier brut (Blob) pour garantir l'accès sans re-téléchargement
+                            fetch(url, { cache: 'force-cache' }).then(res => res.blob()).then(blob => {
+                                window.videoCache[url] = URL.createObjectURL(blob);
+                                finish();
+                            }).catch(finish);
                         } else {
                             fetch(url, { cache: 'force-cache' }).then(finish).catch(finish);
                         }
@@ -3362,14 +3369,15 @@
             if (soundId) { const sfx = $(soundId); try { sfx.currentTime = 0; sfx.play().catch(e => console.log("Lecture du son bloquée")); } catch(e) {} }
         }
 
-        async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
+                async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`; nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             await wait(1500); nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
             if (videoSrc) {
                 const batM = $('battle-music'); let wasMusicPlaying = !isMuted && !batM.paused; if (wasMusicPlaying) pauseAudio(batM);
-                video.src = videoSrc; video.classList.remove('hidden');
+                video.src = window.videoCache && window.videoCache[videoSrc] ? window.videoCache[videoSrc] : videoSrc; 
+                video.classList.remove('hidden');
                 await new Promise((resolve) => {
                     let safetyTimer = setTimeout(resolve, 20000); 
                     video.onended = () => { clearTimeout(safetyTimer); resolve(); }; video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
