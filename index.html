@@ -2614,21 +2614,46 @@
         }
 
 
-        /* --- PRELOADER ET DEMARRAGE --- */
+                /* --- PRELOADER ET DEMARRAGE --- */
 
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
-            if (localStorage.getItem('jjk_assets_preloaded_v1') === 'true') {
-                progressFill.style.width = '100%'; progressText.innerText = "Ressources prêtes !";
-                progressText.classList.add('text-green-400'); $('loader-text').classList.remove('animate-pulse'); $('loader-btn').classList.remove('hidden'); return;
-            }
-            const total = assetsToPreload.length; let loaded = 0; let errors = 0;
-            const loadFile = async (url) => { try { await fetch(url, { mode: 'no-cors', cache: 'force-cache' }); } catch (e) { errors++; } loaded++; progressFill.style.width = Math.floor((loaded / total) * 100) + '%'; progressText.innerText = `Téléchargement des ressources... ${Math.floor((loaded / total) * 100)}%`; };
+            
+            const total = assetsToPreload.length; 
+            let loaded = 0; 
+            let errors = 0;
+            
+            const loadFile = async (url) => { 
+                try { 
+                    // Force la vérification dans le cache HTTP
+                    await fetch(url, { mode: 'no-cors', cache: 'force-cache' }); 
+                    
+                    // Force l'injection en mémoire vive (RAM) pour les WebViews
+                    if(url.endsWith('.jpg') || url.endsWith('.jpeg') || url.endsWith('.png')) {
+                        const img = new Image();
+                        img.src = url;
+                    }
+                } catch (e) { 
+                    errors++; 
+                } 
+                loaded++; 
+                progressFill.style.width = Math.floor((loaded / total) * 100) + '%'; 
+                progressText.innerText = `Vérification des ressources... ${Math.floor((loaded / total) * 100)}%`; 
+            };
+            
             await Promise.all(assetsToPreload.map(url => loadFile(url)));
-            if (errors > 0 || !navigator.onLine) { $('modal-connection').classList.remove('hidden'); $('modal-connection').classList.add('flex'); return; }
-            localStorage.setItem('jjk_assets_preloaded_v1', 'true');
-            progressText.innerText = "Ressources prêtes !"; progressText.classList.add('text-green-400'); $('loader-text').classList.remove('animate-pulse'); $('loader-btn').classList.remove('hidden');
+            
+            if (errors > 0 || !navigator.onLine) { 
+                $('modal-connection').classList.remove('hidden'); 
+                $('modal-connection').classList.add('flex'); 
+                return; 
+            }
+            
+            progressText.innerText = "Ressources prêtes !"; 
+            progressText.classList.add('text-green-400'); 
+            $('loader-text').classList.remove('animate-pulse'); 
+            $('loader-btn').classList.remove('hidden');
         }
 
         function retryConnection() { $('modal-connection').classList.add('hidden'); $('modal-connection').classList.remove('flex'); $('loader-fill').style.width = '0%'; $('loader-text').innerText = 'Initialisation du cache... 0%'; preloadAssets(); }
