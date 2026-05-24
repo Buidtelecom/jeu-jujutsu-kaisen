@@ -344,38 +344,44 @@
     <audio id="sfx-puissant"><source src="coup puissant .mp3" type="audio/mpeg"></audio>
 
     <!-- ECRAN D'ACCUEIL (MENU PRINCIPAL) -->
-    <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-50 hidden overflow-hidden">
-        <div class="absolute inset-0 bg-cover bg-center opacity-40 anim-sway-bg dynamic-menu-bg" style="background-image: url('jjk_homme.jpeg');"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/90"></div>
-        <h1 class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-500 mb-1 text-center drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] relative z-10">JUJUTSU<br>KAISEN</h1>
-        <p class="text-gray-300 tracking-widest mb-8 text-xs sm:text-sm font-bold relative z-10 drop-shadow-md">CLASH OF SORCERERS</p>
-        <div class="flex flex-col gap-3 w-64 relative z-10">
-            <button id="btn-new-game" onclick="handleNewGame()" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">NOUVELLE PARTIE</button>
-            <button id="btn-continue" onclick="handleContinue()" disabled class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-500 tracking-wide opacity-50 cursor-not-allowed">CONTINUER</button>
-            <button onclick="showScreen('screen-options')" class="menu-btn py-3 px-6 rounded-lg font-bold text-white tracking-wide">OPTIONS</button>
-            <button onclick="showScreen('screen-profile'); renderProfile();" class="menu-btn py-3 px-6 rounded-lg font-bold text-teal-400 tracking-wide flex justify-between items-center">
-                <span>PROFIL</span> <i class="fas fa-user"></i>
+            <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-between bg-gray-950 z-50 hidden overflow-hidden p-6 sm:p-8">
+        <div class="absolute inset-0 bg-cover bg-center opacity-30 anim-sway-bg dynamic-menu-bg" style="background-image: url('jjk_homme.jpeg');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black/95"></div>
+        
+        <div class="flex flex-col items-center mt-8 sm:mt-12 relative z-10 text-center">
+            <h1 class="text-5xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 tracking-wider drop-shadow-[0_0_30px_rgba(168,85,247,0.6)] leading-none">
+                JUJUTSU<br>KAISEN
+            </h1>
+            <div class="h-[2px] w-32 bg-gradient-to-r from-transparent via-purple-500 to-transparent my-4"></div>
+            <p class="text-purple-300 tracking-[0.4em] text-[10px] sm:text-xs font-black uppercase drop-shadow-md">Clash of Sorcerers</p>
+        </div>
+
+        <div class="w-full max-w-sm flex flex-col gap-4 relative z-10 mb-10">
+            <button id="btn-continue" onclick="handleContinue()" disabled class="w-full py-5 rounded-2xl font-black tracking-widest text-center text-xl uppercase transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-2 bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 border-white/50 shadow-[0_0_30px_rgba(147,51,234,0.6)] text-white active:scale-95 hover:scale-[1.02]">
+                <i class="fas fa-play mr-2 animate-pulse text-2xl align-middle"></i> Jouer
             </button>
-            <button onclick="showScreen('screen-leaderboard'); switchLeaderboardTab('global');" class="menu-btn py-3 px-6 rounded-lg font-bold text-blue-400 tracking-wide flex justify-between items-center">
-                <span>CLASSEMENT</span> <i class="fas fa-trophy"></i>
+                        <div class="mt-2">
+                <button id="btn-new-game" onclick="handleNewGame()" class="w-full py-3.5 rounded-xl font-bold tracking-wider text-center text-xs uppercase transition-all border border-white/20 bg-slate-900/80 backdrop-blur text-gray-300 hover:border-red-500 hover:bg-red-950/50 shadow-md active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-redo"></i> Nouvelle Partie
+                </button>
+            </div>
+        </div>
+
+        <div class="flex gap-6 w-full justify-center mb-4 relative z-10">
+            <button onclick="showScreen('screen-options')" class="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors active:scale-95">
+                <i class="fas fa-cog text-gray-500"></i> OPTIONS
             </button>
-            <button onclick="showScreen('screen-clan'); renderClanScreen();" class="menu-btn py-3 px-6 rounded-lg font-bold text-orange-400 tracking-wide flex justify-between items-center shadow-[0_0_10px_rgba(249,115,22,0.3)]">
-                <span>CLAN</span> <i class="fas fa-users"></i>
+            <div class="w-[1px] bg-gray-800 h-4"></div>
+            <button onclick="showScreen('screen-credits')" class="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors active:scale-95">
+                <i class="fas fa-info-circle text-gray-500"></i> CRÉDITS
             </button>
-            <button onclick="showScreen('screen-tv'); fetchLiveMatches();" class="menu-btn py-3 px-6 rounded-lg font-bold text-pink-400 tracking-wide flex justify-between items-center shadow-[0_0_10px_rgba(236,72,153,0.3)]">
-                <span>TV (DIRECT)</span> <i class="fas fa-tv"></i>
-            </button>
-            <button onclick="showScreen('screen-market'); renderMarket();" class="menu-btn py-3 px-6 rounded-lg font-bold text-yellow-400 tracking-wide flex justify-between items-center">
-                <span>MARCHÉ</span> <i class="fas fa-store"></i>
-            </button>
-            <button onclick="showScreen('screen-credits')" class="menu-btn py-3 px-6 rounded-lg font-bold text-gray-300 tracking-wide">CRÉDITS</button>
         </div>
     </div>
 
     <!-- ECRAN TV SPECTATEUR -->
-    <div id="screen-tv" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div id="screen-tv" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+        <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
         <h2 class="text-3xl font-black text-pink-400 mt-2 mb-4 text-center drop-shadow-lg relative z-10"><i class="fas fa-tv"></i> TV DIRECT</h2>
@@ -384,9 +390,9 @@
     </div>
 
     <!-- ECRAN CLAN -->
-    <div id="screen-clan" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div id="screen-clan" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+        <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
         <h2 class="text-3xl font-black text-orange-400 mt-2 mb-4 text-center drop-shadow-lg relative z-10">COMMUNAUTÉ</h2>
@@ -432,9 +438,9 @@
     </div>
 
     <!-- ECRAN PROFIL -->
-    <div id="screen-profile" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4 overflow-y-auto no-scrollbar">
+        <div id="screen-profile" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4 overflow-y-auto no-scrollbar">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+        <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
         <h2 class="text-3xl font-black text-teal-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">MON PROFIL</h2>
@@ -488,28 +494,98 @@
     </div>
 
     <!-- ECRAN CHOIX DU MODE -->
-    <div id="screen-mode-select" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-40 hidden">
+            <div id="screen-mode-select" class="absolute inset-0 flex flex-col bg-gray-950 z-40 hidden p-4 overflow-y-auto no-scrollbar">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <button onclick="showScreen('screen-menu')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2 class="text-3xl font-black text-white mb-8 z-10 drop-shadow-lg text-center relative z-10">CHOIX DU MODE</h2>
-        <div class="flex flex-col gap-4 w-72 sm:w-80 relative z-10">
-            <button onclick="currentMode='shibuya'; selectionStep='player'; playerTeamSelection=[]; showScreen('screen-select');" class="menu-btn py-4 px-6 rounded-xl font-bold text-purple-400 tracking-wide text-left shadow-[0_0_10px_rgba(168,85,247,0.3)]">
-                <i class="fas fa-torii-gate mr-2"></i> L'Incident de Shibuya
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90"></div>
+        
+        <div class="flex items-center justify-between w-full max-w-lg mx-auto mt-4 mb-6 relative z-10 shrink-0 px-2">
+            <button onclick="showScreen('screen-menu')" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90 shadow-md">
+                <i class="fas fa-arrow-left"></i>
             </button>
-            <button onclick="goToOnlineMode()" class="menu-btn py-4 px-6 rounded-xl font-bold text-blue-400 tracking-wide text-left shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-                <i class="fas fa-globe mr-2"></i> Combat en Ligne
-            </button>
-            <button onclick="startTutorial()" class="menu-btn py-4 px-6 rounded-xl font-bold text-green-400 tracking-wide text-left shadow-[0_0_10px_rgba(34,197,94,0.3)]">
-                <i class="fas fa-graduation-cap mr-2"></i> Didacticiel
-            </button>
-            <button onclick="showNotification('Aucun événement en cours pour le moment.', 'ÉVÉNEMENTS')" class="menu-btn py-4 px-6 rounded-xl font-bold text-purple-400 tracking-wide text-left opacity-70">
-                <i class="fas fa-calendar-alt mr-2"></i> Événements en Ligne
-            </button>
-            <button onclick="currentMode='tournament'; selectionStep='player'; showScreen('screen-select');" class="menu-btn py-4 px-6 rounded-xl font-bold text-red-400 tracking-wide text-left shadow-[0_0_10px_rgba(239,68,68,0.3)]">
-                <i class="fas fa-trophy mr-2"></i> Tournoi VS IA
-            </button>
+            <h2 class="text-xl sm:text-2xl font-black tracking-widest text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">SÉLECTION DU MODE</h2>
+            <div class="w-10"></div>
+        </div>
+
+        <div class="flex-1 w-full max-w-lg mx-auto relative z-10 pb-8 px-2">
+            <div class="grid grid-cols-2 gap-3 auto-rows-[110px] sm:auto-rows-[140px]">
+                
+                <button onclick="goToOnlineMode()" class="col-span-2 row-span-2 relative rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.5)] group transform transition-all active:scale-95 border-2 border-blue-500/80 hover:border-blue-400">
+                    <div class="absolute inset-0 bg-[url('arene_1.jpg')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-4 flex flex-col items-start">
+                        <span class="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded mb-2 shadow-md flex items-center gap-1"><i class="fas fa-globe"></i> PVP EN LIGNE</span>
+                        <h3 class="text-3xl font-black text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] italic tracking-wider">COMBAT MULTI</h3>
+                        <p class="text-xs text-blue-200 mt-1 drop-shadow-md text-left font-bold">Défiez le monde entier !</p>
+                    </div>
+                </button>
+
+                <button onclick="currentMode='shibuya'; selectionStep='player'; playerTeamSelection=[]; showScreen('screen-select');" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-purple-500/50 hover:border-purple-400">
+                    <div class="absolute inset-0 bg-[url('Sphere_de_lespace_infini_arriere_plan.jpeg')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-torii-gate text-purple-400 text-xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Shibuya</h3>
+                        <span class="text-[9px] text-purple-300 font-bold mt-1">ROGUELITE</span>
+                    </div>
+                </button>
+
+                <button onclick="currentMode='tournament'; selectionStep='player'; showScreen('screen-select');" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-red-500/50 hover:border-red-400">
+                    <div class="absolute inset-0 bg-[url('arene_2.jpg')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-red-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-trophy text-red-400 text-xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Tournoi</h3>
+                        <span class="text-[9px] text-red-300 font-bold mt-1">VS IA</span>
+                    </div>
+                </button>
+
+                <button onclick="showScreen('screen-clan'); renderClanScreen();" class="col-span-2 relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-orange-500/50 hover:border-orange-400">
+                    <div class="absolute inset-0 bg-[url('lhotel_demoniaque_arriere_plan.jpeg')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-position: center 20%;"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-black via-orange-900/60 to-transparent"></div>
+                    <div class="absolute inset-0 flex flex-col justify-center items-start p-4">
+                        <i class="fas fa-users text-orange-400 text-2xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-xl font-black text-white drop-shadow-lg leading-tight text-left uppercase">Mon Clan</h3>
+                        <span class="text-[10px] text-orange-300 font-bold mt-1 tracking-widest">GUERRES & ALLIANCES</span>
+                    </div>
+                </button>
+
+                <button onclick="showScreen('screen-profile'); renderProfile();" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-teal-500/50 hover:border-teal-400">
+                    <div class="absolute inset-0 bg-[url('Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-teal-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-user-shield text-teal-400 text-xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Profil</h3>
+                    </div>
+                </button>
+
+                <button onclick="showScreen('screen-leaderboard'); switchLeaderboardTab('global');" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-blue-500/50 hover:border-blue-400">
+                    <div class="absolute inset-0 bg-[url('arene_5.jpg')] bg-cover bg-center opacity-80 transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-trophy text-blue-400 text-xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Classement</h3>
+                    </div>
+                </button>
+
+                <button onclick="showScreen('screen-tv'); fetchLiveMatches();" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-pink-500/50 hover:border-pink-400">
+                    <div class="absolute inset-0 bg-[url('arene_3.jpg')] bg-cover bg-center opacity-70 transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-pink-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-tv text-pink-400 text-xl mb-1 drop-shadow-md animate-pulse"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">TV Live</h3>
+                    </div>
+                </button>
+
+                <button onclick="startTutorial()" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-green-500/50 hover:border-green-400">
+                    <div class="absolute inset-0 bg-[url('arene_4.jpg')] bg-cover bg-center opacity-70 transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-green-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-graduation-cap text-green-400 text-xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Didacticiel</h3>
+                    </div>
+                </button>
+
+            </div>
         </div>
     </div>
 
@@ -556,18 +632,18 @@
         </div>
     </div>
 
-
     <!-- ECRAN CLASSEMENT -->
-    <div id="screen-leaderboard" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div id="screen-leaderboard" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+        <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
         <h2 class="text-3xl font-black text-blue-400 mt-2 mb-6 text-center drop-shadow-lg relative z-10">CLASSEMENT</h2>
         
-        <div class="flex justify-center gap-4 mt-2 mb-4 z-10 relative max-w-lg mx-auto w-full">
-            <button id="tab-global" onclick="switchLeaderboardTab('global')" class="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-sm">GLOBAL (Pièces)</button>
-            <button id="tab-daily" onclick="switchLeaderboardTab('daily')" class="flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-sm">JOURNALIER (Victoires)</button>
+                <div class="flex justify-center gap-2 mt-2 mb-4 z-10 relative max-w-lg mx-auto w-full px-2">
+            <button id="tab-global" onclick="switchLeaderboardTab('global')" class="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-[10px] sm:text-xs">GLOBAL (Pièces)</button>
+            <button id="tab-daily" onclick="switchLeaderboardTab('daily')" class="flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-[10px] sm:text-xs">JOURNAL (Victoires)</button>
+            <button id="tab-clan" onclick="switchLeaderboardTab('clan')" class="flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-[10px] sm:text-xs">CLANS (Guerres)</button>
         </div>
 
         <div id="leaderboard-list" class="flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar space-y-3 pb-10 relative z-10"></div>
@@ -645,9 +721,9 @@
     </div>
 
     <!-- ECRAN MARCHE -->
-    <div id="screen-market" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+        <div id="screen-market" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
-        <button onclick="showScreen('screen-menu')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
+        <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
         </button>
         <div class="flex justify-between items-center mt-2 mb-6 px-10 relative z-10">
@@ -1742,16 +1818,16 @@
             }
         }
 
-        let currentLbTab = 'global';
+                let currentLbTab = 'global';
         function switchLeaderboardTab(tab) {
             currentLbTab = tab;
-            if(tab === 'global') {
-                $('tab-global').className = "flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-sm";
-                $('tab-daily').className = "flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-sm";
-            } else {
-                $('tab-daily').className = "flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-sm";
-                $('tab-global').className = "flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-sm";
-            }
+            const activeClass = "flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-400 text-[10px] sm:text-xs";
+            const inactiveClass = "flex-1 py-2 bg-gray-700 text-gray-300 font-bold rounded-lg opacity-70 hover:opacity-100 border border-gray-600 text-[10px] sm:text-xs";
+            
+            $('tab-global').className = (tab === 'global') ? activeClass : inactiveClass;
+            $('tab-daily').className = (tab === 'daily') ? activeClass : inactiveClass;
+            $('tab-clan').className = (tab === 'clan') ? activeClass : inactiveClass;
+            
             renderRealLeaderboard(tab);
         }
 
@@ -1765,46 +1841,71 @@
             if(tab === 'global') {
                 ref = db.ref('users').orderByChild('coins').limitToLast(50);
                 valKey = 'coins';
-            } else {
+            } else if (tab === 'daily') {
                 const today = new Date().toISOString().split('T')[0];
                 ref = db.ref(`daily_leaderboard/${today}`).orderByChild('wins').limitToLast(50);
                 valKey = 'wins';
+            } else if (tab === 'clan') {
+                ref = db.ref('clans').orderByChild('info/warWins').limitToLast(50);
+                valKey = 'warWins';
             }
             
             try {
                 const snap = await ref.once('value');
-                let players = [];
-                snap.forEach(child => { players.push({uid: child.key, ...child.val()}); });
-                players.sort((a,b) => b[valKey] - a[valKey]); 
+                let itemsList = [];
+                snap.forEach(child => {
+                    if (tab === 'clan') {
+                        itemsList.push({ id: child.key, name: child.val().info.name, warWins: child.val().info.warWins || 0, memberCount: child.val().info.memberCount });
+                    } else {
+                        itemsList.push({uid: child.key, ...child.val()});
+                    }
+                });
+                
+                itemsList.sort((a,b) => b[valKey] - a[valKey]); 
                 
                 list.innerHTML = '';
-                if(players.length === 0) {
-                    list.innerHTML = '<p class="text-center text-gray-400 mt-10">Aucun joueur classé pour le moment.</p>';
+                if(itemsList.length === 0) {
+                    list.innerHTML = `<p class="text-center text-gray-400 mt-10">Aucun ${tab === 'clan' ? 'clan' : 'joueur'} classé pour le moment.</p>`;
                     return;
                 }
 
-                players.forEach((p, index) => {
+                itemsList.forEach((itemData, index) => {
                     const item = document.createElement('div');
-                    let isMe = (auth.currentUser && p.uid === auth.currentUser.uid);
                     
-                    item.className = `flex items-center justify-between p-3 rounded-lg border ${isMe ? 'bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-800 border-gray-700'}`;
-                    
-                    let rankMedal = `<span class="font-black ${isMe ? 'text-blue-300' : 'text-gray-500'} w-6 text-sm">#${index + 1}</span>`;
-                    if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
-                    if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
-                    if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
+                    if (tab === 'clan') {
+                        let isMyClan = (playerClanId && itemData.id === playerClanId);
+                        item.className = `flex items-center justify-between p-3 rounded-lg border ${isMyClan ? 'bg-orange-900/50 border-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'bg-gray-800 border-gray-700'}`;
+                        
+                        let rankMedal = `<span class="font-black ${isMyClan ? 'text-orange-300' : 'text-gray-500'} w-6 text-sm">#${index + 1}</span>`;
+                        if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
+                        if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
+                        if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
 
-                    let valDisplay = tab === 'global' ? `<i class="fas fa-coins text-xs mr-1 text-yellow-400"></i> <span class="text-yellow-400">${p[valKey]}</span>` : `<i class="fas fa-trophy text-xs mr-1 text-blue-400"></i> <span class="text-blue-400">${p[valKey]} V.</span>`;
-                    
-                    let userCountry = p.country || '🌍';
+                        let valDisplay = `<i class="fas fa-fire text-xs mr-1 text-red-500"></i> <span class="text-red-400 font-black">${itemData.warWins} V.</span>`;
 
-                    item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span onclick="showPublicPlayerProfile('${p.uid}')" class="font-bold text-white cursor-pointer hover:underline">${userCountry} ${p.name} ${isMe ? '(Vous)' : ''}</span></div><div class="font-bold">${valDisplay}</div>`;
+                        item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<div class="flex flex-col"><span class="font-bold text-white">${itemData.name} ${isMyClan ? '(Votre Clan)' : ''}</span><span class="text-[9px] text-gray-400"><i class="fas fa-users"></i> ${itemData.memberCount}/20</span></div></div><div class="font-bold">${valDisplay}</div>`;
+                    } else {
+                        let isMe = (auth.currentUser && itemData.uid === auth.currentUser.uid);
+                        item.className = `flex items-center justify-between p-3 rounded-lg border ${isMe ? 'bg-blue-900/50 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-800 border-gray-700'}`;
+                        
+                        let rankMedal = `<span class="font-black ${isMe ? 'text-blue-300' : 'text-gray-500'} w-6 text-sm">#${index + 1}</span>`;
+                        if (index === 0) rankMedal = `<i class="fas fa-medal text-yellow-400 w-6 text-lg drop-shadow-md"></i>`;
+                        if (index === 1) rankMedal = `<i class="fas fa-medal text-gray-300 w-6 text-lg drop-shadow-md"></i>`;
+                        if (index === 2) rankMedal = `<i class="fas fa-medal text-orange-400 w-6 text-lg drop-shadow-md"></i>`;
+
+                        let valDisplay = tab === 'global' ? `<i class="fas fa-coins text-xs mr-1 text-yellow-400"></i> <span class="text-yellow-400">${itemData[valKey]}</span>` : `<i class="fas fa-trophy text-xs mr-1 text-blue-400"></i> <span class="text-blue-400">${itemData[valKey]} V.</span>`;
+                        
+                        let userCountry = itemData.country || '🌍';
+
+                        item.innerHTML = `<div class="flex items-center gap-3">${rankMedal}<span onclick="showPublicPlayerProfile('${itemData.uid}')" class="font-bold text-white cursor-pointer hover:underline">${userCountry} ${itemData.name} ${isMe ? '(Vous)' : ''}</span></div><div class="font-bold">${valDisplay}</div>`;
+                    }
                     list.appendChild(item);
                 });
             } catch(e) {
                 list.innerHTML = '<p class="text-center text-red-400 mt-10">Erreur de connexion au classement.</p>';
             }
         }
+
 
         /* --- SYSTÈME DE COMMUNAUTÉ (CLANS) --- */
         function renderClanScreen() {
@@ -1835,7 +1936,7 @@
             $('modal-create-clan').classList.remove('flex');
         }
 
-        function confirmCreateClan() {
+                function confirmCreateClan() {
             const clanName = $('input-clan-name').value.trim();
             if(clanName.length < 3) {
                 showNotification("Le nom du clan doit faire au moins 3 caractères.");
@@ -1845,9 +1946,10 @@
             playerClanId = newClanRef.key;
             
             const clanData = {
-                info: { name: clanName, creatorUid: auth.currentUser.uid, memberCount: 1, createdAt: firebase.database.ServerValue.TIMESTAMP },
+                info: { name: clanName, creatorUid: auth.currentUser.uid, memberCount: 1, createdAt: firebase.database.ServerValue.TIMESTAMP, warWins: 0 },
                 members: {}
             };
+
             clanData.members[auth.currentUser.uid] = { role: 'leader', name: globalPlayerPseudo, joinedAt: firebase.database.ServerValue.TIMESTAMP };
             
             newClanRef.set(clanData).then(() => {
@@ -2394,10 +2496,22 @@
             showScreen('screen-select');
         }
 
-        function endClanWar() {
-            db.ref('clans/' + playerClanId + '/war').remove();
-            renderClanWarUI();
+                function endClanWar() {
+            db.ref('wars/' + currentWarId).once('value', snap => {
+                if (snap.exists()) {
+                    const war = snap.val();
+                    const myClanData = war.clan1.id === playerClanId ? war.clan1 : war.clan2;
+                    const enemyClanData = war.clan1.id === playerClanId ? war.clan2 : war.clan1;
+                    
+                    if ((myClanData.score || 0) > (enemyClanData.score || 0)) {
+                        db.ref('clans/' + playerClanId + '/info/warWins').transaction(c => (c || 0) + 1);
+                    }
+                }
+                db.ref('clans/' + playerClanId + '/war').remove();
+                renderClanWarUI();
+            });
         }
+
 
         /* --- PRELOADER ET DEMARRAGE --- */
 
