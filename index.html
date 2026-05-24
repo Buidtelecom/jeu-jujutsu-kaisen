@@ -390,10 +390,13 @@
     </div>
 
     <!-- ECRAN CLAN -->
-        <div id="screen-clan" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+            <div id="screen-clan" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
+        </button>
+        <button onclick="showScreenInfo('clan')" class="absolute top-4 right-4 text-blue-400 hover:text-blue-300 transition-colors text-2xl z-50">
+            <i class="fas fa-info-circle"></i>
         </button>
         <h2 class="text-3xl font-black text-orange-400 mt-2 mb-4 text-center drop-shadow-lg relative z-10">COMMUNAUTÉ</h2>
         
@@ -549,7 +552,7 @@
                     </div>
                 </button>
 
-                <button onclick="showScreen('screen-profile'); renderProfile();" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-teal-500/50 hover:border-teal-400">
+                                <button onclick="showScreen('screen-profile'); renderProfile();" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-teal-500/50 hover:border-teal-400">
                     <div class="absolute inset-0 bg-[url('Yuji-Itadori-Jujutsu-Kaisen-4K-Ultra-HD-Mobile-Wallpaper-scaled.jpeg')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
                     <div class="absolute inset-0 bg-gradient-to-t from-teal-900/90 via-black/40 to-transparent"></div>
                     <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
@@ -566,6 +569,15 @@
                         <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Classement</h3>
                     </div>
                 </button>
+                
+                <button onclick="showScreen('screen-market'); renderMarket();" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-yellow-500/50 hover:border-yellow-400">
+                    <div class="absolute inset-0 bg-[url('Toji.jpeg')] bg-cover bg-top opacity-80 transition-transform duration-700 group-hover:scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-yellow-900/90 via-black/40 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
+                        <i class="fas fa-store text-yellow-400 text-xl mb-1 drop-shadow-md"></i>
+                        <h3 class="text-sm font-black text-white drop-shadow-lg leading-tight text-left uppercase">Marché</h3>
+                    </div>
+                </button>
 
                 <button onclick="showScreen('screen-tv'); fetchLiveMatches();" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-pink-500/50 hover:border-pink-400">
                     <div class="absolute inset-0 bg-[url('arene_3.jpg')] bg-cover bg-center opacity-70 transition-transform duration-700 group-hover:scale-110"></div>
@@ -576,7 +588,7 @@
                     </div>
                 </button>
 
-                <button onclick="startTutorial()" class="relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-green-500/50 hover:border-green-400">
+                <button onclick="startTutorial()" class="col-span-2 relative rounded-2xl overflow-hidden shadow-lg group transform transition-all active:scale-95 border border-green-500/50 hover:border-green-400">
                     <div class="absolute inset-0 bg-[url('arene_4.jpg')] bg-cover bg-center opacity-70 transition-transform duration-700 group-hover:scale-110"></div>
                     <div class="absolute inset-0 bg-gradient-to-t from-green-900/90 via-black/40 to-transparent"></div>
                     <div class="absolute bottom-0 left-0 w-full p-3 flex flex-col items-start">
@@ -604,20 +616,26 @@
     </div>
 
     <!-- ECRAN TOURNOI -->
-    <div id="screen-tournament" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-4">
+        <div id="screen-tournament" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="confirmExit()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-sign-out-alt"></i>
+        </button>
+        <button onclick="showScreenInfo('tournament')" class="absolute top-4 right-4 text-blue-400 hover:text-blue-300 transition-colors text-2xl z-50">
+            <i class="fas fa-info-circle"></i>
         </button>
                 <h2 id="tournament-round-title" class="text-3xl font-black text-red-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">QUARTS DE FINALE</h2>
         <div id="tournament-matchups" class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto no-scrollbar pb-6 relative z-10"></div>
         <button id="btn-tournament-start" onclick="startTournamentMatch()" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-xl active:scale-95 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.5)] mt-4 mb-2 shrink-0 relative z-10">COMBATTRE</button>
     </div>
 
-    <div id="screen-shibuya" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-4">
+        <div id="screen-shibuya" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="confirmExit()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-sign-out-alt"></i>
+        </button>
+        <button onclick="showScreenInfo('shibuya')" class="absolute top-4 right-4 text-blue-400 hover:text-blue-300 transition-colors text-2xl z-50">
+            <i class="fas fa-info-circle"></i>
         </button>
         <h2 id="shibuya-stage-title" class="text-3xl font-black text-purple-500 mt-2 mb-6 text-center drop-shadow-lg uppercase tracking-widest relative z-10">ÉTAGE 1 / 10</h2>
         <div id="shibuya-current-match" class="flex-1 flex flex-col justify-center min-h-0 pb-6 relative z-10"></div>
@@ -721,10 +739,13 @@
     </div>
 
     <!-- ECRAN MARCHE -->
-        <div id="screen-market" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
+            <div id="screen-market" class="absolute inset-0 flex flex-col bg-gray-900 z-50 hidden p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="showScreen('screen-mode-select')" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
+        </button>
+        <button onclick="showScreenInfo('market')" class="absolute top-4 right-4 text-blue-400 hover:text-blue-300 transition-colors text-2xl z-50">
+            <i class="fas fa-info-circle"></i>
         </button>
         <div class="flex justify-between items-center mt-2 mb-6 px-10 relative z-10">
             <h2 class="text-2xl font-black text-yellow-400 drop-shadow-lg ml-4">MARCHÉ NOIR</h2>
@@ -760,10 +781,13 @@
     </div>
 
     <!-- ECRAN DE SELECTION -->
-    <div id="screen-select" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-3 sm:p-4">
+        <div id="screen-select" class="absolute inset-0 flex flex-col bg-gray-900 z-40 hidden p-3 sm:p-4">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button id="btn-back-select" onclick="goBackSelect()" class="absolute top-4 left-4 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
+        </button>
+        <button onclick="showScreenInfo('select')" class="absolute top-4 right-4 text-blue-400 hover:text-blue-300 transition-colors text-2xl z-50">
+            <i class="fas fa-info-circle"></i>
         </button>
         <h2 id="select-title" class="text-xl sm:text-2xl font-bold text-center mt-2 mb-1 text-purple-400 z-10 relative">Choisissez votre Exorciste</h2>
         <div id="select-desc-container" class="text-center mb-3 relative z-10"></div>
@@ -982,6 +1006,17 @@
                     <span class="text-gray-400">👊 Neutre</span> <i class="fas fa-angle-double-right text-green-500"></i> <span class="text-purple-500">🌑 Ténèbres</span>
                 </div>
                 <p class="text-[10px] text-gray-500 text-center mt-2 italic">Avantage : Dégâts +50% | Désavantage : Dégâts -50%</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-screen-info" class="absolute inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-blue-500/50 rounded-xl w-full max-w-sm overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)] flex flex-col max-h-[85vh]">
+            <div class="bg-gradient-to-r from-blue-900 to-black p-3 flex justify-between items-center border-b border-blue-500/30 shrink-0">
+                <h3 id="info-modal-title" class="font-bold text-blue-400 text-lg flex items-center gap-2"><i class="fas fa-info-circle"></i> Informations</h3>
+                <button onclick="closeScreenInfo()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto no-scrollbar text-sm text-gray-300 space-y-3 leading-relaxed" id="info-modal-content">
             </div>
         </div>
     </div>
@@ -1644,10 +1679,29 @@
             $('modal-element-rules').classList.add('flex');
         }
 
-        function closeElementRules() {
+                function closeElementRules() {
             $('modal-element-rules').classList.add('hidden');
             $('modal-element-rules').classList.remove('flex');
         }
+
+        /* --- FONCTION INFO DIDACTICIEL ECRANS --- */
+        function showScreenInfo(screenType) {
+            let title = ""; let content = "";
+            if (screenType === 'select') {
+                title = "Sélection de l'Équipe"; content = "<b>Multijoueur / Shibuya :</b> Formez une équipe de 3 exorcistes. Jouez sur la complémentarité de leurs éléments pour contrer votre adversaire.<br><br><b>Tournoi :</b> Choisissez un combattant principal. Les affinités élémentaires dictent vos forces et faiblesses.<br><br><i>Astuce :</i> Choisissez en fonction des cycles Élémentaires et Occultes.";
+            } else if (screenType === 'clan') {
+                title = "Système de Clan"; content = "<b>Guerres de Clan :</b> Avec 5 membres minimum, participez à une guerre asynchrone (24h de préparation, 24h d'attaque).<br><br><b>Défense :</b> Chaque membre doit définir une équipe de 3 personnages qui sera contrôlée par l'IA contre les attaquants.<br><br><b>Entraide :</b> Utilisez le chat pour demander ou offrir des pièces (5 pièces par don) et évoluer plus vite.";
+            } else if (screenType === 'market') {
+                title = "Marché Noir"; content = "Débloquez les personnages les plus puissants (Sukuna, Gojo, etc.) à l'aide de pièces.<br><br><b>Obtenir des pièces :</b><br>- Victoires en multijoueur<br>- Réussite des tournois<br>- Bonus de connexion journalière<br>- Survie dans l'Incident de Shibuya.";
+            } else if (screenType === 'tournament') {
+                title = "Tournoi VS IA"; content = "Un arbre de championnat à 8 participants.<br><br>Gagnez pour empocher la récompense de difficulté. Si vous perdez, vous êtes éliminé.<br>La difficulté Extrême est redoutable mais très lucrative !";
+            } else if (screenType === 'shibuya') {
+                title = "L'Incident de Shibuya"; content = "<b>Mode Roguelite :</b> Survivez à 10 étages consécutifs sans restauration totale de vos PV.<br><br><b>Bonus Occultes :</b> Après chaque étage, choisissez une amélioration vitale (Soin, Dégâts, Régénération). Si votre équipe meurt, la partie est terminée.";
+            }
+            $('info-modal-title').innerHTML = `<i class="fas fa-info-circle"></i> ${title}`; $('info-modal-content').innerHTML = content;
+            $('modal-screen-info').classList.remove('hidden'); $('modal-screen-info').classList.add('flex');
+        }
+        function closeScreenInfo() { $('modal-screen-info').classList.add('hidden'); $('modal-screen-info').classList.remove('flex'); }
 
         /* --- FONCTIONS DE PROFIL PUBLIC EN LIGNE --- */
         function showPublicPlayerProfile(uid) {
@@ -3178,10 +3232,10 @@
                 container.classList.remove('hidden');
             }
 
-            container.innerHTML = '';
+                        container.innerHTML = '';
             player.moves.forEach((move, index) => {
                 let isDomainActive = player.activeDomain && move.type === 'domain'; let canAfford = isDomainActive ? true : player.ce >= move.cost; let isEnabled = canAfford && isPlayerTurn && !isAnimating; let isTutorialTarget = false;
-                                if (currentMode === 'tutorial' && !isDomainActive) { if (tutorialStep < tutorialSequence.length) { if (index !== tutorialSequence[tutorialStep].targetMove) isEnabled = false; else { isTutorialTarget = true; isEnabled = true; } } }
+                                if (currentMode === 'tutorial' && !isDomainActive) { if (tutorialStep < tutorialSequence.length) { if (index !== tutorialSequence[tutorialStep].targetMove) { isEnabled = false; } else { isTutorialTarget = true; isEnabled = isPlayerTurn && !isAnimating; } } }
                 
                 const btn = document.createElement('button'); btn.className = `p-2 rounded-lg text-left flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${isEnabled ? 'bg-gray-800 border border-gray-600 hover:bg-gray-700 active:scale-95 shadow-md anim-idle-btn' : 'bg-gray-900 border border-gray-800 opacity-40 cursor-not-allowed'}`;
                 if (isTutorialTarget) btn.classList.add('border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.6)]');
