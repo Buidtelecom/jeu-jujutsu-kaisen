@@ -2614,79 +2614,69 @@
         }
 
 
-                                /* --- PRELOADER ET DEMARRAGE --- */
-        window.ramCache = []; // Empêche l'application de supprimer les fichiers de la RAM (Garbage Collection)
+                                        /* --- PRELOADER AMÉLIORÉ --- */
+        window.ramCache = []; 
 
         async function preloadAssets() {
             const progressFill = $('loader-fill');
             const progressText = $('loader-text');
+            const progressInfo = document.createElement('p'); // Message d'avertissement
+            progressInfo.style.marginTop = "10px";
+            progressInfo.style.fontSize = "0.8rem";
+            progressInfo.style.color = "#a0a0a0";
+            progressInfo.innerText = "Veuillez ne pas fermer l'application pendant le chargement.";
+            progressText.parentNode.appendChild(progressInfo);
             
             const total = assetsToPreload.length; 
             let loaded = 0; 
             
             const loadFile = (url) => { 
                 return new Promise((resolve) => {
-                    // Sécurité : Timeout de 12s par fichier pour ne pas bloquer le jeu si la connexion est lente
                     let isResolved = false;
-                    const timeout = setTimeout(() => { if(!isResolved){ isResolved = true; resolve(); } }, 12000);
-
                     const finish = () => {
                         if(isResolved) return;
                         isResolved = true;
-                        clearTimeout(timeout);
                         loaded++; 
-                        progressFill.style.width = Math.floor((loaded / total) * 100) + '%'; 
-                        progressText.innerText = `Extraction des fichiers... ${Math.floor((loaded / total) * 100)}%`; 
+                        let percent = Math.floor((loaded / total) * 100);
+                        progressFill.style.width = percent + '%'; 
+                        progressText.innerText = `Préparation des ressources : ${percent}%`; 
                         resolve();
                     };
 
                     try {
                         if (url.match(/\.(jpg|jpeg|png)$/i)) {
                             const img = new Image();
-                            img.onload = finish;   // Le code ATTEND que l'image soit vraiment prête
+                            img.onload = finish;
                             img.onerror = finish;
                             img.src = url;
-                            window.ramCache.push(img); // Injection forcée en mémoire vive
+                            window.ramCache.push(img);
                         } else if (url.match(/\.(mp3|wav)$/i)) {
                             const audio = new Audio();
-                            audio.oncanplaythrough = finish; // Le code ATTEND que le son soit lisible
+                            audio.oncanplaythrough = finish;
                             audio.onerror = finish;
                             audio.src = url;
                             audio.load();
                             window.ramCache.push(audio);
-                        } else if (url.match(/\.(mp4)$/i)) {
-                            // Fetch standard avec conversion en Blob (fichier brut) pour forcer le cache disque sur les vidéos
-                            fetch(url, { cache: 'force-cache' }).then(res => res.blob()).then(blob => {
-                                window.ramCache.push(blob);
-                                finish();
-                            }).catch(finish);
                         } else {
-                            finish();
+                            fetch(url, { cache: 'force-cache' }).then(finish).catch(finish);
                         }
-                    } catch(e) {
-                        finish();
-                    }
+                    } catch(e) { finish(); }
                 });
             };
             
-            // Chargement par petits lots de 4 pour éviter de faire planter l'application Web2App
-            for (let i = 0; i < total; i += 4) {
-                const batch = assetsToPreload.slice(i, i + 4);
+            // Chargement par petits lots pour ne pas surcharger le processeur du téléphone
+            for (let i = 0; i < total; i += 3) {
+                const batch = assetsToPreload.slice(i, i + 3);
                 await Promise.all(batch.map(url => loadFile(url)));
             }
             
-            if (!navigator.onLine) { 
-                $('modal-connection').classList.remove('hidden'); 
-                $('modal-connection').classList.add('flex'); 
-                return; 
-            }
-            
-            progressText.innerText = "Téléchargement complet !"; 
-            progressText.classList.add('text-green-400'); 
+            // Étape finale : Confirmation à 100%
+            progressText.innerText = "Téléchargement terminé (100%)";
+            progressText.classList.add('text-green-400');
+            progressInfo.style.display = "none"; // On masque l'avertissement
             $('loader-text').classList.remove('animate-pulse'); 
             $('loader-btn').classList.remove('hidden');
         }
-
         function retryConnection() { $('modal-connection').classList.add('hidden'); $('modal-connection').classList.remove('flex'); $('loader-fill').style.width = '0%'; $('loader-text').innerText = 'Initialisation du cache... 0%'; preloadAssets(); }
         function hideLoaderAndStart() { $('screen-loader').classList.add('hidden'); $('screen-loader').classList.remove('flex'); showScreen('screen-menu'); checkDailyReward(); }
 
