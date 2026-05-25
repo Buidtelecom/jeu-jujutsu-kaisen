@@ -501,12 +501,19 @@
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90"></div>
         
-        <div class="flex items-center justify-between w-full max-w-lg mx-auto mt-4 mb-6 relative z-10 shrink-0 px-2">
+                <div class="flex items-center justify-between w-full max-w-lg mx-auto mt-4 mb-6 relative z-10 shrink-0 px-2">
             <button onclick="showScreen('screen-menu')" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90 shadow-md">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h2 class="text-xl sm:text-2xl font-black tracking-widest text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">SÉLECTION DU MODE</h2>
-            <div class="w-10"></div>
+            <div class="flex flex-col items-end gap-1 shrink-0">
+                <div class="bg-yellow-900/50 border border-yellow-500 text-yellow-300 px-2 py-0.5 rounded-full font-bold shadow-[0_0_10px_rgba(234,179,8,0.3)] text-[10px] flex items-center">
+                    <i class="fas fa-coins mr-1"></i> <span id="mode-select-coins">0</span>
+                </div>
+                <div class="bg-blue-900/50 border border-blue-500 text-blue-300 px-2 py-0.5 rounded-full font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)] text-[10px] flex items-center">
+                    <i class="fas fa-star mr-1"></i> <span id="mode-select-level">Niv. 1</span>
+                </div>
+            </div>
         </div>
 
         <div class="flex-1 w-full max-w-lg mx-auto relative z-10 pb-8 px-2">
@@ -756,7 +763,13 @@
                 <i class="fas fa-coins mr-1"></i> <span id="market-coins">25</span>
             </div>
         </div>
-        <p class="text-center text-gray-400 text-sm mb-4 relative z-10">Achetez des exorcistes ou fléaux scellés pour les débloquer.</p>
+                <p class="text-center text-gray-400 text-sm mb-4 relative z-10">Achetez des exorcistes ou fléaux scellés pour les débloquer.</p>
+        
+        <div class="w-full max-w-lg mx-auto relative z-10 mb-4 px-2 flex gap-2">
+            <input type="text" id="input-promo-code" placeholder="Code Promo (Optionnel)" maxlength="6" class="flex-1 bg-gray-800 border border-gray-600 text-white rounded-lg p-2 focus:outline-none focus:border-yellow-400 font-bold placeholder-gray-500 text-center tracking-widest text-sm">
+            <button onclick="submitPromoCode()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-lg px-4 transition-colors shadow-[0_0_10px_rgba(234,179,8,0.5)] active:scale-95 text-xs">VALIDER</button>
+        </div>
+        
         <div id="market-grid" class="grid grid-cols-2 gap-4 flex-1 min-h-0 w-full max-w-lg mx-auto overflow-y-auto pb-24 relative z-10 content-start px-2"></div>
     </div>
 
@@ -1107,8 +1120,13 @@
         let dailyWinsDate = "";
         let lastDailyRewardDate = "";
 
+        let playerLevel = 1;
+        let playerXP = 0;
+        let tutorialCompleted = false;
+
         let player = null;
         let enemy = null;
+
 
         /* Variables Système Clan */
         let playerClanId = null;
@@ -1764,8 +1782,9 @@
                     $('public-profile-loading').innerText = "Impossible de charger ce profil.";
                     return;
                 }
-                $('pub-pseudo').innerText = `${u.country || '🌍'} ${u.name || 'Anonyme'}`;
+                                $('pub-pseudo').innerHTML = `${u.country || '🌍'} ${u.name || 'Anonyme'} <span id="pub-level" class="text-xs bg-blue-600 px-2 py-0.5 rounded-full border border-blue-400 absolute ml-2 translate-y-[-2px]">Niv. ${u.level || 1}</span>`;
                 $('pub-coins').innerHTML = `<i class="fas fa-coins text-yellow-400 mr-1"></i> <span class="text-yellow-400">${u.coins !== undefined ? u.coins : 0}</span>`;
+
                 $('pub-country').innerText = u.country || '🌍';
 
                 if(u.clanId) {
@@ -1872,8 +1891,10 @@
                 clanId: playerClanId || null,
                 wins: onlineWins,
                 losses: onlineLosses,
-                streak: maxWinStreak
+                streak: maxWinStreak,
+                level: playerLevel
             });
+
             
             const today = new Date().toISOString().split('T')[0];
             db.ref(`daily_leaderboard/${today}/${uid}`).update({
@@ -2704,9 +2725,13 @@
                 if (data.maxWinStreak !== undefined) maxWinStreak = data.maxWinStreak;
                 if (data.playerCountryEmoji !== undefined) playerCountryEmoji = data.playerCountryEmoji;
                 if (data.lastPseudoChangeDate !== undefined) lastPseudoChangeDate = data.lastPseudoChangeDate;
-                if (data.clanId !== undefined) playerClanId = data.clanId;
+                                if (data.clanId !== undefined) playerClanId = data.clanId;
                 if (data.lastCoinRequest !== undefined) lastCoinRequest = data.lastCoinRequest;
                 
+                if (data.playerLevel !== undefined) playerLevel = data.playerLevel;
+                if (data.playerXP !== undefined) playerXP = data.playerXP;
+                if (data.tutorialCompleted !== undefined) tutorialCompleted = data.tutorialCompleted;
+
                 if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.emotesEnabled !== undefined) emotesEnabled = data.emotesEnabled;
                 if (data.unlocked) data.unlocked.forEach(id => { const c = charData.find(char => char.id === id); if(c) c.locked = false; });
@@ -2731,7 +2756,10 @@
                 dailyWins: dailyWins, dailyWinsDate: dailyWinsDate, lastDailyRewardDate: lastDailyRewardDate,
                 currentWinStreak: currentWinStreak, maxWinStreak: maxWinStreak, playerCountryEmoji: playerCountryEmoji, lastPseudoChangeDate: lastPseudoChangeDate,
                 clanId: playerClanId,
-                lastCoinRequest: lastCoinRequest
+                lastCoinRequest: lastCoinRequest,
+                playerLevel: playerLevel,
+                playerXP: playerXP,
+                tutorialCompleted: tutorialCompleted
             }));
             hasSave = true; updateMenuButtons();
             syncUserDataToFirebase();
@@ -2747,8 +2775,9 @@
         function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
         
         function confirmNewGame() { 
-            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null; lastCoinRequest = 0;
+            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null; lastCoinRequest = 0; playerLevel = 1; playerXP = 0; tutorialCompleted = false;
             charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara', 'maki', 'nanami', 'hakari', 'todo'].includes(c.id)); 
+ 
             updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); 
         }
 
@@ -2772,7 +2801,7 @@
 
         $('btn-sound-toggle').classList.add('bg-green-500'); $('btn-emote-toggle').classList.add('bg-green-500');
 
-        function getDomainBgStyle(domainClass) {
+                function getDomainBgStyle(domainClass) {
             if(domainClass === 'domain-gojo') return `url("Sphere_de_lespace_infini_arriere_plan.jpeg")`;
             if(domainClass === 'domain-sukuna') return `url("lhotel_demoniaque_arriere_plan.jpeg")`;
             if(domainClass === 'domain-megumi') return `url("image_du_territoire_de_megumi.jpg")`;
@@ -2781,6 +2810,35 @@
             if(domainClass === 'domain-jogo') return `url("arriere_plan_territoire_de_Jogo.jpg")`;
             if(domainClass === 'domain-higuruma') return `url("arriere_plan_territoire_higuruma.jpg")`;
             return '#1e293b'; 
+        }
+
+        /* --- SYSTÈME D'EXPÉRIENCE ET CODES SECRETS --- */
+        function gainXP(amount) {
+            if (playerLevel >= 150) return;
+            playerXP += amount;
+            let xpNeeded = playerLevel * 100;
+            let leveledUp = false;
+            while (playerXP >= xpNeeded && playerLevel < 150) {
+                playerXP -= xpNeeded;
+                playerLevel++;
+                xpNeeded = playerLevel * 100;
+                leveledUp = true;
+            }
+            if (leveledUp) showNotification(`Félicitations ! Vous avez atteint le Niveau ${playerLevel} !`, "NIVEAU SUPÉRIEUR");
+            saveGameData();
+        }
+
+        function submitPromoCode() {
+            const code = $('input-promo-code').value.trim();
+            if (code === '260456') {
+                charData.forEach(c => c.locked = false);
+                saveGameData();
+                renderMarket();
+                $('input-promo-code').value = '';
+                showNotification("Code Dev activé : Tous les personnages sont débloqués !", "SUCCÈS SECRET");
+            } else {
+                showNotification("Code promo invalide ou expiré.", "ERREUR");
+            }
         }
 
         async function showScreen(screenId) {
@@ -2793,18 +2851,29 @@
                 bg.style.backgroundImage = `url('${randomBg}')`;
             });
 
-                        ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-shibuya', 'screen-rps', 'screen-profile', 'screen-clan', 'screen-tv'].forEach(id => {
+            ['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-battle', 'screen-vs', 'screen-pseudo', 'screen-matchmaking', 'screen-leaderboard', 'screen-tournament', 'screen-shibuya', 'screen-rps', 'screen-profile', 'screen-clan', 'screen-tv'].forEach(id => {
                 const el = $(id);
                 if(el) el.classList.add('hidden');
             });
 
             const targetScreen = $(screenId);
             if(targetScreen) targetScreen.classList.remove('hidden');
-            
+
             if (['screen-menu', 'screen-mode-select', 'screen-options', 'screen-market', 'screen-credits', 'screen-select', 'screen-pseudo', 'screen-leaderboard', 'screen-tournament', 'screen-shibuya', 'screen-profile', 'screen-clan', 'screen-tv'].includes(screenId)) {
+
+
+                if (screenId === 'screen-mode-select') {
+                    if (!tutorialCompleted) {
+                        startTutorial();
+                        return; // Stoppe l'affichage de l'écran et lance le tuto directement
+                    }
+                    $('mode-select-coins').innerText = playerCoins;
+                    $('mode-select-level').innerText = `Niv. ${playerLevel}`;
+                }
 
                 if (screenId === 'screen-select') { playerTeamSelection = []; selectionStep = 'player'; pIndex = -1; eIndex = -1; updateSelectionUI(); }
                 playMusic('menu');
+
             } else if (['screen-matchmaking', 'screen-vs', 'screen-battle', 'screen-rps'].includes(screenId)) {
                 playMusic('battle');
             }
@@ -3721,15 +3790,16 @@
                 return;
             }
 
-            if (isWin) {
+                        if (isWin) {
                 if(currentMode === 'tutorial') {
+                    tutorialCompleted = true; gainXP(100); saveGameData();
                     $('gameover-title').innerText = 'TUTO TERMINÉ !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous êtes prêt pour les vrais combats.`;
                     btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Continuer</button>`;
                 } else if (currentMode === 'online') {
                     onlineWins++; dailyWins++; currentWinStreak++;
                     if(currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
                     
-                    let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); playerCoins += earnedCoins; saveGameData(); 
+                    let earnedCoins = 50 + Math.floor((playerTeam.filter(c=>c.hp>0).length / 3) * 50); playerCoins += earnedCoins; gainXP(50); saveGameData(); 
                     $('gameover-title').innerText = 'VICTOIRE !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative';
                     
                     if (result === 'win_abandon') {
@@ -3740,10 +3810,11 @@
                     
                     btnContainer.innerHTML = `<button onclick="hideGameOverAndReplay()" class="flex-1 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] active:scale-95 transition-transform">Rejouer</button><button onclick="hideGameOverAndChangeMode()" class="flex-1 py-4 bg-gray-700 text-white rounded-full font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95 transition-transform">Changer de mode</button>`;
                     clearNetwork();
-                                } else if (currentMode === 'shibuya') {
+                                                } else if (currentMode === 'shibuya') {
                     if (sState.stage >= 9) {
-                        let earnedCoins = 300; playerCoins += earnedCoins; saveGameData(); 
+                        let earnedCoins = 300; playerCoins += earnedCoins; gainXP(150); saveGameData(); 
                         $('gameover-title').innerText = 'SURVIVANT DE SHIBUYA !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-red-600 drop-shadow-lg z-10 relative';
+
                         $('gameover-desc').innerHTML = `Vous avez exorcisé toutes les menaces.<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
                         btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                     } else {
@@ -3757,10 +3828,11 @@
                     let nextRoundPlayers = [currentMatches[0].winner]; for(let i=1; i<currentMatches.length; i++) { let m = currentMatches[i]; m.winner = Math.random() > 0.5 ? m.p1 : m.p2; nextRoundPlayers.push(m.winner); }
                     if (tState.round < 2) { let nextMatches = []; for(let i=0; i<nextRoundPlayers.length; i+=2) nextMatches.push({ p1: nextRoundPlayers[i], p2: nextRoundPlayers[i+1], winner: null }); tState.bracket.push(nextMatches); }
                     tState.phase = 'results';
-                    if (tState.round === 2) {
+                                        if (tState.round === 2) {
                         tournamentTrophies++; let earnedCoins = 0; if (difficultyLevel === 'facile') earnedCoins = 10; else if (difficultyLevel === 'normal') earnedCoins = 15; else if (difficultyLevel === 'difficile') earnedCoins = 35; else if (difficultyLevel === 'extreme') earnedCoins = 250;
-                        playerCoins += earnedCoins; saveGameData();
+                        playerCoins += earnedCoins; gainXP(100); saveGameData();
                         $('gameover-title').innerText = 'CHAMPION !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg z-10 relative'; $('gameover-desc').innerHTML = `Vous avez remporté le tournoi !<br><span class="text-yellow-400 font-bold mt-2 inline-block text-2xl"><i class="fas fa-coins"></i> +${earnedCoins} Pièces</span>`;
+
                         btnContainer.innerHTML = `<button onclick="resetGame()" class="w-full px-10 py-4 bg-white text-black rounded-full font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 transition-transform">Retour au Menu</button>`;
                     } else {
                         $('gameover-title').innerText = 'VICTOIRE !'; $('gameover-title').className = 'text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 drop-shadow-lg z-10 relative'; $('gameover-desc').innerText = `Vous passez au tour suivant.`;
