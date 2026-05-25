@@ -727,7 +727,7 @@
     </div>
 
     <!-- ECRAN OPTIONS -->
-    <div id="screen-options" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-50 hidden">
+        <div id="screen-options" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-50 hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-20 blur-sm anim-sway-bg dynamic-menu-bg"></div>
         <button onclick="showScreen('screen-menu')" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors text-2xl z-50">
             <i class="fas fa-arrow-left"></i>
@@ -735,9 +735,15 @@
         <h2 class="text-3xl font-black text-white mb-8 text-center drop-shadow-lg relative z-10">OPTIONS</h2>
         <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 w-80 shadow-2xl relative z-10">
             <div class="flex justify-between items-center mb-6">
-                <span class="font-bold text-lg"><i class="fas fa-volume-up mr-2 text-blue-400"></i> Son & Musique</span>
-                <button onclick="toggleSound()" class="w-14 h-8 rounded-full bg-gray-600 relative transition-colors duration-300" id="btn-sound-toggle">
-                    <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-sound"></div>
+                <span class="font-bold text-lg"><i class="fas fa-music mr-2 text-blue-400"></i> Musique</span>
+                <button onclick="toggleMusic()" class="w-14 h-8 rounded-full bg-green-500 relative transition-colors duration-300" id="btn-music-toggle">
+                    <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-music"></div>
+                </button>
+            </div>
+            <div class="flex justify-between items-center mb-6">
+                <span class="font-bold text-lg"><i class="fas fa-volume-up mr-2 text-orange-400"></i> Bruitages</span>
+                <button onclick="toggleSfx()" class="w-14 h-8 rounded-full bg-green-500 relative transition-colors duration-300" id="btn-sfx-toggle">
+                    <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-sfx"></div>
                 </button>
             </div>
             <div class="flex justify-between items-center mb-6">
@@ -746,7 +752,7 @@
                     <div class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform translate-x-6" id="knob-emote"></div>
                 </button>
             </div>
-            <p class="text-xs text-gray-400 text-center">Active ou désactive l'audio global et les réactions.</p>
+            <p class="text-xs text-gray-400 text-center">Ajustez l'expérience selon vos préférences.</p>
         </div>
     </div>
 
@@ -1105,9 +1111,10 @@
         let lastPseudoChangeDate = 0;
         let lastCoinRequest = 0; // Ajout du cooldown 10 min
         
-        let isMuted = false;
+        let isMusicMuted = false;
+        let isSfxMuted = false;
         let emotesEnabled = true; 
-        let currentMode = 'tournament'; 
+        let currentMode = 'tournament';  
         let hasSave = false; 
         let isPlayerTurn = false;
         let firstPlayerRole = 'p1';
@@ -1233,22 +1240,9 @@
             { id: 'uraume', name: 'Uraume', img: 'uraume.jpg', color: 'from-blue-200 to-white', locked: true, price: 1500, hp: 450, ce: 50, maxCe: 100, attr: 'Eau', moves: [ { name: 'Givre', cost: 0, dmg: 20, desc: 'Attaque gelée basique. Restaure 15 CE.', type: 'basic', attr: 'Eau' }, { name: 'Lance de Glace', cost: 25, dmg: 45, desc: 'Projette une stalactite acérée.', type: 'attack', attr: 'Eau' }, { name: 'Calme Glacial', cost: 50, dmg: 80, desc: 'Gèle les alentours. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Eau' }, { name: 'Cascade de Glace', cost: 75, dmg: 130, desc: 'Déferlement de glace massive.', type: 'attack', attr: 'Eau' } ] }
         ];
 
-                const $ = id => document.getElementById(id);
+                        const $ = id => document.getElementById(id);
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-        /* --- EFFETS SONORES UI --- */
-        document.addEventListener('click', (e) => {
-            if(e.target.closest('button') && !isMuted) {
-                try { const sfx = $('sfx-btn'); if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); } } catch(err) {}
-            }
-        });
-
-        function playCharSelectSound() {
-            if(!isMuted) {
-                try { const sfx = $('sfx-char'); if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); } } catch(err) {}
-            }
-        }
 
         /* --- SYSTÈME DE NOTIFICATIONS --- */
 
@@ -1636,15 +1630,28 @@
             resetGame();
         }
 
-        /* --- GESTION MUSIQUE ET SON --- */
+                /* --- GESTION MUSIQUE ET SON --- */
         function pauseAudio(audioElement) { try { if (!audioElement.paused) audioElement.pause(); } catch (e) {} }
         function stopAudioAndReset(audioElement) { try { if (!audioElement.paused) audioElement.pause(); if (!isNaN(audioElement.duration)) audioElement.currentTime = 0; } catch (e) {} }
         
         async function playMusic(type) {
             const bgM = $('bg-music'); const batM = $('battle-music');
-            if (isMuted || type === 'none') { pauseAudio(bgM); pauseAudio(batM); return; }
+            if (isMusicMuted || type === 'none') { pauseAudio(bgM); pauseAudio(batM); return; }
             if (type === 'menu') { pauseAudio(batM); if (bgM.paused) try { await bgM.play(); } catch(e) {} }
             else if (type === 'battle') { pauseAudio(bgM); if (batM.paused) try { await batM.play(); } catch(e) {} }
+        }
+
+        /* --- EFFETS SONORES UI GLOBALS --- */
+        document.addEventListener('click', (e) => {
+            if(e.target.closest('button') && !isSfxMuted) {
+                try { const sfx = $('sfx-btn'); if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); } } catch(err) {}
+            }
+        });
+
+        function playCharSelectSound() {
+            if(!isSfxMuted) {
+                try { const sfx = $('sfx-char'); if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); } } catch(err) {}
+            }
         }
 
         /* --- GESTION DES EMOTES ET STATS D'EQUIPE --- */
@@ -2749,8 +2756,12 @@
                 if (data.playerXP !== undefined) playerXP = data.playerXP;
                 if (data.tutorialCompleted !== undefined) tutorialCompleted = data.tutorialCompleted;
 
-                if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
+                                if (data.tournamentTrophies !== undefined) tournamentTrophies = data.tournamentTrophies;
                 if (data.emotesEnabled !== undefined) emotesEnabled = data.emotesEnabled;
+                if (data.isMusicMuted !== undefined) isMusicMuted = data.isMusicMuted;
+                if (data.isSfxMuted !== undefined) isSfxMuted = data.isSfxMuted;
+                if (data.isMuted !== undefined && data.isMusicMuted === undefined) { isMusicMuted = data.isMuted; isSfxMuted = data.isMuted; } // Rétrocompatibilité ancienne save
+
                 if (data.unlocked) data.unlocked.forEach(id => { const c = charData.find(char => char.id === id); if(c) c.locked = false; });
                 
                 if (data.dailyWinsDate !== today) { dailyWins = 0; dailyWinsDate = today; } 
@@ -2764,12 +2775,15 @@
             }
             updateMenuButtons();
             if(!emotesEnabled) { $('knob-emote').classList.remove('translate-x-6'); $('knob-emote').classList.add('translate-x-0'); $('btn-emote-toggle').classList.remove('bg-green-500'); $('btn-emote-toggle').classList.add('bg-gray-600'); }
+            if(isMusicMuted) { $('knob-music').classList.remove('translate-x-6'); $('knob-music').classList.add('translate-x-0'); $('btn-music-toggle').classList.remove('bg-green-500'); $('btn-music-toggle').classList.add('bg-gray-600'); }
+            if(isSfxMuted) { $('knob-sfx').classList.remove('translate-x-6'); $('knob-sfx').classList.add('translate-x-0'); $('btn-sfx-toggle').classList.remove('bg-green-500'); $('btn-sfx-toggle').classList.add('bg-gray-600'); }
         }
 
         function saveGameData() {
             localStorage.setItem('jjk_save_v2', JSON.stringify({ 
                 pseudo: globalPlayerPseudo, coins: playerCoins, unlocked: charData.filter(c => !c.locked).map(c => c.id), 
                 onlineWins: onlineWins, onlineLosses: onlineLosses, tournamentTrophies: tournamentTrophies, emotesEnabled: emotesEnabled,
+                isMusicMuted: isMusicMuted, isSfxMuted: isSfxMuted,
                 dailyWins: dailyWins, dailyWinsDate: dailyWinsDate, lastDailyRewardDate: lastDailyRewardDate,
                 currentWinStreak: currentWinStreak, maxWinStreak: maxWinStreak, playerCountryEmoji: playerCountryEmoji, lastPseudoChangeDate: lastPseudoChangeDate,
                 clanId: playerClanId,
@@ -2792,21 +2806,32 @@
         function hideNewGameModal() { $('modal-new-game').classList.add('hidden'); $('modal-new-game').classList.remove('flex'); }
         
         function confirmNewGame() { 
-            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null; lastCoinRequest = 0; playerLevel = 1; playerXP = 0; tutorialCompleted = false;
+            hideNewGameModal(); localStorage.removeItem('jjk_save_v2'); hasSave = false; playerCoins = 25; globalPlayerPseudo = "Exorciste" + rand(1000, 9999); onlineWins = 0; onlineLosses = 0; currentWinStreak = 0; maxWinStreak = 0; tournamentTrophies = 0; emotesEnabled = true; isMusicMuted = false; isSfxMuted = false; dailyWins = 0; lastDailyRewardDate = ""; lastPseudoChangeDate = 0; playerClanId = null; lastCoinRequest = 0; playerLevel = 1; playerXP = 0; tutorialCompleted = false;
             charData.forEach(c => c.locked = !['yuji', 'megumi', 'nobara', 'maki', 'nanami', 'hakari', 'todo'].includes(c.id)); 
  
-            updateMenuButtons(); $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); startFreshGame(); 
+            updateMenuButtons(); 
+            $('knob-emote').classList.remove('translate-x-0'); $('knob-emote').classList.add('translate-x-6'); $('btn-emote-toggle').classList.remove('bg-gray-600'); $('btn-emote-toggle').classList.add('bg-green-500'); 
+            $('knob-music').classList.remove('translate-x-0'); $('knob-music').classList.add('translate-x-6'); $('btn-music-toggle').classList.remove('bg-gray-600'); $('btn-music-toggle').classList.add('bg-green-500'); 
+            $('knob-sfx').classList.remove('translate-x-0'); $('knob-sfx').classList.add('translate-x-6'); $('btn-sfx-toggle').classList.remove('bg-gray-600'); $('btn-sfx-toggle').classList.add('bg-green-500'); 
+            startFreshGame(); 
         }
 
         function handleContinue() { showScreen('screen-mode-select'); }
         function startFreshGame() { showScreen('screen-mode-select'); }
 
-        /* --- MENUS & OPTIONS --- */
-        function toggleSound() {
-            isMuted = !isMuted; const knob = $('knob-sound'); const btn = $('btn-sound-toggle');
-            if(isMuted) { knob.classList.remove('translate-x-6'); knob.classList.add('translate-x-0'); btn.classList.remove('bg-green-500'); btn.classList.add('bg-gray-600'); playMusic('none'); } 
+                /* --- MENUS & OPTIONS --- */
+        function toggleMusic() {
+            isMusicMuted = !isMusicMuted; const knob = $('knob-music'); const btn = $('btn-music-toggle');
+            if(isMusicMuted) { knob.classList.remove('translate-x-6'); knob.classList.add('translate-x-0'); btn.classList.remove('bg-green-500'); btn.classList.add('bg-gray-600'); playMusic('none'); } 
             else { knob.classList.remove('translate-x-0'); knob.classList.add('translate-x-6'); btn.classList.remove('bg-gray-600'); btn.classList.add('bg-green-500'); if (!$('screen-battle').classList.contains('hidden') || !$('screen-vs').classList.contains('hidden') || !$('screen-matchmaking').classList.contains('hidden')) playMusic('battle'); else playMusic('menu'); }
-            document.querySelectorAll('audio').forEach(a => a.muted = isMuted);
+            saveGameData();
+        }
+
+        function toggleSfx() {
+            isSfxMuted = !isSfxMuted; const knob = $('knob-sfx'); const btn = $('btn-sfx-toggle');
+            if(isSfxMuted) { knob.classList.remove('translate-x-6'); knob.classList.add('translate-x-0'); btn.classList.remove('bg-green-500'); btn.classList.add('bg-gray-600'); } 
+            else { knob.classList.remove('translate-x-0'); knob.classList.add('translate-x-6'); btn.classList.remove('bg-gray-600'); btn.classList.add('bg-green-500'); }
+            saveGameData();
         }
 
         function toggleEmotes() {
@@ -2816,7 +2841,7 @@
             saveGameData();
         }
 
-        $('btn-sound-toggle').classList.add('bg-green-500'); $('btn-emote-toggle').classList.add('bg-green-500');
+        $('btn-music-toggle').classList.add('bg-green-500'); $('btn-sfx-toggle').classList.add('bg-green-500'); $('btn-emote-toggle').classList.add('bg-green-500');
 
                 function getDomainBgStyle(domainClass) {
             if(domainClass === 'domain-gojo') return `url("Sphere_de_lespace_infini_arriere_plan.jpeg")`;
@@ -3451,8 +3476,8 @@
 
         function shakeScreen() { const container = $('arena-container'); container.classList.add('anim-screen-shake'); setTimeout(() => container.classList.remove('anim-screen-shake'), 500); }
 
-        function playAttackSound(damage) {
-            if (isMuted) return; let soundId = ''; if (damage > 0 && damage <= 35) soundId = 'sfx-simple'; else if (damage > 35 && damage <= 75) soundId = 'sfx-moyen'; else if (damage > 75) soundId = 'sfx-puissant';
+                function playAttackSound(damage) {
+            if (isSfxMuted) return; let soundId = ''; if (damage > 0 && damage <= 35) soundId = 'sfx-simple'; else if (damage > 35 && damage <= 75) soundId = 'sfx-moyen'; else if (damage > 75) soundId = 'sfx-puissant';
             if (soundId) { const sfx = $(soundId); try { sfx.currentTime = 0; sfx.play().catch(e => console.log("Lecture du son bloquée")); } catch(e) {} }
         }
 
@@ -3462,18 +3487,18 @@
             await wait(1500); nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
 
             if (videoSrc) {
-                const batM = $('battle-music'); let wasMusicPlaying = !isMuted && !batM.paused; if (wasMusicPlaying) pauseAudio(batM);
+                const batM = $('battle-music'); let wasMusicPlaying = !isMusicMuted && !batM.paused; if (wasMusicPlaying) pauseAudio(batM);
                 video.src = window.videoCache && window.videoCache[videoSrc] ? window.videoCache[videoSrc] : videoSrc; 
                 video.classList.remove('hidden');
                 await new Promise((resolve) => {
                     let safetyTimer = setTimeout(resolve, 20000); 
                     video.onended = () => { clearTimeout(safetyTimer); resolve(); }; video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
-                    video.muted = isMuted; 
+                    video.muted = isSfxMuted; // Le son de la vidéo dépend de l'option Bruitages
                     let playPromise = video.play();
                     if (playPromise !== undefined) { playPromise.catch(e => { video.muted = true; let p2 = video.play(); if (p2 !== undefined) p2.catch(err => { clearTimeout(safetyTimer); resolve(); }); else resolve(); }); } else resolve();
                 });
                 video.classList.add('hidden');
-                if (wasMusicPlaying && !isMuted) try { await batM.play(); } catch(e) {}
+                if (wasMusicPlaying && !isMusicMuted) try { await batM.play(); } catch(e) {}
             }
             flash.classList.remove('anim-domain-flash'); void flash.offsetWidth; flash.classList.add('anim-domain-flash');
             await wait(1000); updateArenaBackground(); shakeScreen(); await wait(1000); flash.classList.remove('anim-domain-flash'); await wait(1000);
