@@ -342,6 +342,8 @@
     <audio id="sfx-simple"><source src="attaque_simple.mp3" type="audio/mpeg"></audio>
     <audio id="sfx-moyen"><source src="coup_moyen.mp3" type="audio/mpeg"></audio>
     <audio id="sfx-puissant"><source src="coup_puissant.mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-btn"><source src="sfx_btn_click.mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-char"><source src="sfx_char_select.mp3" type="audio/mpeg"></audio>
 
     <!-- ECRAN D'ACCUEIL (MENU PRINCIPAL) -->
             <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-between bg-gray-950 z-50 hidden overflow-hidden p-6 sm:p-8">
@@ -1170,6 +1172,7 @@
             "arene_1.jpg", "arene_2.jpg", "arene_3.jpg", "arene_4.jpg", "arene_5.jpg", // Ajout des arènes au preload
             "theme_de_personnages_jjk.mp3", "JJK_musique_darene_de_combat.mp3",
             "attaque_simple.mp3", "coup_moyen.mp3", "coup_puissant.mp3",
+            "sfx_btn_click.mp3", "sfx_char_select.mp3",
             "Sphere_de_lespace_infini.mp4", "territoire_de_Megumi.mp4", "Lhotel_demoniaque.mp4",
             "territoire_dHakari.mp4", "territoire_de_Mahito.mp4", "Territoire_de_Jogo.mp4", "territoire_higuruma.mp4"
         ];
@@ -1230,11 +1233,25 @@
             { id: 'uraume', name: 'Uraume', img: 'uraume.jpg', color: 'from-blue-200 to-white', locked: true, price: 1500, hp: 450, ce: 50, maxCe: 100, attr: 'Eau', moves: [ { name: 'Givre', cost: 0, dmg: 20, desc: 'Attaque gelée basique. Restaure 15 CE.', type: 'basic', attr: 'Eau' }, { name: 'Lance de Glace', cost: 25, dmg: 45, desc: 'Projette une stalactite acérée.', type: 'attack', attr: 'Eau' }, { name: 'Calme Glacial', cost: 50, dmg: 80, desc: 'Gèle les alentours. 30% de chance d\'étourdir.', effect: 'chance-stun', type: 'attack', attr: 'Eau' }, { name: 'Cascade de Glace', cost: 75, dmg: 130, desc: 'Déferlement de glace massive.', type: 'attack', attr: 'Eau' } ] }
         ];
 
-        const $ = id => document.getElementById(id);
+                const $ = id => document.getElementById(id);
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        /* --- EFFETS SONORES UI --- */
+        document.addEventListener('click', (e) => {
+            if(e.target.closest('button') && !isMuted) {
+                try { const sfx = $('sfx-btn'); if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); } } catch(err) {}
+            }
+        });
+
+        function playCharSelectSound() {
+            if(!isMuted) {
+                try { const sfx = $('sfx-char'); if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); } } catch(err) {}
+            }
+        }
+
         /* --- SYSTÈME DE NOTIFICATIONS --- */
+
         function showNotification(msg, title="ATTENTION") {
             $('notif-title').innerText = title;
             $('notif-msg').innerHTML = msg;
@@ -3137,9 +3154,10 @@
         function buyCharacter(charId) { const charIndex = charData.findIndex(c => c.id === charId); if(charIndex === -1) return; const char = charData[charIndex]; if(playerCoins >= char.price) { playerCoins -= char.price; charData[charIndex].locked = false; saveGameData(); renderMarket(); } else showNotification("Pièces insuffisantes !"); }
         function startTutorial() { currentMode = 'tutorial'; pIndex = charData.findIndex(c => c.id === 'gojo'); eIndex = charData.findIndex(c => c.id === 'sukuna'); if(pIndex !== -1 && eIndex !== -1) startGame('facile'); }
         
-                        function selectCharacter(index) {
+                                function selectCharacter(index) {
+            playCharSelectSound();
             if(selectionStep === 'player') { 
-                if (currentMode === 'online' || currentMode === 'shibuya') { 
+                if (currentMode === 'online' || currentMode === 'shibuya') {  
                     if (!playerTeamSelection.includes(index)) { 
                         playerTeamSelection.push(index); 
                         if (playerTeamSelection.length === 3) { 
