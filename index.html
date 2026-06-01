@@ -3950,27 +3950,37 @@
 
         // --- AUTH & DÉMARRAGE INITIAL ---
         window.onload = () => { 
-            // Vérification de la période de maintenance
-            const now = Date.now();
-            const maintenanceStart = new Date("2026-06-01T16:00:00+01:00").getTime(); // Heure locale (UTC+1)
-            const maintenanceEnd = new Date("2026-06-02T18:30:00+01:00").getTime();
-            
-            // Vérification du compte Développeur
+            // 1. Vérification stricte du compte Développeur
             let isDev = false;
             try {
                 const saved = localStorage.getItem('jjk_save_v2');
                 if (saved) {
                     const data = JSON.parse(saved);
-                    if (data.pseudo === "Dévastateur 🔥") isDev = true;
+                    // L'accès t'est réservé si ton pseudo correspond parfaitement
+                    if (data.pseudo === "Dévastateur 🔥") {
+                        isDev = true;
+                    }
                 }
             } catch(e) {}
             
-            if (now >= maintenanceStart && now <= maintenanceEnd && !isDev) {
+            // 2. Dates programmées (Format universel compatible mobile : Année, Mois (0-11), Jour, Heure, Min, Sec)
+            // Mois 5 = Juin
+            const now = Date.now();
+            const maintenanceStart = new Date(2026, 5, 1, 16, 0, 0).getTime(); 
+            const maintenanceEnd = new Date(2026, 5, 2, 18, 30, 0).getTime();
+            
+            // 3. Forcer la maintenance AUJOURD'HUI pour tes tests
+            // Garde-le sur 'true' pour bloquer tout le monde (sauf toi) immédiatement.
+            // Remets-le sur 'false' quand tu veux rouvrir le jeu au public.
+            const forceMaintenanceActuelle = true; 
+
+            // Si on est en maintenance (ou qu'elle est forcée) ET qu'on n'est PAS Dévastateur 🔥 -> BLOQUÉ
+            if ((now >= maintenanceStart && now <= maintenanceEnd || forceMaintenanceActuelle) && !isDev) {
                 $('screen-loader').classList.add('hidden');
                 $('screen-loader').classList.remove('flex');
                 $('screen-maintenance').classList.remove('hidden');
                 $('screen-maintenance').classList.add('flex');
-                return; // Bloque le chargement du reste du jeu pour les joueurs normaux
+                return; // Bloque instantanément tout le reste pour les autres joueurs
             }
 
             auth.onAuthStateChanged((user) => {
