@@ -206,10 +206,13 @@
             animation: clash-pulse 3s infinite alternate; 
             transition: background 1.5s;
         }
-        @keyframes clash-pulse { 
+                @keyframes clash-pulse { 
             0% { filter: hue-rotate(0deg) brightness(1); } 
             100% { filter: hue-rotate(45deg) brightness(1.2); } 
         }
+
+        /* Masquer le bouton play natif sur mobile */
+        video::-webkit-media-controls, video::-webkit-media-controls-overlay-play-button, video::-webkit-media-controls-start-playback-button { display: none !important; opacity: 0 !important; }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -257,6 +260,21 @@
             <button onclick="retryConnection()" class="w-full py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)] active:scale-95">RÉESSAYER</button>
         </div>
     </div>
+
+    <!-- ECRAN MAINTENANCE -->
+    <div id="screen-maintenance" class="absolute inset-0 bg-gray-950 z-[500] hidden flex-col items-center justify-center p-6 text-center">
+        <i class="fas fa-hard-hat text-6xl text-yellow-500 mb-6 animate-pulse"></i>
+        <h1 class="text-3xl sm:text-4xl font-black text-white mb-4 drop-shadow-lg">MAINTENANCE EN COURS</h1>
+        <div class="bg-gray-900 border border-yellow-500/50 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+            <p class="text-gray-300 text-sm font-bold leading-relaxed">
+                Le jeu est actuellement indisponible en raison d'une mise à jour majeure.<br><br>
+                <span class="text-yellow-400">Du 1er Juin 2026 à 16h00<br>Au 2 Juin 2026 à 18h30</span><br><br>
+                Merci de votre patience, les serveurs rouvriront bientôt !
+            </p>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION MODAL SYSTEM -->
 
     <!-- NOTIFICATION MODAL SYSTEM -->
     <div id="modal-notification" class="absolute inset-0 bg-black/90 z-[350] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
@@ -905,12 +923,12 @@
                     <div class="absolute inset-0 bg-yellow-300 animate-pulse opacity-30" style="filter: blur(8px);"></div>
                     <div id="clash-bg-player" class="absolute inset-0 bg-cover bg-center" style="clip-path: polygon(0% 0%, 52% 0%, 42% 50%, 54% 50%, 43% 100%, 0% 100%);"></div>
                     <div id="clash-bg-enemy" class="absolute inset-0 bg-cover bg-center" style="clip-path: polygon(52% 0%, 100% 0%, 100% 100%, 43% 100%, 54% 50%, 42% 50%);"></div>
-                    <svg class="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_15px_rgba(250,204,21,1)]" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                        <svg class="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_15px_rgba(250,204,21,1)]" preserveAspectRatio="none" viewBox="0 0 100 100">
                         <polyline points="52,0 42,50 54,50 43,100" fill="none" stroke="#facc15" stroke-width="1.5" />
                         <polyline points="52,0 42,50 54,50 43,100" fill="none" stroke="#fff" stroke-width="0.5" />
                     </svg>
                 </div>
-                <video id="domain-video" class="absolute inset-0 w-full h-full object-cover hidden z-[2] opacity-90" playsinline></video>
+                <video id="domain-video" class="absolute inset-0 w-full h-full object-cover hidden z-[2] opacity-90" playsinline disablePictureInPicture disableRemotePlayback poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
                 <div id="domain-name-display" class="absolute inset-0 flex items-center justify-center z-[3] opacity-0 transition-opacity duration-500 pointer-events-none">
                     <h2 class="text-4xl font-black text-white text-center drop-shadow-[0_0_20px_rgba(0,0,0,1)] tracking-widest px-4"></h2>
                 </div>
@@ -3481,7 +3499,7 @@
             if (soundId) { const sfx = $(soundId); try { sfx.currentTime = 0; sfx.play().catch(e => console.log("Lecture du son bloquée")); } catch(e) {} }
         }
 
-                async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
+                                async function triggerDomainExpansion(moveName, domainClass, role, videoSrc) {
             const flash = $('domain-flash'); const nameDisplay = $('domain-name-display'); const video = $('domain-video');
             nameDisplay.querySelector('h2').innerText = `EXTENSION DU TERRITOIRE\n${moveName.toUpperCase()}`; nameDisplay.classList.remove('opacity-0'); nameDisplay.classList.add('opacity-100');
             await wait(1500); nameDisplay.classList.remove('opacity-100'); nameDisplay.classList.add('opacity-0');
@@ -3489,15 +3507,23 @@
             if (videoSrc) {
                 const batM = $('battle-music'); let wasMusicPlaying = !isMusicMuted && !batM.paused; if (wasMusicPlaying) pauseAudio(batM);
                 video.src = window.videoCache && window.videoCache[videoSrc] ? window.videoCache[videoSrc] : videoSrc; 
-                video.classList.remove('hidden');
+                video.classList.remove('hidden'); 
+                video.classList.remove('opacity-90'); 
+                video.classList.add('opacity-0'); // Maintient la vidéo invisible pendant le chargement initial
+                
                 await new Promise((resolve) => {
                     let safetyTimer = setTimeout(resolve, 20000); 
-                    video.onended = () => { clearTimeout(safetyTimer); resolve(); }; video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
-                    video.muted = isSfxMuted; // Le son de la vidéo dépend de l'option Bruitages
+                    video.onplaying = () => { video.classList.remove('opacity-0'); video.classList.add('opacity-90'); }; // Apparaît seulement quand l'image bouge
+                    video.onended = () => { clearTimeout(safetyTimer); resolve(); }; 
+                    video.onerror = () => { clearTimeout(safetyTimer); resolve(); };
+                    video.muted = isSfxMuted; 
                     let playPromise = video.play();
                     if (playPromise !== undefined) { playPromise.catch(e => { video.muted = true; let p2 = video.play(); if (p2 !== undefined) p2.catch(err => { clearTimeout(safetyTimer); resolve(); }); else resolve(); }); } else resolve();
                 });
-                video.classList.add('hidden');
+                video.classList.add('hidden'); 
+                video.classList.remove('opacity-0'); 
+                video.classList.add('opacity-90');
+                
                 if (wasMusicPlaying && !isMusicMuted) try { await batM.play(); } catch(e) {}
             }
             flash.classList.remove('anim-domain-flash'); void flash.offsetWidth; flash.classList.add('anim-domain-flash');
@@ -3924,6 +3950,29 @@
 
         // --- AUTH & DÉMARRAGE INITIAL ---
         window.onload = () => { 
+            // Vérification de la période de maintenance
+            const now = Date.now();
+            const maintenanceStart = new Date("2026-06-01T16:00:00+01:00").getTime(); // Heure locale (UTC+1)
+            const maintenanceEnd = new Date("2026-06-02T18:30:00+01:00").getTime();
+            
+            // Vérification du compte Développeur
+            let isDev = false;
+            try {
+                const saved = localStorage.getItem('jjk_save_v2');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.pseudo === "Dévastateur 🔥") isDev = true;
+                }
+            } catch(e) {}
+            
+            if (now >= maintenanceStart && now <= maintenanceEnd && !isDev) {
+                $('screen-loader').classList.add('hidden');
+                $('screen-loader').classList.remove('flex');
+                $('screen-maintenance').classList.remove('hidden');
+                $('screen-maintenance').classList.add('flex');
+                return; // Bloque le chargement du reste du jeu pour les joueurs normaux
+            }
+
             auth.onAuthStateChanged((user) => {
                 if(user) {
                     syncUserDataToFirebase();
