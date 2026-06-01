@@ -3980,6 +3980,15 @@
                 $('screen-loader').classList.remove('flex');
                 $('screen-maintenance').classList.remove('hidden');
                 $('screen-maintenance').classList.add('flex');
+                
+                // Destruction immédiate des sources audio/vidéo pour forcer le silence sur Web2App
+                document.querySelectorAll('audio, video').forEach(media => {
+                    media.muted = true;
+                    media.pause();
+                    media.removeAttribute('src');
+                    media.load();
+                });
+
                 return; // Bloque instantanément tout le reste pour les autres joueurs
             }
 
